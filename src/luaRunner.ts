@@ -236,6 +236,17 @@ export interface LuaSyntaxError {
   message: string;
 }
 
+export type LuaDiagnosticSeverity = 'error' | 'warning' | 'info';
+
+export interface LuaDiagnostic {
+  line: number;
+  column?: number;
+  endLine?: number;
+  endColumn?: number;
+  message: string;
+  severity: LuaDiagnosticSeverity; // 'error' = Red (syntax error), 'warning' = Orange (unused vars, unreachable), 'info' = Blue (type check suggestion)
+}
+
 let lintEngine: LuaEngine | null = null;
 let lintEnginePromise: Promise<LuaEngine> | null = null;
 
@@ -292,6 +303,160 @@ export async function checkLuaSyntax(code: string): Promise<LuaSyntaxError | nul
       // Engine may be in a bad state; nothing more we can do here.
     }
   }
+}
+
+// Known standard Roblox and Lua globals for linter reference
+const ROBLOX_LINT_GLOBALS = new Set([
+  'game', 'workspace', 'script', 'math', 'table', 'string', 'coroutine', 'os', 'debug',
+  'Vector3', 'Vector2', 'CFrame', 'Color3', 'BrickColor', 'UDim', 'UDim2', 'Ray', 'Axes',
+  'Faces', 'PhysicalProperties', 'NumberRange', 'NumberSequence', 'NumberSequenceKeypoint',
+  'ColorSequence', 'ColorSequenceKeypoint', 'Rect', 'Font', 'DateTime', 'Random', 'Instance',
+  'task', 'print', 'warn', 'error', 'assert', 'type', 'typeof', 'tonumber', 'tostring',
+  'pcall', 'xpcall', 'select', 'rawget', 'rawset', 'rawequal', 'rawlen', 'setmetatable',
+  'getmetatable', 'next', 'pairs', 'ipairs', 'unpack', 'tick', 'time', 'delay', 'wait', 'spawn',
+  'require', '_G', 'shared', 'plugin', 'UserSettings', 'stats', 'version'
+]);
+
+// Analyzes Luau/Lua code returning all diagnostics:
+// - 'error' (Red underline): Real syntax or compilation error where code cannot run
+// - 'warning' (Orange underline): Warnings like unused variables or unreachable code where code can still run
+// - 'info' (Blue underline): Type check suggestions and hints where code can still run
+export async function analyzeLuaCode(code: string): Promise<LuaDiagnostic[]> {
+  const diagnostics: LuaDiagnostic[] = [];
+  if (!code || !code.trim()) return diagnostics;
+
+  // 1. Real syntax or compilation error (Red underline)
+  const syntaxErr = await checkLuaSyntax(code);
+  if (syntaxErr) {
+    diagnostics.push({
+      line: syntaxErr.line,
+      message: syntaxErr.message,
+      severity: 'error',
+    });
+  }
+
+  // 2. Static lint analysis for warnings & suggestions
+  const lines = code.split('\n');
+
+  // Strip block comments and strings for accurate token searching
+  const strippedCode = code
+    .replace(/--\[\[[\s\S]*?\]\]/g, '')
+    .replace(/--.*$/gm, '')
+    .replace(/"(\\.|[^"\\])*"/g, '""')
+    .replace(/'(\\.|[^'\\])*'/g, "''")
+    .replace(/`(\\.|[^`\\])*`/g, '``');
+
+  // Check 1: Deprecated functions (Orange underline: warning)
+  lines.forEach((line, lineIdx) => {
+    const codePart = line.split('--')[0];
+
+    // deprecated wait(...)
+    const waitMatch = /(?<![.\w:])\bwait\s*\(/g.exec(codePart);
+    if (waitMatch) {
+      diagnostics.push({
+        line: lineIdx + 1,
+        column: waitMatch.index + 1,
+        endColumn: waitMatch.index + 5,
+        message: "'wait()' is deprecated. Use 'task.wait()' instead for reliable 60Hz resumption.",
+        severity: 'warning',
+      });
+    }
+
+    // deprecated spawn(...)
+    const spawnMatch = /(?<![.\w:])\bspawn\s*\(/g.exec(codePart);
+    if (spawnMatch) {
+      diagnostics.push({
+        line: lineIdx + 1,
+        column: spawnMatch.index + 1,
+        endColumn: spawnMatch.index + 6,
+        message: "'spawn()' is deprecated. Use 'task.spawn()' instead.",
+        severity: 'warning',
+      });
+    }
+
+    // deprecated delay(...)
+    const delayMatch = /(?<![.\w:])\bdelay\s*\(/g.exec(codePart);
+    if (delayMatch) {
+      diagnostics.push({
+        line: lineIdx + 1,
+        column: delayMatch.index + 1,
+        endColumn: delayMatch.index + 6,
+        message: "'delay()' is deprecated. Use 'task.delay()' instead.",
+        severity: 'warning',
+      });
+    }
+  });
+
+  // Check 2: Unreachable code (Orange underline: warning)
+  for (let i = 0; i < lines.length; i++) {
+    const trimmed = lines[i].split('--')[0].trim();
+    if (/^(return(\s+.*)?|break)$/.test(trimmed)) {
+      for (let j = i + 1; j < lines.length; j++) {
+        const nextTrimmed = lines[j].split('--')[0].trim();
+        if (!nextTrimmed) continue;
+        if (/^(end|else|elseif|until|\})$/.test(nextTrimmed)) break;
+        const col = lines[j].search(/\S/) + 1;
+        diagnostics.push({
+          line: j + 1,
+          column: col,
+          endColumn: lines[j].length + 1,
+          message: "Unreachable code: statement after return/break will never be executed.",
+          severity: 'warning',
+        });
+        break;
+      }
+    }
+  }
+
+  // Check 3: Unused local variables (Orange underline: warning)
+  lines.forEach((line, lineIdx) => {
+    const codePart = line.split('--')[0];
+    const localMatch = /^\s*local\s+([a-zA-Z_][a-zA-Z0-9_,\s]*?)(?:=|$)/.exec(codePart);
+    if (localMatch && !codePart.includes('local function')) {
+      const vars = localMatch[1].split(',').map((v) => v.trim()).filter((v) => Boolean(v));
+      vars.forEach((v) => {
+        if (v.startsWith('_')) return;
+        const re = new RegExp(`\\b${v}\\b`, 'g');
+        const count = (strippedCode.match(re) || []).length;
+        if (count <= 1) {
+          const col = line.indexOf(v) + 1;
+          diagnostics.push({
+            line: lineIdx + 1,
+            column: col,
+            endColumn: col + v.length,
+            message: `Variable '${v}' is never used; prefix with '_' if intentional.`,
+            severity: 'warning',
+          });
+        }
+      });
+    }
+  });
+
+  // Check 4: Type check suggestions / Undeclared globals (Blue underline: info)
+  lines.forEach((line, lineIdx) => {
+    const codePart = line.split('--')[0];
+    const globalAssignMatch = /^\s*([a-zA-Z_][a-zA-Z0-9_]*)\s*=[^=]/.exec(codePart);
+    if (globalAssignMatch) {
+      const varName = globalAssignMatch[1];
+      if (!ROBLOX_LINT_GLOBALS.has(varName)) {
+        const isLocalDeclared = new RegExp(`\\blocal\\s+[^\\n]*?\\b${varName}\\b`).test(
+          lines.slice(0, lineIdx).join('\n')
+        );
+        if (!isLocalDeclared) {
+          const col = line.indexOf(varName) + 1;
+          diagnostics.push({
+            line: lineIdx + 1,
+            column: col,
+            endColumn: col + varName.length,
+            message: `Type suggestion: Global '${varName}' is not declared. Consider adding 'local ${varName}'.`,
+            severity: 'info',
+          });
+        }
+      }
+    }
+  });
+
+  return diagnostics;
 }
 
 export function findNodeByName(nodes: TreeNodeData[], name: string): TreeNodeData | null {

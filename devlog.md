@@ -378,24 +378,21 @@
   - Explorer tree, tab headers, and Insert Object context menu now render the modern Roblox Studio icons directly.
   - Production build verified with `vite build` (0 errors, 2606 modules compiled).
 
-## Roblox Studio Script Editor Red & Yellow Squiggly Lines — 2026-09-12
-- **Luau Static Analyzer & Diagnostic Engine (`src/luauLinter.ts`)**:
-  - Implemented real-time tokenization and lexical scope analyzer tailored for Luau.
-  - **Red Squiggly Lines (`MarkerSeverity.Error`)**:
-    - Pinpoints exact syntax error tokens and symbol boundaries from Lua compiler error outputs (`unexpected symbol near ')'`, `')' expected near 'bar'`, `unfinished string`, `<eof>`).
-    - Focuses precisely on the offending symbol rather than underlining the entire line.
-  - **Yellow Squiggly Lines (`MarkerSeverity.Warning`)**:
-    - **Unknown Globals (`W000`)**: Flags non-local variables not recognized in Roblox Luau builtins (`game`, `workspace`, `Vector3`, `CFrame`, `Instance`, `task`, etc.).
-    - **Unused Local Variables (`W001`)**: Flags declared local variables and arguments never read in scope; supports standard `_` prefix ignore convention.
-    - **Deprecated Roblox APIs (`W002`)**: Detects legacy methods (`:Remove()` -> `:Destroy()`, `:findFirstChild()` -> `:FindFirstChild()`, `:children()` -> `:GetChildren()`, `wait()` -> `task.wait()`, `spawn()` -> `task.spawn()`, `delay()` -> `task.delay()`).
-    - **Method vs. Member Differentiation**: Accurately recognizes member accesses (`obj.prop`), method calls (`obj:method()`), table constructors (`{ key = value }`), and implicit `self` injection in `function tbl:method()`.
-- **Studio-Authentic Visual Styling (`src/index.css` & Monaco Theme)**:
-  - Custom SVG wavy squiggly patterns for `.squiggly-error` (`#ff4d4d`) and `.squiggly-warning` (`#ffbf00`).
-  - Added `editorError.foreground`, `editorWarning.foreground`, and overview ruler indicators in `roblox-studio-dark` theme.
-- **Enhanced Status Bar**:
-  - Added live indicators with count and line numbers for both Errors (red alert circle) and Warnings (yellow alert triangle).
-  - One-click navigation reveals and centers the offending line directly in Monaco Editor.
-- **Fast Debounced Linting**:
-  - Reduced debounce to 200ms on typing and 80ms on tab switch for near instantaneous visual feedback.
-- **Build Verification**:
-  - Verified with `tsc --noEmit` and `vite build` (0 errors).
+## Code Editor Squiggly Syntax Error & Warning Colors & Diagnostics — 2026-09-12
+- **Roblox Studio Error and Warning Underline Colors**:
+  - **Red squiggly underline (`#ff4d4d`)**: Real syntax or compilation errors where code cannot compile or run.
+  - **Orange squiggly underline (`#ff8c00`)**: Warnings (unused local variables, unreachable code after `return`/`break`, deprecated `wait()`/`spawn()`/`delay()` APIs) where the code can still run.
+  - **Blue squiggly underline (`#00a2ff`)**: Type check suggestions and hints (e.g. undeclared global variable assignment without `local`).
+- **Monaco Theme & CSS Wave Implementation**:
+  - Configured `editorError.foreground` (`#ff4d4d`), `editorWarning.foreground` (`#ff8c00`), `editorInfo.foreground` (`#00a2ff`), `editorHint.foreground` (`#00a2ff`), and overview ruler counterparts in `roblox-studio-dark` Monaco theme.
+  - Added CSS wave pattern overrides for `.monaco-editor .squiggly-error`, `.monaco-editor .squiggly-warning`, `.monaco-editor .squiggly-info`, and `.monaco-editor .squiggly-hint` in `src/index.css`.
+- **Static Analysis Engine (`analyzeLuaCode`) in `luaRunner.ts`**:
+  - Validates code with Lua WebAssembly parser for real compilation errors.
+  - Performs static lint analysis detecting unreachable statements, unused local declarations, deprecated Roblox functions, and undeclared globals with type check suggestions.
+- **Output Panel & Editor Status Bar Colors**:
+  - **Red text in Output (`#ff4d4f`)**: Runtime errors logged via `error()`.
+  - **Yellow text in Output (`#ffe600`)**: Warnings logged via `warn()`.
+  - **Editor Status Bar**: Shows colored status button linking directly to the line of error/warning/suggestion.
+- **Verification**:
+  - `tsc --noEmit` passed with 0 errors.
+  - `vite build` succeeded with 0 errors.

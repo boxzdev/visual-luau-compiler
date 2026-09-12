@@ -46,7 +46,8 @@ import {
   Flame,
   Moon,
   Image as ImageIcon,
-  Grid
+  Grid,
+  Info
 } from 'lucide-react';
 import Editor from '@monaco-editor/react';
 import { Canvas, useFrame, useLoader, useThree } from '@react-three/fiber';
@@ -66,11 +67,12 @@ import {
   clockTimeToTimeOfDay,
   timeOfDayToClockTime,
   checkLuaSyntax,
-  LuaSyntaxError
+  LuaSyntaxError,
+  analyzeLuaCode,
+  LuaDiagnostic
 } from './luaRunner';
 import { PropertiesPanel } from './PropertiesPanel';
 import { globalPhysicsEngine } from './physicsEngine';
-import { analyzeLuau, formatSyntaxErrorDiagnostic, LuauDiagnostic } from './luauLinter';
 import sunAsset from '../R_Assets/Sun.png';
 import moonAsset from '../R_Assets/Moon.png';
 
@@ -1939,14 +1941,17 @@ function setupRobloxStudioTheme(monaco: any) {
       'editor.lineHighlightBackground': '#2d3241',
       'editorBracketMatch.background': '#55555580',
       'editorBracketMatch.border': '#00000000',
-      'editorError.foreground': '#ff4d4d',
+      // Roblox Studio Squiggly Underline & Marker Colors
+      'editorError.foreground': '#ff4d4d',              // Red underline: real syntax/compilation error
       'editorError.border': '#00000000',
-      'editorWarning.foreground': '#ffbf00',
+      'editorWarning.foreground': '#ff8c00',            // Orange underline: warning (unused variables, unreachable code)
       'editorWarning.border': '#00000000',
-      'editorInfo.foreground': '#38bdf8',
-      'editorHint.foreground': '#a3e681',
+      'editorInfo.foreground': '#00a2ff',               // Blue underline: type check suggestions & hints
+      'editorInfo.border': '#00000000',
+      'editorHint.foreground': '#00a2ff',
       'editorOverviewRuler.errorForeground': '#ff4d4d',
-      'editorOverviewRuler.warningForeground': '#ffbf00',
+      'editorOverviewRuler.warningForeground': '#ff8c00',
+      'editorOverviewRuler.infoForeground': '#00a2ff',
     },
   });
 }
@@ -2206,11 +2211,12 @@ export default function App() {
   const lintTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lintRequestIdRef = useRef(0);
   const lintedTabRef = useRef<string | null>(null);
-  const [syntaxError, setSyntaxError] = useState<LuaSyntaxError | null>(null);
-  const [warningDiagnostics, setWarningDiagnostics] = useState<LuauDiagnostic[]>([]);
+  const [primaryDiagnostic, setPrimaryDiagnostic] = useState<LuaDiagnostic | null>(null);
 
-  // Compiles `code` (without running it) and paints red squiggle markers for syntax errors
-  // and yellow squiggle markers for Luau warnings (unknown globals, unused variables, deprecated APIs).
+  // Compiles and analyzes `code` (without running it) and paints/clears:
+  // - Red squiggle: Real syntax or compilation error where code cannot run
+  // - Orange squiggle: Warning (unused variable, unreachable code, deprecated APIs)
+  // - Blue squiggle: Type check suggestion / undeclared global
   const runLuaLint = useCallback(async (code: string) => {
     const monacoInst = monacoApiRef.current;
     const editorInst = codeEditorRef.current;
@@ -2219,50 +2225,45 @@ export default function App() {
     if (!model) return;
 
     const requestId = ++lintRequestIdRef.current;
-    const error = await checkLuaSyntax(code);
+    const diagnostics = await analyzeLuaCode(code);
 
-    // If the editor moved on while we were awaiting the check, don't paint stale results.
+    // If the editor moved on (newer keystroke, tab switch, unmount) while we
+    // were awaiting the check, don't paint stale results over new content.
     if (requestId !== lintRequestIdRef.current || model.isDisposed()) return;
 
-    setSyntaxError(error);
+    const firstError = diagnostics.find((d) => d.severity === 'error') || null;
+    const firstWarning = diagnostics.find((d) => d.severity === 'warning') || null;
+    const firstInfo = diagnostics.find((d) => d.severity === 'info') || null;
+    setPrimaryDiagnostic(firstError || firstWarning || firstInfo || null);
 
-    const markers: any[] = [];
+    const lineCount = model.getLineCount();
 
-    // 1. Red Squiggly Line for Syntax Error
-    if (error) {
-      const errorDiag = formatSyntaxErrorDiagnostic(error, model);
-      markers.push({
-        severity: monacoInst.MarkerSeverity.Error,
-        message: errorDiag.message,
-        startLineNumber: errorDiag.startLineNumber,
-        startColumn: errorDiag.startColumn,
-        endLineNumber: errorDiag.endLineNumber,
-        endColumn: errorDiag.endColumn,
-        source: 'Luau',
-      });
-    }
+    const markers = diagnostics.map((d) => {
+      const line = Math.min(Math.max(d.line, 1), lineCount);
+      const lineContent = model.getLineContent(line);
+      const firstNonWhitespace = lineContent.search(/\S/);
+      const defStart = firstNonWhitespace >= 0 ? firstNonWhitespace + 1 : 1;
+      const startColumn = d.column ?? defStart;
+      const endColumn = d.endColumn ?? Math.max(lineContent.length + 1, startColumn + 1);
 
-    // 2. Yellow Squiggly Lines for Luau Warnings
-    try {
-      const warnings = analyzeLuau(code);
-      setWarningDiagnostics(warnings);
-      for (const w of warnings) {
-        markers.push({
-          severity: monacoInst.MarkerSeverity.Warning,
-          message: w.message,
-          startLineNumber: w.startLineNumber,
-          startColumn: w.startColumn,
-          endLineNumber: w.endLineNumber,
-          endColumn: w.endColumn,
-          source: 'Luau',
-        });
+      let monacoSeverity = monacoInst.MarkerSeverity.Error;
+      if (d.severity === 'warning') {
+        monacoSeverity = monacoInst.MarkerSeverity.Warning;
+      } else if (d.severity === 'info') {
+        monacoSeverity = monacoInst.MarkerSeverity.Info;
       }
-    } catch {
-      setWarningDiagnostics([]);
-    }
 
-    // Paint both red and yellow squiggly lines onto the editor model
-    monacoInst.editor.setModelMarkers(model, 'luau-diagnostics', markers);
+      return {
+        severity: monacoSeverity,
+        message: d.message,
+        startLineNumber: line,
+        startColumn: Math.max(1, startColumn),
+        endLineNumber: d.endLine ?? line,
+        endColumn: Math.max(startColumn + 1, endColumn),
+      };
+    });
+
+    monacoInst.editor.setModelMarkers(model, 'luau-syntax', markers);
   }, []);
 
   // Context Menu State
@@ -2953,13 +2954,12 @@ export default function App() {
       const monacoInst = monacoApiRef.current;
       const model = codeEditorRef.current?.getModel();
       if (monacoInst && model) {
-        monacoInst.editor.setModelMarkers(model, 'luau-diagnostics', []);
+        monacoInst.editor.setModelMarkers(model, 'luau-syntax', []);
       }
-      setSyntaxError(null);
-      setWarningDiagnostics([]);
-      lintTimeoutRef.current = setTimeout(() => runLuaLint(currentScriptCode), 80);
+      setPrimaryDiagnostic(null);
+      lintTimeoutRef.current = setTimeout(() => runLuaLint(currentScriptCode), 120);
     } else {
-      lintTimeoutRef.current = setTimeout(() => runLuaLint(currentScriptCode), 200);
+      lintTimeoutRef.current = setTimeout(() => runLuaLint(currentScriptCode), 500);
     }
 
     return () => {
@@ -3339,47 +3339,37 @@ export default function App() {
                 <div className="flex items-center gap-3">
                   <span>Luau / Lua 5.1 (Wasmoon)</span>
                   <span>UTF-8</span>
-                  {/* Red Syntax Error Indicator */}
-                  {syntaxError && (
+                  {primaryDiagnostic ? (
                     <button
-                      className="flex items-center gap-1 min-w-0 max-w-[280px] text-[#ff4d4d] hover:text-[#ff8080] transition-colors cursor-pointer"
-                      title={`Syntax error on line ${syntaxError.line}: ${syntaxError.message}`}
+                      className={`flex items-center gap-1 min-w-0 max-w-[420px] transition-colors ${
+                        primaryDiagnostic.severity === 'error'
+                          ? 'text-[#ff4d4f] hover:text-[#ff7875]'
+                          : primaryDiagnostic.severity === 'warning'
+                          ? 'text-[#ff8c00] hover:text-[#ffa940]'
+                          : 'text-[#00a2ff] hover:text-[#40a9ff]'
+                      }`}
+                      title={primaryDiagnostic.message}
                       onClick={() => {
                         const editorInst = codeEditorRef.current;
                         if (!editorInst) return;
-                        editorInst.revealLineInCenter(syntaxError.line);
-                        editorInst.setPosition({ lineNumber: syntaxError.line, column: 1 });
+                        editorInst.revealLineInCenter(primaryDiagnostic.line);
+                        editorInst.setPosition({ lineNumber: primaryDiagnostic.line, column: primaryDiagnostic.column || 1 });
                         editorInst.focus();
                       }}
                     >
-                      <AlertCircle size={12} className="flex-shrink-0 text-[#ff4d4d]" />
-                      <span className="truncate">Error Ln {syntaxError.line}: {syntaxError.message}</span>
+                      {primaryDiagnostic.severity === 'error' ? (
+                        <AlertCircle size={12} className="flex-shrink-0" />
+                      ) : primaryDiagnostic.severity === 'warning' ? (
+                        <AlertTriangle size={12} className="flex-shrink-0" />
+                      ) : (
+                        <Info size={12} className="flex-shrink-0" />
+                      )}
+                      <span className="truncate">Ln {primaryDiagnostic.line}: {primaryDiagnostic.message}</span>
                     </button>
-                  )}
-
-                  {/* Yellow Warning Indicator */}
-                  {warningDiagnostics.length > 0 && (
-                    <button
-                      className="flex items-center gap-1 min-w-0 max-w-[280px] text-[#ffbf00] hover:text-[#ffd54f] transition-colors cursor-pointer"
-                      title={`${warningDiagnostics.length} warning${warningDiagnostics.length > 1 ? 's' : ''}: ${warningDiagnostics[0].message}`}
-                      onClick={() => {
-                        const editorInst = codeEditorRef.current;
-                        if (!editorInst || !warningDiagnostics[0]) return;
-                        const w = warningDiagnostics[0];
-                        editorInst.revealLineInCenter(w.startLineNumber);
-                        editorInst.setPosition({ lineNumber: w.startLineNumber, column: w.startColumn });
-                        editorInst.focus();
-                      }}
-                    >
-                      <AlertTriangle size={12} className="flex-shrink-0 text-[#ffbf00]" />
-                      <span className="truncate">{warningDiagnostics.length} Warning{warningDiagnostics.length > 1 ? 's' : ''} (Ln {warningDiagnostics[0].startLineNumber})</span>
-                    </button>
-                  )}
-
-                  {!syntaxError && warningDiagnostics.length === 0 && (
+                  ) : (
                     <span className="flex items-center gap-1 text-[#6a9955]">
                       <CheckCircle2 size={12} />
-                      No problems
+                      No errors or warnings
                     </span>
                   )}
                 </div>
@@ -3422,12 +3412,14 @@ export default function App() {
                 let Icon = null;
 
                 if (log.type === 'print') {
-                  colorClass = 'text-[#75b0e2]';
+                  colorClass = 'text-[#e0e0e0]';
                 } else if (log.type === 'warn') {
-                  colorClass = 'text-[#ffb74d]';
+                  // Yellow text in Output: Shows a warning logged via warn()
+                  colorClass = 'text-[#ffe600] font-medium';
                   Icon = AlertTriangle;
                 } else if (log.type === 'error') {
-                  colorClass = 'text-[#f87171] font-semibold';
+                  // Red text in Output: Shows a runtime error logged via error()
+                  colorClass = 'text-[#ff4d4f] font-semibold';
                   Icon = AlertCircle;
                 } else if (log.type === 'system') {
                   colorClass = 'text-[#9ca3af]';
