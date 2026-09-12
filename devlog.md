@@ -323,3 +323,79 @@
   - Added direct mapping for bundled local assets (`Grid.png`, `SpawnLocation.png`, `Moon.png`, `Sun.png`, `workspace.png`).
 - **Properties Panel UX**:
   - Enhanced `Texture` input with detailed placeholder, tooltip documentation, and one-click clear button.
+
+## Baseplate Texture & SpawnLocation Decal Scene Upgrade — 2026-09-12
+- **Initial Scene Tree Defaults**:
+  - Attached a `Texture` element under `Baseplate` with ID `6372755229`, `Face = "Top"`, `StudsPerTileU = 16`, `StudsPerTileV = 16`, and `Transparency = 0.8`.
+  - Attached a `Decal` element under `SpawnLocation` with ID `3724740815`, `Face = "Top"`, and `Transparency = 0`.
+  - Set Baseplate color to `#5B5B5B` and SpawnLocation color to light grey/white (`#e8e8e8`).
+- **Pure Dynamic Asset ID Resolution**:
+  - Removed local `Grid.png`, `SpawnLocation.png`, and `workspace.png` imports and dependencies completely from `R_Assets/`.
+  - Textures and decals now resolve 100% dynamically from Roblox CDN using their IDs (`6372755229` and `3724740815`) via `fetchRobloxThumbnail` and Three.js `TextureLoader`.
+  - Friendly aliases (`"grid"`, `"spawnlocation"`) automatically map to the respective asset IDs.
+- **Visual & Viewport Polish**:
+  - Tuned sky dome gradient colors (`zenithColor = #73859c`, `horizonColor = #69768d`) and daytime ambient illumination (`#73859c`) to match modern Roblox Studio atmospheric lighting.
+  - Added slight surface offset epsilon (`eps = 0.005`) to `PartDecalOrTexture` to eliminate z-fighting depth flicker across large part surfaces.
+  - Adjusted initial viewport camera position to `[24, 16, 28]` with `fov: 50` for an ideal elevated perspective framing the SpawnLocation and Baseplate grid.
+
+## Roblox Studio Element & Object Icon Extraction & Organization — 2026-09-12
+- **Official Master Spritesheet**:
+  - Sourced official `ClassImages.PNG` (2352×16, containing all 147 Roblox class icons).
+- **Automated Slicing & Structuring**:
+  - Implemented PNG decoding and slicing script extracting every icon into individual 16×16 transparent PNGs.
+  - Linked official class reflection metadata (`ReflectionMetadata.xml`) mapping 300+ classes to their exact Explorer icon indices.
+- **Clean `R_Assets/` Organization**:
+  - `R_Assets/Classes/`: Contains 278 class icons (`Part.png`, `Script.png`, `LocalScript.png`, `ModuleScript.png`, `Folder.png`, `Model.png`, `Decal.png`, `Texture.png`, `SpawnLocation.png`, etc.).
+  - `R_Assets/Services/`: Contains 25 service icons (`Workspace.png`, `Players.png`, `Lighting.png`, `ReplicatedStorage.png`, `ServerScriptService.png`, `StarterGui.png`, etc.).
+  - `R_Assets/AllIcons/`: Contains all 147 raw indexed icon slices (`icon_0.png` ... `icon_146.png`).
+  - `R_Assets/StudioUI/`: Contains 67 official Roblox Studio UI icons (arrows, audio, grid, folders, filters, alerts).
+  - `R_Assets/icon_manifest.json`: Full manifest mapping class names to their category, index, and asset path.
+
+## Roblox Studio Icon UI Integration with Lucide Fallbacks — 2026-09-12
+- **Eager Bundling via `import.meta.glob`**:
+  - Dynamically import and bundle all 278 class icons and 25 service icons from `R_Assets/Classes/*.png` and `R_Assets/Services/*.png` via Vite's `import.meta.glob`.
+  - Built high-performance lowercase lookup dictionaries (`CLASS_ICONS` and `SERVICE_ICONS`) with internal alias resolution (`object` -> `part`, `folder_script` -> `folder`).
+- **Universal Resolver with Lucide Fallback (`getRobloxIconUrl`)**:
+  - Implemented `getRobloxIconUrl(name, type)` that checks Roblox services, class mappings, and names.
+  - Returns the URL string when an extracted Roblox Studio icon is found, or `null` if none exists so consumers cleanly fallback to Lucide icons.
+- **UI Components Updated**:
+  - **Explorer Tree (`getNodeIcon`)**: Automatically displays the official 16×16 Roblox icon (`Part`, `Model`, `Folder`, `Script`, `LocalScript`, `ModuleScript`, `Workspace`, `Lighting`, `Decal`, `Texture`, `SpawnLocation`, `PointLight`, `SpotLight`, `Atmosphere`, `Sky`, etc.) with Lucide fallback.
+  - **Tab Bar**: Replaced script and viewport tab icons with the official Roblox icons (`Script`, `LocalScript`, `ModuleScript`, `Workspace`), maintaining Lucide fallbacks.
+  - **Insert Object Context Menu**: All menu items (`Model`, `Folder`, `Part`, `Decal`, `Texture`, `Script`, `LocalScript`, `ModuleScript`, `PointLight`, `SpotLight`, `SurfaceLight`, `RemoteEvent`, `RemoteFunction`, `Sky`, `Atmosphere`, `ColorCorrectionEffect`, `BloomEffect`, `SunRaysEffect`, `BlurEffect`) now display the official Roblox icons.
+- **Type Safety & Build Verification**:
+  - Verified with `tsc --noEmit` (0 errors) and production build `vite build` (all 300+ icons bundled seamlessly).
+
+## Modern Roblox Studio Vector Icons Upgrade — 2026-09-12
+- **Discovered Modern Vector Texture Assets**:
+  - Located official modern vector icon repository in `C:\Program Files (x86)\Roblox\Versions\version-93202a13414c4131\content\studio_svg_textures\Shared\InsertableObjects\Dark\Standard\`.
+  - Replaced the 2012-2019 legacy spritesheet (`ClassImages.PNG`) icons with the latest modern flat vector Roblox Studio icons (Dark Theme).
+- **Asset Migration & Preservation**:
+  - Safely archived the classic icons into `R_Assets/Classic/Classes/` and `R_Assets/Classic/Services/`.
+  - Extracted and deployed **317 modern class icons** into `R_Assets/Classes/` and **28 modern service icons** into `R_Assets/Services/`.
+  - Generated `R_Assets/icon_manifest_modern.json` mapping all 317 modern classes and services.
+  - Added alias support (`Baseplate.png` -> `BasePlate.png`, `ChatService.png` -> `TextChatService.png`, and fallback generic service icons for `MarketplaceService`, `TweenService`, `RunService`).
+- **Seamless Live Rendering**:
+  - Explorer tree, tab headers, and Insert Object context menu now render the modern Roblox Studio icons directly.
+  - Production build verified with `vite build` (0 errors, 2606 modules compiled).
+
+## Roblox Studio Script Editor Red & Yellow Squiggly Lines — 2026-09-12
+- **Luau Static Analyzer & Diagnostic Engine (`src/luauLinter.ts`)**:
+  - Implemented real-time tokenization and lexical scope analyzer tailored for Luau.
+  - **Red Squiggly Lines (`MarkerSeverity.Error`)**:
+    - Pinpoints exact syntax error tokens and symbol boundaries from Lua compiler error outputs (`unexpected symbol near ')'`, `')' expected near 'bar'`, `unfinished string`, `<eof>`).
+    - Focuses precisely on the offending symbol rather than underlining the entire line.
+  - **Yellow Squiggly Lines (`MarkerSeverity.Warning`)**:
+    - **Unknown Globals (`W000`)**: Flags non-local variables not recognized in Roblox Luau builtins (`game`, `workspace`, `Vector3`, `CFrame`, `Instance`, `task`, etc.).
+    - **Unused Local Variables (`W001`)**: Flags declared local variables and arguments never read in scope; supports standard `_` prefix ignore convention.
+    - **Deprecated Roblox APIs (`W002`)**: Detects legacy methods (`:Remove()` -> `:Destroy()`, `:findFirstChild()` -> `:FindFirstChild()`, `:children()` -> `:GetChildren()`, `wait()` -> `task.wait()`, `spawn()` -> `task.spawn()`, `delay()` -> `task.delay()`).
+    - **Method vs. Member Differentiation**: Accurately recognizes member accesses (`obj.prop`), method calls (`obj:method()`), table constructors (`{ key = value }`), and implicit `self` injection in `function tbl:method()`.
+- **Studio-Authentic Visual Styling (`src/index.css` & Monaco Theme)**:
+  - Custom SVG wavy squiggly patterns for `.squiggly-error` (`#ff4d4d`) and `.squiggly-warning` (`#ffbf00`).
+  - Added `editorError.foreground`, `editorWarning.foreground`, and overview ruler indicators in `roblox-studio-dark` theme.
+- **Enhanced Status Bar**:
+  - Added live indicators with count and line numbers for both Errors (red alert circle) and Warnings (yellow alert triangle).
+  - One-click navigation reveals and centers the offending line directly in Monaco Editor.
+- **Fast Debounced Linting**:
+  - Reduced debounce to 200ms on typing and 80ms on tab switch for near instantaneous visual feedback.
+- **Build Verification**:
+  - Verified with `tsc --noEmit` and `vite build` (0 errors).

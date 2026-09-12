@@ -15,3 +15,12 @@
     background: #4f4f4f;
   }
 }
+
+/* ── Roblox Studio Script Editor Squiggly Lines ────────────────────── */
+.monaco-editor .squiggly-error {
+  background: url("data:image/svg+xml,%3Csvg%20xmlns%3D'http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg'%20viewBox%3D'0%200%206%203'%20width%3D'6'%20height%3D'3'%3E%3Cpath%20d%3D'M0%202.5%20Q%201.5%200.5%203%202.5%20T%206%202.5'%20fill%3D'none'%20stroke%3D'%23ff4d4d'%20stroke-width%3D'1.2'%20stroke-linecap%3D'round'%2F%3E%3C%2Fsvg%3E") repeat-x bottom left !important;
+}
+
+.monaco-editor .squiggly-warning {
+  background: url("data:image/svg+xml,%3Csvg%20xmlns%3D'http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg'%20viewBox%3D'0%200%206%203'%20width%3D'6'%20height%3D'3'%3E%3Cpath%20d%3D'M0%202.5%20Q%201.5%200.5%203%202.5%20T%206%202.5'%20fill%3D'none'%20stroke%3D'%23ffbf00'%20stroke-width%3D'1.2'%20stroke-linecap%3D'round'%2F%3E%3C%2Fsvg%3E") repeat-x bottom left !important;
+}

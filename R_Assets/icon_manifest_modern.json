@@ -1,0 +1,1270 @@
+{
+  "Accessory": {
+    "file": "R_Assets/Classes/Accessory.png",
+    "isService": false
+  },
+  "Actor": {
+    "file": "R_Assets/Classes/Actor.png",
+    "isService": false
+  },
+  "AdGui": {
+    "file": "R_Assets/Classes/AdGui.png",
+    "isService": false
+  },
+  "AdPortal": {
+    "file": "R_Assets/Classes/AdPortal.png",
+    "isService": false
+  },
+  "AirController": {
+    "file": "R_Assets/Classes/AirController.png",
+    "isService": false
+  },
+  "AlignOrientation": {
+    "file": "R_Assets/Classes/AlignOrientation.png",
+    "isService": false
+  },
+  "AlignPosition": {
+    "file": "R_Assets/Classes/AlignPosition.png",
+    "isService": false
+  },
+  "AngularVelocity": {
+    "file": "R_Assets/Classes/AngularVelocity.png",
+    "isService": false
+  },
+  "Animation": {
+    "file": "R_Assets/Classes/Animation.png",
+    "isService": false
+  },
+  "AnimationConstraint": {
+    "file": "R_Assets/Classes/AnimationConstraint.png",
+    "isService": false
+  },
+  "AnimationController": {
+    "file": "R_Assets/Classes/AnimationController.png",
+    "isService": false
+  },
+  "AnimationFromVideoCreatorService": {
+    "file": "R_Assets/Classes/AnimationFromVideoCreatorService.png",
+    "isService": false
+  },
+  "Animator": {
+    "file": "R_Assets/Classes/Animator.png",
+    "isService": false
+  },
+  "ArcHandles": {
+    "file": "R_Assets/Classes/ArcHandles.png",
+    "isService": false
+  },
+  "Atmosphere": {
+    "file": "R_Assets/Classes/Atmosphere.png",
+    "isService": false
+  },
+  "Attachment": {
+    "file": "R_Assets/Classes/Attachment.png",
+    "isService": false
+  },
+  "AudioAnalyzer": {
+    "file": "R_Assets/Classes/AudioAnalyzer.png",
+    "isService": false
+  },
+  "AudioChannelMixer": {
+    "file": "R_Assets/Classes/AudioChannelMixer.png",
+    "isService": false
+  },
+  "AudioChannelSplitter": {
+    "file": "R_Assets/Classes/AudioChannelSplitter.png",
+    "isService": false
+  },
+  "AudioChorus": {
+    "file": "R_Assets/Classes/AudioChorus.png",
+    "isService": false
+  },
+  "AudioCompressor": {
+    "file": "R_Assets/Classes/AudioCompressor.png",
+    "isService": false
+  },
+  "AudioDeviceInput": {
+    "file": "R_Assets/Classes/AudioDeviceInput.png",
+    "isService": false
+  },
+  "AudioDeviceOutput": {
+    "file": "R_Assets/Classes/AudioDeviceOutput.png",
+    "isService": false
+  },
+  "AudioDistortion": {
+    "file": "R_Assets/Classes/AudioDistortion.png",
+    "isService": false
+  },
+  "AudioEcho": {
+    "file": "R_Assets/Classes/AudioEcho.png",
+    "isService": false
+  },
+  "AudioEmitter": {
+    "file": "R_Assets/Classes/AudioEmitter.png",
+    "isService": false
+  },
+  "AudioEqualizer": {
+    "file": "R_Assets/Classes/AudioEqualizer.png",
+    "isService": false
+  },
+  "AudioFader": {
+    "file": "R_Assets/Classes/AudioFader.png",
+    "isService": false
+  },
+  "AudioFilter": {
+    "file": "R_Assets/Classes/AudioFilter.png",
+    "isService": false
+  },
+  "AudioFlanger": {
+    "file": "R_Assets/Classes/AudioFlanger.png",
+    "isService": false
+  },
+  "AudioGate": {
+    "file": "R_Assets/Classes/AudioGate.png",
+    "isService": false
+  },
+  "AudioLimiter": {
+    "file": "R_Assets/Classes/AudioLimiter.png",
+    "isService": false
+  },
+  "AudioListener": {
+    "file": "R_Assets/Classes/AudioListener.png",
+    "isService": false
+  },
+  "AudioPitchShifter": {
+    "file": "R_Assets/Classes/AudioPitchShifter.png",
+    "isService": false
+  },
+  "AudioPlayer": {
+    "file": "R_Assets/Classes/AudioPlayer.png",
+    "isService": false
+  },
+  "AudioRecorder": {
+    "file": "R_Assets/Classes/AudioRecorder.png",
+    "isService": false
+  },
+  "AudioReverb": {
+    "file": "R_Assets/Classes/AudioReverb.png",
+    "isService": false
+  },
+  "AudioSpeechToText": {
+    "file": "R_Assets/Classes/AudioSpeechToText.png",
+    "isService": false
+  },
+  "AudioStreamReader": {
+    "file": "R_Assets/Classes/AudioStreamReader.png",
+    "isService": false
+  },
+  "AudioStreamWriter": {
+    "file": "R_Assets/Classes/AudioStreamWriter.png",
+    "isService": false
+  },
+  "AudioTextToSpeech": {
+    "file": "R_Assets/Classes/AudioTextToSpeech.png",
+    "isService": false
+  },
+  "AudioTremolo": {
+    "file": "R_Assets/Classes/AudioTremolo.png",
+    "isService": false
+  },
+  "AuroraScript": {
+    "file": "R_Assets/Classes/AuroraScript.png",
+    "isService": false
+  },
+  "AvatarEditorService": {
+    "file": "R_Assets/Classes/AvatarEditorService.png",
+    "isService": true
+  },
+  "AvatarSettings": {
+    "file": "R_Assets/Classes/AvatarSettings.png",
+    "isService": false
+  },
+  "Backpack": {
+    "file": "R_Assets/Classes/Backpack.png",
+    "isService": false
+  },
+  "BallSocketConstraint": {
+    "file": "R_Assets/Classes/BallSocketConstraint.png",
+    "isService": false
+  },
+  "BasePlate": {
+    "file": "R_Assets/Classes/BasePlate.png",
+    "isService": false
+  },
+  "Beam": {
+    "file": "R_Assets/Classes/Beam.png",
+    "isService": false
+  },
+  "BillboardGui": {
+    "file": "R_Assets/Classes/BillboardGui.png",
+    "isService": false
+  },
+  "BindableEvent": {
+    "file": "R_Assets/Classes/BindableEvent.png",
+    "isService": false
+  },
+  "BindableFunction": {
+    "file": "R_Assets/Classes/BindableFunction.png",
+    "isService": false
+  },
+  "BlockMesh": {
+    "file": "R_Assets/Classes/BlockMesh.png",
+    "isService": false
+  },
+  "BloomEffect": {
+    "file": "R_Assets/Classes/BloomEffect.png",
+    "isService": false
+  },
+  "BlurEffect": {
+    "file": "R_Assets/Classes/BlurEffect.png",
+    "isService": false
+  },
+  "BodyAngularVelocity": {
+    "file": "R_Assets/Classes/BodyAngularVelocity.png",
+    "isService": false
+  },
+  "BodyColors": {
+    "file": "R_Assets/Classes/BodyColors.png",
+    "isService": false
+  },
+  "BodyForce": {
+    "file": "R_Assets/Classes/BodyForce.png",
+    "isService": false
+  },
+  "BodyGyro": {
+    "file": "R_Assets/Classes/BodyGyro.png",
+    "isService": false
+  },
+  "BodyPosition": {
+    "file": "R_Assets/Classes/BodyPosition.png",
+    "isService": false
+  },
+  "BodyThrust": {
+    "file": "R_Assets/Classes/BodyThrust.png",
+    "isService": false
+  },
+  "BodyVelocity": {
+    "file": "R_Assets/Classes/BodyVelocity.png",
+    "isService": false
+  },
+  "Bone": {
+    "file": "R_Assets/Classes/Bone.png",
+    "isService": false
+  },
+  "BoolValue": {
+    "file": "R_Assets/Classes/BoolValue.png",
+    "isService": false
+  },
+  "BoxHandleAdornment": {
+    "file": "R_Assets/Classes/BoxHandleAdornment.png",
+    "isService": false
+  },
+  "Breakpoint": {
+    "file": "R_Assets/Classes/Breakpoint.png",
+    "isService": false
+  },
+  "BrickColorValue": {
+    "file": "R_Assets/Classes/BrickColorValue.png",
+    "isService": false
+  },
+  "BubbleChatConfiguration": {
+    "file": "R_Assets/Classes/BubbleChatConfiguration.png",
+    "isService": false
+  },
+  "Buggaroo": {
+    "file": "R_Assets/Classes/Buggaroo.png",
+    "isService": false
+  },
+  "Camera": {
+    "file": "R_Assets/Classes/Camera.png",
+    "isService": false
+  },
+  "CanvasGroup": {
+    "file": "R_Assets/Classes/CanvasGroup.png",
+    "isService": false
+  },
+  "CFrameValue": {
+    "file": "R_Assets/Classes/CFrameValue.png",
+    "isService": false
+  },
+  "ChannelTabsConfiguration": {
+    "file": "R_Assets/Classes/ChannelTabsConfiguration.png",
+    "isService": false
+  },
+  "CharacterControllerManager": {
+    "file": "R_Assets/Classes/CharacterControllerManager.png",
+    "isService": false
+  },
+  "CharacterMesh": {
+    "file": "R_Assets/Classes/CharacterMesh.png",
+    "isService": false
+  },
+  "Chat": {
+    "file": "R_Assets/Classes/Chat.png",
+    "isService": true
+  },
+  "ChatInputBarConfiguration": {
+    "file": "R_Assets/Classes/ChatInputBarConfiguration.png",
+    "isService": false
+  },
+  "ChatWindowConfiguration": {
+    "file": "R_Assets/Classes/ChatWindowConfiguration.png",
+    "isService": false
+  },
+  "ChorusSoundEffect": {
+    "file": "R_Assets/Classes/ChorusSoundEffect.png",
+    "isService": false
+  },
+  "Class": {
+    "file": "R_Assets/Classes/Class.png",
+    "isService": false
+  },
+  "Cleanup": {
+    "file": "R_Assets/Classes/Cleanup.png",
+    "isService": false
+  },
+  "ClickDetector": {
+    "file": "R_Assets/Classes/ClickDetector.png",
+    "isService": false
+  },
+  "ClientReplicator": {
+    "file": "R_Assets/Classes/ClientReplicator.png",
+    "isService": false
+  },
+  "ClimbController": {
+    "file": "R_Assets/Classes/ClimbController.png",
+    "isService": false
+  },
+  "Clouds": {
+    "file": "R_Assets/Classes/Clouds.png",
+    "isService": false
+  },
+  "Color": {
+    "file": "R_Assets/Classes/Color.png",
+    "isService": false
+  },
+  "ColorCorrectionEffect": {
+    "file": "R_Assets/Classes/ColorCorrectionEffect.png",
+    "isService": false
+  },
+  "CompressorSoundEffect": {
+    "file": "R_Assets/Classes/CompressorSoundEffect.png",
+    "isService": false
+  },
+  "ConeHandleAdornment": {
+    "file": "R_Assets/Classes/ConeHandleAdornment.png",
+    "isService": false
+  },
+  "Configuration": {
+    "file": "R_Assets/Classes/Configuration.png",
+    "isService": false
+  },
+  "Constant": {
+    "file": "R_Assets/Classes/Constant.png",
+    "isService": false
+  },
+  "Constructor": {
+    "file": "R_Assets/Classes/Constructor.png",
+    "isService": false
+  },
+  "Controller": {
+    "file": "R_Assets/Classes/Controller.png",
+    "isService": false
+  },
+  "ControlState": {
+    "file": "R_Assets/Classes/ControlState.png",
+    "isService": false
+  },
+  "CoreGui": {
+    "file": "R_Assets/Classes/CoreGui.png",
+    "isService": false
+  },
+  "CornerWedgePart": {
+    "file": "R_Assets/Classes/CornerWedgePart.png",
+    "isService": false
+  },
+  "CylinderHandleAdornment": {
+    "file": "R_Assets/Classes/CylinderHandleAdornment.png",
+    "isService": false
+  },
+  "CylindricalConstraint": {
+    "file": "R_Assets/Classes/CylindricalConstraint.png",
+    "isService": false
+  },
+  "Decal": {
+    "file": "R_Assets/Classes/Decal.png",
+    "isService": false
+  },
+  "DepthOfFieldEffect": {
+    "file": "R_Assets/Classes/DepthOfFieldEffect.png",
+    "isService": false
+  },
+  "Dialog": {
+    "file": "R_Assets/Classes/Dialog.png",
+    "isService": false
+  },
+  "DialogChoice": {
+    "file": "R_Assets/Classes/DialogChoice.png",
+    "isService": false
+  },
+  "DistortionSoundEffect": {
+    "file": "R_Assets/Classes/DistortionSoundEffect.png",
+    "isService": false
+  },
+  "DragDetector": {
+    "file": "R_Assets/Classes/DragDetector.png",
+    "isService": false
+  },
+  "EchoSoundEffect": {
+    "file": "R_Assets/Classes/EchoSoundEffect.png",
+    "isService": false
+  },
+  "EditableImage": {
+    "file": "R_Assets/Classes/EditableImage.png",
+    "isService": false
+  },
+  "EditableMesh": {
+    "file": "R_Assets/Classes/EditableMesh.png",
+    "isService": false
+  },
+  "Enum": {
+    "file": "R_Assets/Classes/Enum.png",
+    "isService": false
+  },
+  "EnumMember": {
+    "file": "R_Assets/Classes/EnumMember.png",
+    "isService": false
+  },
+  "EqualizerSoundEffect": {
+    "file": "R_Assets/Classes/EqualizerSoundEffect.png",
+    "isService": false
+  },
+  "Event": {
+    "file": "R_Assets/Classes/Event.png",
+    "isService": false
+  },
+  "Explosion": {
+    "file": "R_Assets/Classes/Explosion.png",
+    "isService": false
+  },
+  "FaceControls": {
+    "file": "R_Assets/Classes/FaceControls.png",
+    "isService": false
+  },
+  "Field": {
+    "file": "R_Assets/Classes/Field.png",
+    "isService": false
+  },
+  "File": {
+    "file": "R_Assets/Classes/File.png",
+    "isService": false
+  },
+  "Fire": {
+    "file": "R_Assets/Classes/Fire.png",
+    "isService": false
+  },
+  "FlangeSoundEffect": {
+    "file": "R_Assets/Classes/FlangeSoundEffect.png",
+    "isService": false
+  },
+  "Folder": {
+    "file": "R_Assets/Classes/Folder.png",
+    "isService": false
+  },
+  "ForceField": {
+    "file": "R_Assets/Classes/ForceField.png",
+    "isService": false
+  },
+  "Frame": {
+    "file": "R_Assets/Classes/Frame.png",
+    "isService": false
+  },
+  "Function": {
+    "file": "R_Assets/Classes/Function.png",
+    "isService": false
+  },
+  "GameSettings": {
+    "file": "R_Assets/Classes/GameSettings.png",
+    "isService": false
+  },
+  "GeneratedFolder": {
+    "file": "R_Assets/Classes/GeneratedFolder.png",
+    "isService": false
+  },
+  "GroundController": {
+    "file": "R_Assets/Classes/GroundController.png",
+    "isService": false
+  },
+  "Handles": {
+    "file": "R_Assets/Classes/Handles.png",
+    "isService": false
+  },
+  "HapticEffect": {
+    "file": "R_Assets/Classes/HapticEffect.png",
+    "isService": false
+  },
+  "HapticService": {
+    "file": "R_Assets/Classes/HapticService.png",
+    "isService": false
+  },
+  "HeightmapImporterService": {
+    "file": "R_Assets/Classes/HeightmapImporterService.png",
+    "isService": true
+  },
+  "Highlight": {
+    "file": "R_Assets/Classes/Highlight.png",
+    "isService": false
+  },
+  "HingeConstraint": {
+    "file": "R_Assets/Classes/HingeConstraint.png",
+    "isService": false
+  },
+  "Humanoid": {
+    "file": "R_Assets/Classes/Humanoid.png",
+    "isService": false
+  },
+  "HumanoidDescription": {
+    "file": "R_Assets/Classes/HumanoidDescription.png",
+    "isService": false
+  },
+  "IKControl": {
+    "file": "R_Assets/Classes/IKControl.png",
+    "isService": false
+  },
+  "ImageButton": {
+    "file": "R_Assets/Classes/ImageButton.png",
+    "isService": false
+  },
+  "ImageHandleAdornment": {
+    "file": "R_Assets/Classes/ImageHandleAdornment.png",
+    "isService": false
+  },
+  "ImageLabel": {
+    "file": "R_Assets/Classes/ImageLabel.png",
+    "isService": false
+  },
+  "InputAction": {
+    "file": "R_Assets/Classes/InputAction.png",
+    "isService": false
+  },
+  "InputActionLabel": {
+    "file": "R_Assets/Classes/InputActionLabel.png",
+    "isService": false
+  },
+  "InputBinding": {
+    "file": "R_Assets/Classes/InputBinding.png",
+    "isService": false
+  },
+  "InputContext": {
+    "file": "R_Assets/Classes/InputContext.png",
+    "isService": false
+  },
+  "Interface": {
+    "file": "R_Assets/Classes/Interface.png",
+    "isService": false
+  },
+  "IntersectOperation": {
+    "file": "R_Assets/Classes/IntersectOperation.png",
+    "isService": false
+  },
+  "Keyword": {
+    "file": "R_Assets/Classes/Keyword.png",
+    "isService": false
+  },
+  "Lighting": {
+    "file": "R_Assets/Classes/Lighting.png",
+    "isService": true
+  },
+  "LinearVelocity": {
+    "file": "R_Assets/Classes/LinearVelocity.png",
+    "isService": false
+  },
+  "LineForce": {
+    "file": "R_Assets/Classes/LineForce.png",
+    "isService": false
+  },
+  "LineHandleAdornment": {
+    "file": "R_Assets/Classes/LineHandleAdornment.png",
+    "isService": false
+  },
+  "LocalFile": {
+    "file": "R_Assets/Classes/LocalFile.png",
+    "isService": false
+  },
+  "LocalizationService": {
+    "file": "R_Assets/Classes/LocalizationService.png",
+    "isService": true
+  },
+  "LocalizationTable": {
+    "file": "R_Assets/Classes/LocalizationTable.png",
+    "isService": false
+  },
+  "LocalScript": {
+    "file": "R_Assets/Classes/LocalScript.png",
+    "isService": false
+  },
+  "MaterialService": {
+    "file": "R_Assets/Classes/MaterialService.png",
+    "isService": true
+  },
+  "MaterialVariant": {
+    "file": "R_Assets/Classes/MaterialVariant.png",
+    "isService": false
+  },
+  "MemoryStoreService": {
+    "file": "R_Assets/Classes/MemoryStoreService.png",
+    "isService": false
+  },
+  "MeshPart": {
+    "file": "R_Assets/Classes/MeshPart.png",
+    "isService": false
+  },
+  "Meshparts": {
+    "file": "R_Assets/Classes/Meshparts.png",
+    "isService": false
+  },
+  "MessagingService": {
+    "file": "R_Assets/Classes/MessagingService.png",
+    "isService": true
+  },
+  "Method": {
+    "file": "R_Assets/Classes/Method.png",
+    "isService": false
+  },
+  "Model": {
+    "file": "R_Assets/Classes/Model.png",
+    "isService": false
+  },
+  "Modelgroups": {
+    "file": "R_Assets/Classes/Modelgroups.png",
+    "isService": false
+  },
+  "Module": {
+    "file": "R_Assets/Classes/Module.png",
+    "isService": false
+  },
+  "ModuleScript": {
+    "file": "R_Assets/Classes/ModuleScript.png",
+    "isService": false
+  },
+  "Motor6D": {
+    "file": "R_Assets/Classes/Motor6D.png",
+    "isService": false
+  },
+  "NegateOperation": {
+    "file": "R_Assets/Classes/NegateOperation.png",
+    "isService": false
+  },
+  "NetworkClient": {
+    "file": "R_Assets/Classes/NetworkClient.png",
+    "isService": false
+  },
+  "NoCollisionConstraint": {
+    "file": "R_Assets/Classes/NoCollisionConstraint.png",
+    "isService": false
+  },
+  "Operator": {
+    "file": "R_Assets/Classes/Operator.png",
+    "isService": false
+  },
+  "PackageLink": {
+    "file": "R_Assets/Classes/PackageLink.png",
+    "isService": false
+  },
+  "Pants": {
+    "file": "R_Assets/Classes/Pants.png",
+    "isService": false
+  },
+  "Part": {
+    "file": "R_Assets/Classes/Part.png",
+    "isService": false
+  },
+  "ParticleEmitter": {
+    "file": "R_Assets/Classes/ParticleEmitter.png",
+    "isService": false
+  },
+  "Path2D": {
+    "file": "R_Assets/Classes/Path2D.png",
+    "isService": false
+  },
+  "PathfindingLink": {
+    "file": "R_Assets/Classes/PathfindingLink.png",
+    "isService": false
+  },
+  "PathfindingModifier": {
+    "file": "R_Assets/Classes/PathfindingModifier.png",
+    "isService": false
+  },
+  "PathfindingService": {
+    "file": "R_Assets/Classes/PathfindingService.png",
+    "isService": true
+  },
+  "PitchShiftSoundEffect": {
+    "file": "R_Assets/Classes/PitchShiftSoundEffect.png",
+    "isService": false
+  },
+  "Place": {
+    "file": "R_Assets/Classes/Place.png",
+    "isService": false
+  },
+  "Plane": {
+    "file": "R_Assets/Classes/Plane.png",
+    "isService": false
+  },
+  "PlaneConstraint": {
+    "file": "R_Assets/Classes/PlaneConstraint.png",
+    "isService": false
+  },
+  "Player": {
+    "file": "R_Assets/Classes/Player.png",
+    "isService": false
+  },
+  "Players": {
+    "file": "R_Assets/Classes/Players.png",
+    "isService": true
+  },
+  "PluginGuiService": {
+    "file": "R_Assets/Classes/PluginGuiService.png",
+    "isService": false
+  },
+  "PointLight": {
+    "file": "R_Assets/Classes/PointLight.png",
+    "isService": false
+  },
+  "PrismaticConstraint": {
+    "file": "R_Assets/Classes/PrismaticConstraint.png",
+    "isService": false
+  },
+  "ProceduralModel": {
+    "file": "R_Assets/Classes/ProceduralModel.png",
+    "isService": false
+  },
+  "Property": {
+    "file": "R_Assets/Classes/Property.png",
+    "isService": false
+  },
+  "ProximityPrompt": {
+    "file": "R_Assets/Classes/ProximityPrompt.png",
+    "isService": false
+  },
+  "PublishService": {
+    "file": "R_Assets/Classes/PublishService.png",
+    "isService": true
+  },
+  "Reference": {
+    "file": "R_Assets/Classes/Reference.png",
+    "isService": false
+  },
+  "RemoteEvent": {
+    "file": "R_Assets/Classes/RemoteEvent.png",
+    "isService": false
+  },
+  "RemoteFunction": {
+    "file": "R_Assets/Classes/RemoteFunction.png",
+    "isService": false
+  },
+  "RenderingTest": {
+    "file": "R_Assets/Classes/RenderingTest.png",
+    "isService": false
+  },
+  "ReplicatedFirst": {
+    "file": "R_Assets/Classes/ReplicatedFirst.png",
+    "isService": true
+  },
+  "ReplicatedScriptService": {
+    "file": "R_Assets/Classes/ReplicatedScriptService.png",
+    "isService": false
+  },
+  "ReplicatedStorage": {
+    "file": "R_Assets/Classes/ReplicatedStorage.png",
+    "isService": true
+  },
+  "ReverbSoundEffect": {
+    "file": "R_Assets/Classes/ReverbSoundEffect.png",
+    "isService": false
+  },
+  "RigidConstraint": {
+    "file": "R_Assets/Classes/RigidConstraint.png",
+    "isService": false
+  },
+  "RobloxPluginGuiService": {
+    "file": "R_Assets/Classes/RobloxPluginGuiService.png",
+    "isService": false
+  },
+  "RocketPropulsion": {
+    "file": "R_Assets/Classes/RocketPropulsion.png",
+    "isService": false
+  },
+  "RodConstraint": {
+    "file": "R_Assets/Classes/RodConstraint.png",
+    "isService": false
+  },
+  "RopeConstraint": {
+    "file": "R_Assets/Classes/RopeConstraint.png",
+    "isService": false
+  },
+  "Rotate": {
+    "file": "R_Assets/Classes/Rotate.png",
+    "isService": false
+  },
+  "ScreenGui": {
+    "file": "R_Assets/Classes/ScreenGui.png",
+    "isService": false
+  },
+  "Script": {
+    "file": "R_Assets/Classes/Script.png",
+    "isService": false
+  },
+  "ScrollingFrame": {
+    "file": "R_Assets/Classes/ScrollingFrame.png",
+    "isService": false
+  },
+  "Seat": {
+    "file": "R_Assets/Classes/Seat.png",
+    "isService": false
+  },
+  "Selected_Workspace": {
+    "file": "R_Assets/Classes/Selected_Workspace.png",
+    "isService": false
+  },
+  "SelectionBox": {
+    "file": "R_Assets/Classes/SelectionBox.png",
+    "isService": false
+  },
+  "SelectionSphere": {
+    "file": "R_Assets/Classes/SelectionSphere.png",
+    "isService": false
+  },
+  "ServerScriptService": {
+    "file": "R_Assets/Classes/ServerScriptService.png",
+    "isService": true
+  },
+  "ServerStorage": {
+    "file": "R_Assets/Classes/ServerStorage.png",
+    "isService": true
+  },
+  "Service": {
+    "file": "R_Assets/Classes/Service.png",
+    "isService": true
+  },
+  "Shirt": {
+    "file": "R_Assets/Classes/Shirt.png",
+    "isService": false
+  },
+  "ShirtGraphic": {
+    "file": "R_Assets/Classes/ShirtGraphic.png",
+    "isService": false
+  },
+  "SkinnedMeshPart": {
+    "file": "R_Assets/Classes/SkinnedMeshPart.png",
+    "isService": false
+  },
+  "Sky": {
+    "file": "R_Assets/Classes/Sky.png",
+    "isService": false
+  },
+  "Smoke": {
+    "file": "R_Assets/Classes/Smoke.png",
+    "isService": false
+  },
+  "Snap": {
+    "file": "R_Assets/Classes/Snap.png",
+    "isService": false
+  },
+  "Snippet": {
+    "file": "R_Assets/Classes/Snippet.png",
+    "isService": false
+  },
+  "SocialService": {
+    "file": "R_Assets/Classes/SocialService.png",
+    "isService": true
+  },
+  "Sound": {
+    "file": "R_Assets/Classes/Sound.png",
+    "isService": false
+  },
+  "SoundEffect": {
+    "file": "R_Assets/Classes/SoundEffect.png",
+    "isService": false
+  },
+  "SoundGroup": {
+    "file": "R_Assets/Classes/SoundGroup.png",
+    "isService": false
+  },
+  "SoundService": {
+    "file": "R_Assets/Classes/SoundService.png",
+    "isService": true
+  },
+  "Sparkles": {
+    "file": "R_Assets/Classes/Sparkles.png",
+    "isService": false
+  },
+  "SpawnLocation": {
+    "file": "R_Assets/Classes/SpawnLocation.png",
+    "isService": false
+  },
+  "SpecialMesh": {
+    "file": "R_Assets/Classes/SpecialMesh.png",
+    "isService": false
+  },
+  "SphereHandleAdornment": {
+    "file": "R_Assets/Classes/SphereHandleAdornment.png",
+    "isService": false
+  },
+  "SpotLight": {
+    "file": "R_Assets/Classes/SpotLight.png",
+    "isService": false
+  },
+  "SpringConstraint": {
+    "file": "R_Assets/Classes/SpringConstraint.png",
+    "isService": false
+  },
+  "StandalonePluginScripts": {
+    "file": "R_Assets/Classes/StandalonePluginScripts.png",
+    "isService": false
+  },
+  "StarterCharacterScripts": {
+    "file": "R_Assets/Classes/StarterCharacterScripts.png",
+    "isService": false
+  },
+  "StarterGui": {
+    "file": "R_Assets/Classes/StarterGui.png",
+    "isService": true
+  },
+  "StarterPack": {
+    "file": "R_Assets/Classes/StarterPack.png",
+    "isService": true
+  },
+  "StarterPlayer": {
+    "file": "R_Assets/Classes/StarterPlayer.png",
+    "isService": true
+  },
+  "StarterPlayerScripts": {
+    "file": "R_Assets/Classes/StarterPlayerScripts.png",
+    "isService": false
+  },
+  "Struct": {
+    "file": "R_Assets/Classes/Struct.png",
+    "isService": false
+  },
+  "StyleDerive": {
+    "file": "R_Assets/Classes/StyleDerive.png",
+    "isService": false
+  },
+  "StyleLink": {
+    "file": "R_Assets/Classes/StyleLink.png",
+    "isService": false
+  },
+  "StyleQuery": {
+    "file": "R_Assets/Classes/StyleQuery.png",
+    "isService": false
+  },
+  "StyleRule": {
+    "file": "R_Assets/Classes/StyleRule.png",
+    "isService": false
+  },
+  "StyleSheet": {
+    "file": "R_Assets/Classes/StyleSheet.png",
+    "isService": false
+  },
+  "SunRaysEffect": {
+    "file": "R_Assets/Classes/SunRaysEffect.png",
+    "isService": false
+  },
+  "SurfaceAppearance": {
+    "file": "R_Assets/Classes/SurfaceAppearance.png",
+    "isService": false
+  },
+  "SurfaceGui": {
+    "file": "R_Assets/Classes/SurfaceGui.png",
+    "isService": false
+  },
+  "SurfaceLight": {
+    "file": "R_Assets/Classes/SurfaceLight.png",
+    "isService": false
+  },
+  "SurfaceSelection": {
+    "file": "R_Assets/Classes/SurfaceSelection.png",
+    "isService": false
+  },
+  "SwimController": {
+    "file": "R_Assets/Classes/SwimController.png",
+    "isService": false
+  },
+  "TaskScheduler": {
+    "file": "R_Assets/Classes/TaskScheduler.png",
+    "isService": false
+  },
+  "Team": {
+    "file": "R_Assets/Classes/Team.png",
+    "isService": false
+  },
+  "Teams": {
+    "file": "R_Assets/Classes/Teams.png",
+    "isService": true
+  },
+  "Terrain": {
+    "file": "R_Assets/Classes/Terrain.png",
+    "isService": false
+  },
+  "TerrainDetail": {
+    "file": "R_Assets/Classes/TerrainDetail.png",
+    "isService": false
+  },
+  "TestService": {
+    "file": "R_Assets/Classes/TestService.png",
+    "isService": true
+  },
+  "TextBox": {
+    "file": "R_Assets/Classes/TextBox.png",
+    "isService": false
+  },
+  "TextBoxService": {
+    "file": "R_Assets/Classes/TextBoxService.png",
+    "isService": false
+  },
+  "TextButton": {
+    "file": "R_Assets/Classes/TextButton.png",
+    "isService": false
+  },
+  "TextChannel": {
+    "file": "R_Assets/Classes/TextChannel.png",
+    "isService": false
+  },
+  "TextChannelWindow": {
+    "file": "R_Assets/Classes/TextChannelWindow.png",
+    "isService": false
+  },
+  "TextChatCommand": {
+    "file": "R_Assets/Classes/TextChatCommand.png",
+    "isService": false
+  },
+  "TextChatService": {
+    "file": "R_Assets/Classes/TextChatService.png",
+    "isService": true
+  },
+  "TextLabel": {
+    "file": "R_Assets/Classes/TextLabel.png",
+    "isService": false
+  },
+  "TextString": {
+    "file": "R_Assets/Classes/TextString.png",
+    "isService": false
+  },
+  "Texture": {
+    "file": "R_Assets/Classes/Texture.png",
+    "isService": false
+  },
+  "Tool": {
+    "file": "R_Assets/Classes/Tool.png",
+    "isService": false
+  },
+  "Torque": {
+    "file": "R_Assets/Classes/Torque.png",
+    "isService": false
+  },
+  "TorsionSpringConstraint": {
+    "file": "R_Assets/Classes/TorsionSpringConstraint.png",
+    "isService": false
+  },
+  "Trail": {
+    "file": "R_Assets/Classes/Trail.png",
+    "isService": false
+  },
+  "TremoloSoundEffect": {
+    "file": "R_Assets/Classes/TremoloSoundEffect.png",
+    "isService": false
+  },
+  "TrussPart": {
+    "file": "R_Assets/Classes/TrussPart.png",
+    "isService": false
+  },
+  "TypeParameter": {
+    "file": "R_Assets/Classes/TypeParameter.png",
+    "isService": false
+  },
+  "UGCValidationService": {
+    "file": "R_Assets/Classes/UGCValidationService.png",
+    "isService": true
+  },
+  "UIAspectRatioConstraint": {
+    "file": "R_Assets/Classes/UIAspectRatioConstraint.png",
+    "isService": false
+  },
+  "UICorner": {
+    "file": "R_Assets/Classes/UICorner.png",
+    "isService": false
+  },
+  "UIDragDetector": {
+    "file": "R_Assets/Classes/UIDragDetector.png",
+    "isService": false
+  },
+  "UIFlexItem": {
+    "file": "R_Assets/Classes/UIFlexItem.png",
+    "isService": false
+  },
+  "UIGradient": {
+    "file": "R_Assets/Classes/UIGradient.png",
+    "isService": false
+  },
+  "UIGridLayout": {
+    "file": "R_Assets/Classes/UIGridLayout.png",
+    "isService": false
+  },
+  "UIListLayout": {
+    "file": "R_Assets/Classes/UIListLayout.png",
+    "isService": false
+  },
+  "UIPadding": {
+    "file": "R_Assets/Classes/UIPadding.png",
+    "isService": false
+  },
+  "UIPageLayout": {
+    "file": "R_Assets/Classes/UIPageLayout.png",
+    "isService": false
+  },
+  "UIScale": {
+    "file": "R_Assets/Classes/UIScale.png",
+    "isService": false
+  },
+  "UIShadow": {
+    "file": "R_Assets/Classes/UIShadow.png",
+    "isService": false
+  },
+  "UISizeConstraint": {
+    "file": "R_Assets/Classes/UISizeConstraint.png",
+    "isService": false
+  },
+  "UIStroke": {
+    "file": "R_Assets/Classes/UIStroke.png",
+    "isService": false
+  },
+  "UITableLayout": {
+    "file": "R_Assets/Classes/UITableLayout.png",
+    "isService": false
+  },
+  "UITextSizeConstraint": {
+    "file": "R_Assets/Classes/UITextSizeConstraint.png",
+    "isService": false
+  },
+  "UnionOperation": {
+    "file": "R_Assets/Classes/UnionOperation.png",
+    "isService": false
+  },
+  "Unit": {
+    "file": "R_Assets/Classes/Unit.png",
+    "isService": false
+  },
+  "UniversalConstraint": {
+    "file": "R_Assets/Classes/UniversalConstraint.png",
+    "isService": false
+  },
+  "UnreliableRemoteEvent": {
+    "file": "R_Assets/Classes/UnreliableRemoteEvent.png",
+    "isService": false
+  },
+  "UpdateAvailable": {
+    "file": "R_Assets/Classes/UpdateAvailable.png",
+    "isService": false
+  },
+  "UserService": {
+    "file": "R_Assets/Classes/UserService.png",
+    "isService": true
+  },
+  "Value": {
+    "file": "R_Assets/Classes/Value.png",
+    "isService": false
+  },
+  "Variable": {
+    "file": "R_Assets/Classes/Variable.png",
+    "isService": false
+  },
+  "VectorForce": {
+    "file": "R_Assets/Classes/VectorForce.png",
+    "isService": false
+  },
+  "VehicleSeat": {
+    "file": "R_Assets/Classes/VehicleSeat.png",
+    "isService": false
+  },
+  "VideoDisplay": {
+    "file": "R_Assets/Classes/VideoDisplay.png",
+    "isService": false
+  },
+  "VideoFrame": {
+    "file": "R_Assets/Classes/VideoFrame.png",
+    "isService": false
+  },
+  "VideoPlayer": {
+    "file": "R_Assets/Classes/VideoPlayer.png",
+    "isService": false
+  },
+  "ViewportFrame": {
+    "file": "R_Assets/Classes/ViewportFrame.png",
+    "isService": false
+  },
+  "VirtualUser": {
+    "file": "R_Assets/Classes/VirtualUser.png",
+    "isService": false
+  },
+  "VoiceChannel": {
+    "file": "R_Assets/Classes/VoiceChannel.png",
+    "isService": false
+  },
+  "Voicechat": {
+    "file": "R_Assets/Classes/Voicechat.png",
+    "isService": false
+  },
+  "VoiceChatService": {
+    "file": "R_Assets/Classes/VoiceChatService.png",
+    "isService": true
+  },
+  "VRService": {
+    "file": "R_Assets/Classes/VRService.png",
+    "isService": true
+  },
+  "WedgePart": {
+    "file": "R_Assets/Classes/WedgePart.png",
+    "isService": false
+  },
+  "Weld": {
+    "file": "R_Assets/Classes/Weld.png",
+    "isService": false
+  },
+  "WeldConstraint": {
+    "file": "R_Assets/Classes/WeldConstraint.png",
+    "isService": false
+  },
+  "Wire": {
+    "file": "R_Assets/Classes/Wire.png",
+    "isService": false
+  },
+  "WireframeHandleAdornment": {
+    "file": "R_Assets/Classes/WireframeHandleAdornment.png",
+    "isService": false
+  },
+  "Workspace": {
+    "file": "R_Assets/Classes/Workspace.png",
+    "isService": true
+  },
+  "WorldModel": {
+    "file": "R_Assets/Classes/WorldModel.png",
+    "isService": false
+  },
+  "WrapDeformer": {
+    "file": "R_Assets/Classes/WrapDeformer.png",
+    "isService": false
+  },
+  "WrapLayer": {
+    "file": "R_Assets/Classes/WrapLayer.png",
+    "isService": false
+  },
+  "WrapTarget": {
+    "file": "R_Assets/Classes/WrapTarget.png",
+    "isService": false
+  },
+  "WrapTextureTransfer": {
+    "file": "R_Assets/Classes/WrapTextureTransfer.png",
+    "isService": false
+  }
+}

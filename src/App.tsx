@@ -70,11 +70,79 @@ import {
 } from './luaRunner';
 import { PropertiesPanel } from './PropertiesPanel';
 import { globalPhysicsEngine } from './physicsEngine';
+import { analyzeLuau, formatSyntaxErrorDiagnostic, LuauDiagnostic } from './luauLinter';
 import sunAsset from '../R_Assets/Sun.png';
 import moonAsset from '../R_Assets/Moon.png';
-import gridAsset from '../R_Assets/Grid.png';
-import spawnLocationAsset from '../R_Assets/SpawnLocation.png';
-import workspaceAsset from '../R_Assets/workspace.png';
+
+// ── Roblox Studio class & service icons (eagerly bundled) ──────────────
+const classIconModules = import.meta.glob<{ default: string }>(
+  '../R_Assets/Classes/*.png',
+  { eager: true },
+);
+const serviceIconModules = import.meta.glob<{ default: string }>(
+  '../R_Assets/Services/*.png',
+  { eager: true },
+);
+
+const CLASS_ICONS: Record<string, string> = {};
+for (const [path, mod] of Object.entries(classIconModules)) {
+  const name = path.split('/').pop()?.replace('.png', '')?.toLowerCase();
+  if (name) CLASS_ICONS[name] = mod.default;
+}
+
+const SERVICE_ICONS: Record<string, string> = {};
+for (const [path, mod] of Object.entries(serviceIconModules)) {
+  const name = path.split('/').pop()?.replace('.png', '')?.toLowerCase();
+  if (name) SERVICE_ICONS[name] = mod.default;
+}
+
+/** Resolve a Roblox Studio icon URL by node name / type.  Returns `null`
+ *  when no extracted icon exists so callers can fall back to Lucide. */
+function getRobloxIconUrl(name: string, type?: string): string | null {
+  const nameLower = name.toLowerCase();
+  const typeLower = (type || '').toLowerCase();
+
+  // 1. Service icons (matched by name)
+  if (SERVICE_ICONS[nameLower]) return SERVICE_ICONS[nameLower];
+
+  // 2. Map internal type strings to Roblox class names
+  const TYPE_TO_CLASS: Record<string, string> = {
+    object: 'part',
+    part: 'part',
+    folder_script: 'folder',
+    folder: 'folder',
+    spawnlocation: 'spawnlocation',
+    script: 'script',
+    localscript: 'localscript',
+    modulescript: 'modulescript',
+    remoteevent: 'remoteevent',
+    remotefunction: 'remotefunction',
+    camera: 'camera',
+    terrain: 'terrain',
+    model: 'model',
+    decal: 'decal',
+    texture: 'texture',
+    pointlight: 'pointlight',
+    spotlight: 'spotlight',
+    surfacelight: 'surfacelight',
+    sky: 'sky',
+    atmosphere: 'atmosphere',
+    colorcorrectioneffect: 'colorcorrectioneffect',
+    bloomeffect: 'bloomeffect',
+    sunrayseffect: 'sunrayseffect',
+    blureffect: 'blureffect',
+    depthoffieldeffect: 'depthoffieldeffect',
+  };
+
+  const mappedClass = TYPE_TO_CLASS[typeLower];
+  if (mappedClass && CLASS_ICONS[mappedClass]) return CLASS_ICONS[mappedClass];
+
+  // 3. Direct class lookup by type or name
+  if (CLASS_ICONS[typeLower]) return CLASS_ICONS[typeLower];
+  if (CLASS_ICONS[nameLower]) return CLASS_ICONS[nameLower];
+
+  return null;
+}
 
 // Services whose contents never replicate down to the client — matches
 // Roblox's real behavior for ServerScriptService / ServerStorage.
@@ -261,21 +329,12 @@ const assetUrlCache = new Map<string, string[]>();
 
 // Bundled local assets that can be referenced by friendly name or filename
 const BUNDLED_ASSETS: Record<string, string> = {
-  'grid': gridAsset,
-  'grid.png': gridAsset,
-  'r_assets/grid.png': gridAsset,
-  'spawnlocation': spawnLocationAsset,
-  'spawnlocation.png': spawnLocationAsset,
-  'r_assets/spawnlocation.png': spawnLocationAsset,
   'sun': sunAsset,
   'sun.png': sunAsset,
   'r_assets/sun.png': sunAsset,
   'moon': moonAsset,
   'moon.png': moonAsset,
   'r_assets/moon.png': moonAsset,
-  'workspace': workspaceAsset,
-  'workspace.png': workspaceAsset,
-  'r_assets/workspace.png': workspaceAsset,
 };
 
 // Extracts a numeric Roblox asset ID from any common user input format:
@@ -408,8 +467,17 @@ export async function resolveRobloxAssetUrl(input?: string): Promise<string[]> {
     return assetUrlCache.get(raw)!;
   }
 
-  // 1. Check bundled local assets (e.g. "Grid.png", "SpawnLocation.png")
-  const localKey = raw.toLowerCase();
+  // Map friendly aliases to Roblox asset IDs
+  let lookup = raw;
+  const lower = raw.toLowerCase();
+  if (lower === 'grid' || lower === 'grid.png') {
+    lookup = '6372755229';
+  } else if (lower === 'spawnlocation' || lower === 'spawnlocation.png') {
+    lookup = '3724740815';
+  }
+
+  // 1. Check bundled local assets (e.g. "Sun.png", "Moon.png")
+  const localKey = lookup.toLowerCase();
   if (BUNDLED_ASSETS[localKey]) {
     const resolved = [BUNDLED_ASSETS[localKey]];
     assetUrlCache.set(raw, resolved);
@@ -417,21 +485,21 @@ export async function resolveRobloxAssetUrl(input?: string): Promise<string[]> {
   }
 
   // 2. Data URLs, blobs, or relative paths
-  if (/^(data:|blob:|\.\/|\/)/i.test(raw)) {
-    const resolved = [raw];
+  if (/^(data:|blob:|\.\/|\/)/i.test(lookup)) {
+    const resolved = [lookup];
     assetUrlCache.set(raw, resolved);
     return resolved;
   }
 
   // 3. Direct Roblox CDN image URL (which already sends Access-Control-Allow-Origin: *)
-  if (/^https?:\/\/[a-z0-9-]+\.rbxcdn\.com\//i.test(raw)) {
-    const candidates = buildImageCandidates(raw);
+  if (/^https?:\/\/[a-z0-9-]+\.rbxcdn\.com\//i.test(lookup)) {
+    const candidates = buildImageCandidates(lookup);
     assetUrlCache.set(raw, candidates);
     return candidates;
   }
 
   // 4. Extract Roblox numeric asset ID if input is an ID or Roblox link
-  const assetId = extractRobloxAssetId(raw);
+  const assetId = extractRobloxAssetId(lookup);
   if (assetId) {
     const imgUrl = await fetchRobloxThumbnail(assetId);
     if (imgUrl) {
@@ -444,8 +512,8 @@ export async function resolveRobloxAssetUrl(input?: string): Promise<string[]> {
   }
 
   // 5. Standard non-Roblox web image URL: provide direct URL with wsrv.nl CORS fallback
-  if (/^https?:\/\//i.test(raw)) {
-    const candidates = buildImageCandidates(raw);
+  if (/^https?:\/\//i.test(lookup)) {
+    const candidates = buildImageCandidates(lookup);
     assetUrlCache.set(raw, candidates);
     return candidates;
   }
@@ -487,42 +555,43 @@ function PartDecalOrTexture({
   let facePos: [number, number, number] = [0, 0, -hz];
   let faceRot: [number, number, number] = [0, Math.PI, 0];
 
+  const eps = 0.005;
   switch (face) {
     case 'back':
       faceWidth = sx;
       faceHeight = sy;
-      facePos = [0, 0, hz];
+      facePos = [0, 0, hz + eps];
       faceRot = [0, 0, 0];
       break;
     case 'top':
       faceWidth = sx;
       faceHeight = sz;
-      facePos = [0, hy, 0];
+      facePos = [0, hy + eps, 0];
       faceRot = [-Math.PI / 2, 0, 0];
       break;
     case 'bottom':
       faceWidth = sx;
       faceHeight = sz;
-      facePos = [0, -hy, 0];
+      facePos = [0, -hy - eps, 0];
       faceRot = [Math.PI / 2, 0, 0];
       break;
     case 'left':
       faceWidth = sz;
       faceHeight = sy;
-      facePos = [-hx, 0, 0];
+      facePos = [-hx - eps, 0, 0];
       faceRot = [0, -Math.PI / 2, 0];
       break;
     case 'right':
       faceWidth = sz;
       faceHeight = sy;
-      facePos = [hx, 0, 0];
+      facePos = [hx + eps, 0, 0];
       faceRot = [0, Math.PI / 2, 0];
       break;
     case 'front':
     default:
       faceWidth = sx;
       faceHeight = sy;
-      facePos = [0, 0, -hz];
+      facePos = [0, 0, -hz - eps];
       faceRot = [0, Math.PI, 0];
       break;
   }
@@ -660,11 +729,11 @@ function DraggablePart({
   if (node.name.toLowerCase() === 'baseplate') {
     defaultPos = [0, -0.5, 0];
     defaultSize = [512, 1, 512];
-    defaultColor = '#3b593f';
+    defaultColor = '#5B5B5B';
   } else if (node.type === 'spawnlocation' || node.name.toLowerCase() === 'spawnlocation') {
     defaultPos = [0, 0.5, 0];
     defaultSize = [12, 1, 12];
-    defaultColor = '#888888';
+    defaultColor = '#e8e8e8';
   }
 
   const pos = node.position || defaultPos;
@@ -881,17 +950,17 @@ function RobloxSkyDome({
     sunDiskColor = mixHex('#ff7226', '#ffc477', k);
   } else if (t >= 7 && t < 9) {
     const k = (t - 7) / 2;
-    zenithColor = mixHex('#2d4d8a', '#3277e6', k);
-    horizonColor = mixHex('#ff9843', '#c6dfff', k);
+    zenithColor = mixHex('#2d4d8a', '#73859c', k);
+    horizonColor = mixHex('#ff9843', '#69768d', k);
     sunDiskColor = mixHex('#ffc477', '#fff7e6', k);
   } else if (t >= 9 && t < 16.5) {
-    zenithColor = '#3277e6';
-    horizonColor = '#c6dfff';
+    zenithColor = '#73859c';
+    horizonColor = '#69768d';
     sunDiskColor = '#fffbf0';
   } else if (t >= 16.5 && t < 18.5) {
     const k = (t - 16.5) / 2;
-    zenithColor = mixHex('#3277e6', '#4a2559', k);
-    horizonColor = mixHex('#c6dfff', '#ff5f2e', k);
+    zenithColor = mixHex('#73859c', '#4a2559', k);
+    horizonColor = mixHex('#69768d', '#ff5f2e', k);
     sunDiskColor = mixHex('#fffbf0', '#ff8438', k);
   } else if (t >= 18.5 && t < 20.5) {
     const k = (t - 18.5) / 2;
@@ -1086,7 +1155,7 @@ function SceneLighting({
     ? Math.max(0.05, dayFactor) * brightness * (0.65 + envSpecular * 0.35)
     : 0.22 * brightness * ambientIntensity * (0.6 + envSpecular * 0.4);
 
-  const skyAmbientColor = isDay ? '#8cb8f8' : '#141e30';
+  const skyAmbientColor = isDay ? '#73859c' : '#141e30';
   const hemiSky = colorShiftTop && colorShiftTop.toLowerCase() !== '#000000'
     ? mixHex(skyAmbientColor, colorShiftTop, 0.3)
     : skyAmbientColor;
@@ -1164,8 +1233,46 @@ const initialTree: TreeNodeData[] = [
     children: [
       { id: 'camera', name: 'Camera', type: 'camera', children: [] },
       { id: 'terrain', name: 'Terrain', type: 'terrain', children: [] },
-      { id: 'spawnlocation', name: 'SpawnLocation', type: 'spawnlocation', children: [] },
-      { id: 'baseplate', name: 'Baseplate', type: 'object', children: [] },
+      {
+        id: 'spawnlocation',
+        name: 'SpawnLocation',
+        type: 'spawnlocation',
+        color: '#e8e8e8',
+        expanded: true,
+        children: [
+          {
+            id: 'spawnlocation_decal',
+            name: 'Decal',
+            type: 'decal',
+            texture: '3724740815',
+            face: 'Top',
+            transparency: 0,
+            color: '#ffffff',
+            children: [],
+          },
+        ],
+      },
+      {
+        id: 'baseplate',
+        name: 'Baseplate',
+        type: 'object',
+        color: '#5B5B5B',
+        expanded: true,
+        children: [
+          {
+            id: 'baseplate_texture',
+            name: 'Texture',
+            type: 'texture',
+            texture: '6372755229',
+            face: 'Top',
+            studsPerTileU: 16,
+            studsPerTileV: 16,
+            transparency: 0.8,
+            color: '#ffffff',
+            children: [],
+          },
+        ],
+      },
     ],
   },
   { id: 'players', name: 'Players', type: 'service', children: [] },
@@ -1832,6 +1939,14 @@ function setupRobloxStudioTheme(monaco: any) {
       'editor.lineHighlightBackground': '#2d3241',
       'editorBracketMatch.background': '#55555580',
       'editorBracketMatch.border': '#00000000',
+      'editorError.foreground': '#ff4d4d',
+      'editorError.border': '#00000000',
+      'editorWarning.foreground': '#ffbf00',
+      'editorWarning.border': '#00000000',
+      'editorInfo.foreground': '#38bdf8',
+      'editorHint.foreground': '#a3e681',
+      'editorOverviewRuler.errorForeground': '#ff4d4d',
+      'editorOverviewRuler.warningForeground': '#ffbf00',
     },
   });
 }
@@ -2092,9 +2207,10 @@ export default function App() {
   const lintRequestIdRef = useRef(0);
   const lintedTabRef = useRef<string | null>(null);
   const [syntaxError, setSyntaxError] = useState<LuaSyntaxError | null>(null);
+  const [warningDiagnostics, setWarningDiagnostics] = useState<LuauDiagnostic[]>([]);
 
-  // Compiles `code` (without running it) and paints/clears the red squiggle
-  // marker on the currently mounted editor model to match the result.
+  // Compiles `code` (without running it) and paints red squiggle markers for syntax errors
+  // and yellow squiggle markers for Luau warnings (unknown globals, unused variables, deprecated APIs).
   const runLuaLint = useCallback(async (code: string) => {
     const monacoInst = monacoApiRef.current;
     const editorInst = codeEditorRef.current;
@@ -2105,34 +2221,48 @@ export default function App() {
     const requestId = ++lintRequestIdRef.current;
     const error = await checkLuaSyntax(code);
 
-    // If the editor moved on (newer keystroke, tab switch, unmount) while we
-    // were awaiting the check, don't paint stale results over new content.
+    // If the editor moved on while we were awaiting the check, don't paint stale results.
     if (requestId !== lintRequestIdRef.current || model.isDisposed()) return;
 
     setSyntaxError(error);
 
-    if (!error) {
-      monacoInst.editor.setModelMarkers(model, 'luau-syntax', []);
-      return;
+    const markers: any[] = [];
+
+    // 1. Red Squiggly Line for Syntax Error
+    if (error) {
+      const errorDiag = formatSyntaxErrorDiagnostic(error, model);
+      markers.push({
+        severity: monacoInst.MarkerSeverity.Error,
+        message: errorDiag.message,
+        startLineNumber: errorDiag.startLineNumber,
+        startColumn: errorDiag.startColumn,
+        endLineNumber: errorDiag.endLineNumber,
+        endColumn: errorDiag.endColumn,
+        source: 'Luau',
+      });
     }
 
-    const lineCount = model.getLineCount();
-    const line = Math.min(Math.max(error.line, 1), lineCount);
-    const lineContent = model.getLineContent(line);
-    const firstNonWhitespace = lineContent.search(/\S/);
-    const startColumn = firstNonWhitespace >= 0 ? firstNonWhitespace + 1 : 1;
-    const endColumn = Math.max(lineContent.length + 1, startColumn + 1);
+    // 2. Yellow Squiggly Lines for Luau Warnings
+    try {
+      const warnings = analyzeLuau(code);
+      setWarningDiagnostics(warnings);
+      for (const w of warnings) {
+        markers.push({
+          severity: monacoInst.MarkerSeverity.Warning,
+          message: w.message,
+          startLineNumber: w.startLineNumber,
+          startColumn: w.startColumn,
+          endLineNumber: w.endLineNumber,
+          endColumn: w.endColumn,
+          source: 'Luau',
+        });
+      }
+    } catch {
+      setWarningDiagnostics([]);
+    }
 
-    monacoInst.editor.setModelMarkers(model, 'luau-syntax', [
-      {
-        severity: monacoInst.MarkerSeverity.Error,
-        message: error.message,
-        startLineNumber: line,
-        startColumn,
-        endLineNumber: line,
-        endColumn,
-      },
-    ]);
+    // Paint both red and yellow squiggly lines onto the editor model
+    monacoInst.editor.setModelMarkers(model, 'luau-diagnostics', markers);
   }, []);
 
   // Context Menu State
@@ -2636,6 +2766,20 @@ export default function App() {
 
 
   const getNodeIcon = (name: string, type: string) => {
+    // Try Roblox extracted icon first
+    const robloxUrl = getRobloxIconUrl(name, type);
+    if (robloxUrl) {
+      return (
+        <img
+          src={robloxUrl}
+          alt=""
+          className="w-3.5 h-3.5 mr-1.5 flex-shrink-0 object-contain select-none pointer-events-none"
+          draggable={false}
+        />
+      );
+    }
+
+    // Fallback to Lucide icons
     const getProps = (colorClass: string) => ({
       size: 14,
       className: `mr-1.5 flex-shrink-0 ${colorClass}`,
@@ -2809,12 +2953,13 @@ export default function App() {
       const monacoInst = monacoApiRef.current;
       const model = codeEditorRef.current?.getModel();
       if (monacoInst && model) {
-        monacoInst.editor.setModelMarkers(model, 'luau-syntax', []);
+        monacoInst.editor.setModelMarkers(model, 'luau-diagnostics', []);
       }
       setSyntaxError(null);
-      lintTimeoutRef.current = setTimeout(() => runLuaLint(currentScriptCode), 120);
+      setWarningDiagnostics([]);
+      lintTimeoutRef.current = setTimeout(() => runLuaLint(currentScriptCode), 80);
     } else {
-      lintTimeoutRef.current = setTimeout(() => runLuaLint(currentScriptCode), 500);
+      lintTimeoutRef.current = setTimeout(() => runLuaLint(currentScriptCode), 200);
     }
 
     return () => {
@@ -3005,11 +3150,28 @@ export default function App() {
                     : 'bg-[#2d2d2d] text-[#8a8a8a] hover:bg-[#252526] border-t-2 border-t-transparent'
                 }`}
               >
-                {tab.type === 'script' && <FileCode size={14} className="text-[#a3e681]" />}
-                {tab.type === 'localscript' && <FileCode size={14} className="text-[#38bdf8]" />}
-                {tab.type === 'modulescript' && <FileJson size={14} className="text-[#f59e0b]" />}
+                {/* Script tab icons — Roblox icons with Lucide fallback */}
+                {tab.type === 'script' && (
+                  getRobloxIconUrl(tab.name, 'script')
+                    ? <img src={getRobloxIconUrl(tab.name, 'script')!} alt="" className="w-3.5 h-3.5 flex-shrink-0 object-contain select-none pointer-events-none" draggable={false} />
+                    : <FileCode size={14} className="text-[#a3e681]" />
+                )}
+                {tab.type === 'localscript' && (
+                  getRobloxIconUrl(tab.name, 'localscript')
+                    ? <img src={getRobloxIconUrl(tab.name, 'localscript')!} alt="" className="w-3.5 h-3.5 flex-shrink-0 object-contain select-none pointer-events-none" draggable={false} />
+                    : <FileCode size={14} className="text-[#38bdf8]" />
+                )}
+                {tab.type === 'modulescript' && (
+                  getRobloxIconUrl(tab.name, 'modulescript')
+                    ? <img src={getRobloxIconUrl(tab.name, 'modulescript')!} alt="" className="w-3.5 h-3.5 flex-shrink-0 object-contain select-none pointer-events-none" draggable={false} />
+                    : <FileJson size={14} className="text-[#f59e0b]" />
+                )}
                 
-                {tab.type === 'viewport' && tab.id === 'viewport' && <Globe size={14} className="text-[#4FC3F7]" />}
+                {tab.type === 'viewport' && tab.id === 'viewport' && (
+                  getRobloxIconUrl('Workspace')
+                    ? <img src={getRobloxIconUrl('Workspace')!} alt="" className="w-3.5 h-3.5 flex-shrink-0 object-contain select-none pointer-events-none" draggable={false} />
+                    : <Globe size={14} className="text-[#4FC3F7]" />
+                )}
                 
                 {tab.id === 'gameplay' && (
                   <div className="flex items-center">
@@ -3099,7 +3261,7 @@ export default function App() {
             <div className="flex-1 relative overflow-hidden bg-[#0b1220]">
               <Canvas 
                 shadows
-                camera={{ position: [20, 20, 20], fov: 50 }}
+                camera={{ position: [24, 16, 28], fov: 50 }}
                 onPointerMissed={() => {
                   if (activeTool !== 'select') setSelectedId(null);
                 }}
@@ -3177,10 +3339,11 @@ export default function App() {
                 <div className="flex items-center gap-3">
                   <span>Luau / Lua 5.1 (Wasmoon)</span>
                   <span>UTF-8</span>
-                  {syntaxError ? (
+                  {/* Red Syntax Error Indicator */}
+                  {syntaxError && (
                     <button
-                      className="flex items-center gap-1 min-w-0 max-w-[420px] text-[#f87171] hover:text-[#fca5a5] transition-colors"
-                      title={syntaxError.message}
+                      className="flex items-center gap-1 min-w-0 max-w-[280px] text-[#ff4d4d] hover:text-[#ff8080] transition-colors cursor-pointer"
+                      title={`Syntax error on line ${syntaxError.line}: ${syntaxError.message}`}
                       onClick={() => {
                         const editorInst = codeEditorRef.current;
                         if (!editorInst) return;
@@ -3189,13 +3352,34 @@ export default function App() {
                         editorInst.focus();
                       }}
                     >
-                      <AlertCircle size={12} className="flex-shrink-0" />
-                      <span className="truncate">Ln {syntaxError.line}: {syntaxError.message}</span>
+                      <AlertCircle size={12} className="flex-shrink-0 text-[#ff4d4d]" />
+                      <span className="truncate">Error Ln {syntaxError.line}: {syntaxError.message}</span>
                     </button>
-                  ) : (
+                  )}
+
+                  {/* Yellow Warning Indicator */}
+                  {warningDiagnostics.length > 0 && (
+                    <button
+                      className="flex items-center gap-1 min-w-0 max-w-[280px] text-[#ffbf00] hover:text-[#ffd54f] transition-colors cursor-pointer"
+                      title={`${warningDiagnostics.length} warning${warningDiagnostics.length > 1 ? 's' : ''}: ${warningDiagnostics[0].message}`}
+                      onClick={() => {
+                        const editorInst = codeEditorRef.current;
+                        if (!editorInst || !warningDiagnostics[0]) return;
+                        const w = warningDiagnostics[0];
+                        editorInst.revealLineInCenter(w.startLineNumber);
+                        editorInst.setPosition({ lineNumber: w.startLineNumber, column: w.startColumn });
+                        editorInst.focus();
+                      }}
+                    >
+                      <AlertTriangle size={12} className="flex-shrink-0 text-[#ffbf00]" />
+                      <span className="truncate">{warningDiagnostics.length} Warning{warningDiagnostics.length > 1 ? 's' : ''} (Ln {warningDiagnostics[0].startLineNumber})</span>
+                    </button>
+                  )}
+
+                  {!syntaxError && warningDiagnostics.length === 0 && (
                     <span className="flex items-center gap-1 text-[#6a9955]">
                       <CheckCircle2 size={12} />
-                      No errors
+                      No problems
                     </span>
                   )}
                 </div>
@@ -3302,136 +3486,106 @@ export default function App() {
 
             <div className="flex-1 overflow-y-auto custom-scrollbar py-1">
               {/* Containers & 3D */}
-              <button
-                className="group w-full text-left px-3 py-1.5 text-[12.5px] hover:bg-[#0078d7] hover:text-white flex items-center gap-2"
-                onClick={() => insertObject(targetId, 'model')}
-              >
-                <Boxes size={14} className="text-[#00bcd4] group-hover:text-white" /> Model
-              </button>
-              <button
-                className="group w-full text-left px-3 py-1.5 text-[12.5px] hover:bg-[#0078d7] hover:text-white flex items-center gap-2"
-                onClick={() => insertObject(targetId, 'folder')}
-              >
-                <Folder size={14} className="text-[#fdd835] group-hover:text-white" /> Folder
-              </button>
-              <button
-                className="group w-full text-left px-3 py-1.5 text-[12.5px] hover:bg-[#0078d7] hover:text-white flex items-center gap-2"
-                onClick={() => insertObject(targetId, 'object')}
-              >
-                <Box size={14} className="text-[#8a8a8a] group-hover:text-white" /> Part
-              </button>
-              <button
-                className="group w-full text-left px-3 py-1.5 text-[12.5px] hover:bg-[#0078d7] hover:text-white flex items-center gap-2"
-                onClick={() => insertObject(targetId, 'decal')}
-              >
-                <ImageIcon size={14} className="text-[#f472b6] group-hover:text-white" /> Decal
-              </button>
-              <button
-                className="group w-full text-left px-3 py-1.5 text-[12.5px] hover:bg-[#0078d7] hover:text-white flex items-center gap-2"
-                onClick={() => insertObject(targetId, 'texture')}
-              >
-                <Grid size={14} className="text-[#38bdf8] group-hover:text-white" /> Texture
-              </button>
+              {([
+                ['model', 'Model', Boxes, 'text-[#00bcd4]'],
+                ['folder', 'Folder', Folder, 'text-[#fdd835]'],
+                ['object', 'Part', Box, 'text-[#8a8a8a]'],
+                ['decal', 'Decal', ImageIcon, 'text-[#f472b6]'],
+                ['texture', 'Texture', Grid, 'text-[#38bdf8]'],
+              ] as const).map(([objType, label, FallbackIcon, colorClass]) => (
+                <button
+                  key={objType}
+                  className="group w-full text-left px-3 py-1.5 text-[12.5px] hover:bg-[#0078d7] hover:text-white flex items-center gap-2"
+                  onClick={() => insertObject(targetId, objType)}
+                >
+                  {getRobloxIconUrl(label, objType)
+                    ? <img src={getRobloxIconUrl(label, objType)!} alt="" className="w-3.5 h-3.5 flex-shrink-0 object-contain select-none pointer-events-none" draggable={false} />
+                    : <FallbackIcon size={14} className={`${colorClass} group-hover:text-white`} />
+                  } {label}
+                </button>
+              ))}
               
               <div className="my-1 border-t border-[#3f3f3f]" />
 
               {/* Scripts */}
-              <button
-                className="group w-full text-left px-3 py-1.5 text-[12.5px] hover:bg-[#0078d7] hover:text-white flex items-center gap-2"
-                onClick={() => insertObject(targetId, 'script')}
-              >
-                <FileCode size={14} className="text-[#a3e681] group-hover:text-white" /> Script
-              </button>
-              <button
-                className="group w-full text-left px-3 py-1.5 text-[12.5px] hover:bg-[#0078d7] hover:text-white flex items-center gap-2"
-                onClick={() => insertObject(targetId, 'localscript')}
-              >
-                <FileCode size={14} className="text-[#38bdf8] group-hover:text-white" /> LocalScript
-              </button>
-              <button
-                className="group w-full text-left px-3 py-1.5 text-[12.5px] hover:bg-[#0078d7] hover:text-white flex items-center gap-2"
-                onClick={() => insertObject(targetId, 'modulescript')}
-              >
-                <FileJson size={14} className="text-[#f59e0b] group-hover:text-white" /> ModuleScript
-              </button>
+              {([
+                ['script', 'Script', FileCode, 'text-[#a3e681]'],
+                ['localscript', 'LocalScript', FileCode, 'text-[#38bdf8]'],
+                ['modulescript', 'ModuleScript', FileJson, 'text-[#f59e0b]'],
+              ] as const).map(([objType, label, FallbackIcon, colorClass]) => (
+                <button
+                  key={objType}
+                  className="group w-full text-left px-3 py-1.5 text-[12.5px] hover:bg-[#0078d7] hover:text-white flex items-center gap-2"
+                  onClick={() => insertObject(targetId, objType)}
+                >
+                  {getRobloxIconUrl(label, objType)
+                    ? <img src={getRobloxIconUrl(label, objType)!} alt="" className="w-3.5 h-3.5 flex-shrink-0 object-contain select-none pointer-events-none" draggable={false} />
+                    : <FallbackIcon size={14} className={`${colorClass} group-hover:text-white`} />
+                  } {label}
+                </button>
+              ))}
 
               <div className="my-1 border-t border-[#3f3f3f]" />
 
               {/* Lights */}
-              <button
-                className="group w-full text-left px-3 py-1.5 text-[12.5px] hover:bg-[#0078d7] hover:text-white flex items-center gap-2"
-                onClick={() => insertObject(targetId, 'pointlight')}
-              >
-                <Lightbulb size={14} className="text-[#ffca28] group-hover:text-white" /> PointLight
-              </button>
-              <button
-                className="group w-full text-left px-3 py-1.5 text-[12.5px] hover:bg-[#0078d7] hover:text-white flex items-center gap-2"
-                onClick={() => insertObject(targetId, 'spotlight')}
-              >
-                <Lightbulb size={14} className="text-[#ffca28] group-hover:text-white" /> SpotLight
-              </button>
-              <button
-                className="group w-full text-left px-3 py-1.5 text-[12.5px] hover:bg-[#0078d7] hover:text-white flex items-center gap-2"
-                onClick={() => insertObject(targetId, 'surfacelight')}
-              >
-                <Lightbulb size={14} className="text-[#ffca28] group-hover:text-white" /> SurfaceLight
-              </button>
+              {([
+                ['pointlight', 'PointLight', Lightbulb, 'text-[#ffca28]'],
+                ['spotlight', 'SpotLight', Lightbulb, 'text-[#ffca28]'],
+                ['surfacelight', 'SurfaceLight', Lightbulb, 'text-[#ffca28]'],
+              ] as const).map(([objType, label, FallbackIcon, colorClass]) => (
+                <button
+                  key={objType}
+                  className="group w-full text-left px-3 py-1.5 text-[12.5px] hover:bg-[#0078d7] hover:text-white flex items-center gap-2"
+                  onClick={() => insertObject(targetId, objType)}
+                >
+                  {getRobloxIconUrl(label, objType)
+                    ? <img src={getRobloxIconUrl(label, objType)!} alt="" className="w-3.5 h-3.5 flex-shrink-0 object-contain select-none pointer-events-none" draggable={false} />
+                    : <FallbackIcon size={14} className={`${colorClass} group-hover:text-white`} />
+                  } {label}
+                </button>
+              ))}
 
               <div className="my-1 border-t border-[#3f3f3f]" />
 
               {/* Networking */}
-              <button
-                className="group w-full text-left px-3 py-1.5 text-[12.5px] hover:bg-[#0078d7] hover:text-white flex items-center gap-2"
-                onClick={() => insertObject(targetId, 'remoteevent')}
-              >
-                <Zap size={14} className="text-[#fb923c] group-hover:text-white" /> RemoteEvent
-              </button>
-              <button
-                className="group w-full text-left px-3 py-1.5 text-[12.5px] hover:bg-[#0078d7] hover:text-white flex items-center gap-2"
-                onClick={() => insertObject(targetId, 'remotefunction')}
-              >
-                <ArrowLeftRight size={14} className="text-[#c084fc] group-hover:text-white" /> RemoteFunction
-              </button>
+              {([
+                ['remoteevent', 'RemoteEvent', Zap, 'text-[#fb923c]'],
+                ['remotefunction', 'RemoteFunction', ArrowLeftRight, 'text-[#c084fc]'],
+              ] as const).map(([objType, label, FallbackIcon, colorClass]) => (
+                <button
+                  key={objType}
+                  className="group w-full text-left px-3 py-1.5 text-[12.5px] hover:bg-[#0078d7] hover:text-white flex items-center gap-2"
+                  onClick={() => insertObject(targetId, objType)}
+                >
+                  {getRobloxIconUrl(label, objType)
+                    ? <img src={getRobloxIconUrl(label, objType)!} alt="" className="w-3.5 h-3.5 flex-shrink-0 object-contain select-none pointer-events-none" draggable={false} />
+                    : <FallbackIcon size={14} className={`${colorClass} group-hover:text-white`} />
+                  } {label}
+                </button>
+              ))}
 
               <div className="my-1 border-t border-[#3f3f3f]" />
 
               {/* Environment & Effects */}
-              <button
-                className="group w-full text-left px-3 py-1.5 text-[12.5px] hover:bg-[#0078d7] hover:text-white flex items-center gap-2"
-                onClick={() => insertObject(targetId, 'sky')}
-              >
-                <Cloud size={14} className="text-[#64b5f6] group-hover:text-white" /> Sky
-              </button>
-              <button
-                className="group w-full text-left px-3 py-1.5 text-[12.5px] hover:bg-[#0078d7] hover:text-white flex items-center gap-2"
-                onClick={() => insertObject(targetId, 'atmosphere')}
-              >
-                <Flame size={14} className="text-[#ff8a65] group-hover:text-white" /> Atmosphere
-              </button>
-              <button
-                className="group w-full text-left px-3 py-1.5 text-[12.5px] hover:bg-[#0078d7] hover:text-white flex items-center gap-2"
-                onClick={() => insertObject(targetId, 'colorcorrectioneffect')}
-              >
-                <Sliders size={14} className="text-[#4dd0e1] group-hover:text-white" /> ColorCorrectionEffect
-              </button>
-              <button
-                className="group w-full text-left px-3 py-1.5 text-[12.5px] hover:bg-[#0078d7] hover:text-white flex items-center gap-2"
-                onClick={() => insertObject(targetId, 'bloomeffect')}
-              >
-                <Sparkles size={14} className="text-[#ffd54f] group-hover:text-white" /> BloomEffect
-              </button>
-              <button
-                className="group w-full text-left px-3 py-1.5 text-[12.5px] hover:bg-[#0078d7] hover:text-white flex items-center gap-2"
-                onClick={() => insertObject(targetId, 'sunrayseffect')}
-              >
-                <Sun size={14} className="text-[#ffb74d] group-hover:text-white" /> SunRaysEffect
-              </button>
-              <button
-                className="group w-full text-left px-3 py-1.5 text-[12.5px] hover:bg-[#0078d7] hover:text-white flex items-center gap-2"
-                onClick={() => insertObject(targetId, 'blureffect')}
-              >
-                <Eye size={14} className="text-[#ba68c8] group-hover:text-white" /> BlurEffect
-              </button>
+              {([
+                ['sky', 'Sky', Cloud, 'text-[#64b5f6]'],
+                ['atmosphere', 'Atmosphere', Flame, 'text-[#ff8a65]'],
+                ['colorcorrectioneffect', 'ColorCorrectionEffect', Sliders, 'text-[#4dd0e1]'],
+                ['bloomeffect', 'BloomEffect', Sparkles, 'text-[#ffd54f]'],
+                ['sunrayseffect', 'SunRaysEffect', Sun, 'text-[#ffb74d]'],
+                ['blureffect', 'BlurEffect', Eye, 'text-[#ba68c8]'],
+              ] as const).map(([objType, label, FallbackIcon, colorClass]) => (
+                <button
+                  key={objType}
+                  className="group w-full text-left px-3 py-1.5 text-[12.5px] hover:bg-[#0078d7] hover:text-white flex items-center gap-2"
+                  onClick={() => insertObject(targetId, objType)}
+                >
+                  {getRobloxIconUrl(label, objType)
+                    ? <img src={getRobloxIconUrl(label, objType)!} alt="" className="w-3.5 h-3.5 flex-shrink-0 object-contain select-none pointer-events-none" draggable={false} />
+                    : <FallbackIcon size={14} className={`${colorClass} group-hover:text-white`} />
+                  } {label}
+                </button>
+              ))}
             </div>
           </div>
         );

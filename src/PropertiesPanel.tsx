@@ -140,16 +140,16 @@ export function PropertiesPanel({
   const parentNode = findParentNode(tree, selectedNode.id);
   const parentName = parentNode ? parentNode.name : 'Workspace';
 
-  const pos = selectedNode.position || (nodeNameLower === 'baseplate' ? [0, -0.5, 0] : [0, 5, 0]);
+  const pos = selectedNode.position || (nodeNameLower === 'baseplate' ? [0, -0.5, 0] : nodeTypeLower === 'spawnlocation' || nodeNameLower === 'spawnlocation' ? [0, 0.5, 0] : [0, 5, 0]);
   const rot = selectedNode.rotation || [0, 0, 0];
   const degRot = [
     Math.round(((rot[0] * 180) / Math.PI) * 100) / 100,
     Math.round(((rot[1] * 180) / Math.PI) * 100) / 100,
     Math.round(((rot[2] * 180) / Math.PI) * 100) / 100,
   ];
-  const size = selectedNode.size || (nodeNameLower === 'baseplate' ? [512, 1, 512] : [4, 4, 4]);
+  const size = selectedNode.size || (nodeNameLower === 'baseplate' ? [512, 1, 512] : nodeTypeLower === 'spawnlocation' || nodeNameLower === 'spawnlocation' ? [12, 1, 12] : [4, 4, 4]);
 
-  const color = selectedNode.color || (nodeNameLower === 'baseplate' ? '#3b593f' : '#a3a2a5');
+  const color = selectedNode.color || (nodeNameLower === 'baseplate' ? '#5B5B5B' : nodeTypeLower === 'spawnlocation' || nodeNameLower === 'spawnlocation' ? '#e8e8e8' : '#a3a2a5');
   const matchedBrick = BRICK_COLOR_PALETTE.find((b) => b.hex.toLowerCase() === color.toLowerCase());
   const brickColorName = matchedBrick ? matchedBrick.name : 'Custom';
 
