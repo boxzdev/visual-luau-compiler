@@ -47,7 +47,6 @@ import {
   Moon,
   Image as ImageIcon,
   Grid,
-<<<<<<< HEAD
   Info,
   Type,
   MousePointer,
@@ -58,13 +57,6 @@ import {
 import Editor from '@monaco-editor/react';
 import { Canvas, useFrame, useLoader, useThree } from '@react-three/fiber';
 import { OrbitControls, Box as DreiBox, TransformControls, Html } from '@react-three/drei';
-=======
-  Info
-} from 'lucide-react';
-import Editor from '@monaco-editor/react';
-import { Canvas, useFrame, useLoader, useThree } from '@react-three/fiber';
-import { OrbitControls, Box as DreiBox, TransformControls } from '@react-three/drei';
->>>>>>> 446cf94665da5c6ca6d0681aac9762dc8184a7ef
 import * as THREE from 'three';
 import { 
   LuaRuntime, 
@@ -147,7 +139,6 @@ function getRobloxIconUrl(name: string, type?: string): string | null {
     sunrayseffect: 'sunrayseffect',
     blureffect: 'blureffect',
     depthoffieldeffect: 'depthoffieldeffect',
-<<<<<<< HEAD
     screengui: 'screengui',
     frame: 'frame',
     textlabel: 'textlabel',
@@ -158,8 +149,6 @@ function getRobloxIconUrl(name: string, type?: string): string | null {
     scrollingframe: 'scrollingframe',
     surfacegui: 'surfacegui',
     billboardgui: 'billboardgui',
-=======
->>>>>>> 446cf94665da5c6ca6d0681aac9762dc8184a7ef
   };
 
   const mappedClass = TYPE_TO_CLASS[typeLower];
@@ -729,7 +718,6 @@ function PartDecalOrTexture({
   );
 }
 
-<<<<<<< HEAD
 // ── GUI Rendering Utilities & Components ─────────────────────────────────────
 
 function hexToRgba(hex?: string, transparency = 0): string {
@@ -1288,18 +1276,13 @@ function ScreenGuiOverlay({
   );
 }
 
-=======
->>>>>>> 446cf94665da5c6ca6d0681aac9762dc8184a7ef
 function DraggablePart({ 
   node, 
   isSelected, 
   activeTool,
   globalShadows = true,
-<<<<<<< HEAD
   isInteractive = false,
   onUpdateText,
-=======
->>>>>>> 446cf94665da5c6ca6d0681aac9762dc8184a7ef
   onClick, 
   onTransformChange 
 }: { 
@@ -1307,11 +1290,8 @@ function DraggablePart({
   isSelected: boolean; 
   activeTool: 'select' | 'translate' | 'scale' | 'rotate';
   globalShadows?: boolean;
-<<<<<<< HEAD
   isInteractive?: boolean;
   onUpdateText?: (nodeId: string, text: string) => void;
-=======
->>>>>>> 446cf94665da5c6ca6d0681aac9762dc8184a7ef
   onClick: () => void; 
   onTransformChange: (data: { position: [number, number, number]; rotation: [number, number, number]; scale: [number, number, number] }) => void 
 }) {
@@ -1387,14 +1367,11 @@ function DraggablePart({
     (c) => ['decal', 'texture'].includes(c.type?.toLowerCase())
   );
 
-<<<<<<< HEAD
   // Find child 3D GUIs (SurfaceGui, BillboardGui)
   const childGuis = (node.children || []).filter(
     (c) => ['surfacegui', 'billboardgui'].includes(c.type?.toLowerCase()) && c.enabled !== false
   );
 
-=======
->>>>>>> 446cf94665da5c6ca6d0681aac9762dc8184a7ef
   return (
     <>
       <mesh
@@ -1433,7 +1410,6 @@ function DraggablePart({
           <PartDecalOrTexture key={child.id} node={child} parentSize={size} />
         ))}
 
-<<<<<<< HEAD
         {/* Dynamic child 3D GUIs (SurfaceGui & BillboardGui) attached to Part */}
         {childGuis.map((gui) => {
           const gType = gui.type?.toLowerCase();
@@ -1462,8 +1438,6 @@ function DraggablePart({
           return null;
         })}
 
-=======
->>>>>>> 446cf94665da5c6ca6d0681aac9762dc8184a7ef
         {/* Dynamic child lights attached inside Part */}
         {childLights.map((light) => {
           const lType = light.type?.toLowerCase();
@@ -3113,7 +3087,6 @@ export default function App() {
       | 'sunrayseffect'
       | 'blureffect'
       | 'depthoffieldeffect'
-<<<<<<< HEAD
       | 'screengui'
       | 'frame'
       | 'textlabel'
@@ -3124,8 +3097,6 @@ export default function App() {
       | 'scrollingframe'
       | 'surfacegui'
       | 'billboardgui'
-=======
->>>>>>> 446cf94665da5c6ca6d0681aac9762dc8184a7ef
   ) => {
     const newId = 'node_' + Math.random().toString(36).substring(2, 9);
     let name = 'Part';
@@ -3139,7 +3110,6 @@ export default function App() {
       name = 'Decal';
     } else if (objectType === 'texture') {
       name = 'Texture';
-<<<<<<< HEAD
     } else if (objectType === 'screengui') {
       name = 'ScreenGui';
     } else if (objectType === 'frame') {
@@ -3160,8 +3130,6 @@ export default function App() {
       name = 'SurfaceGui';
     } else if (objectType === 'billboardgui') {
       name = 'BillboardGui';
-=======
->>>>>>> 446cf94665da5c6ca6d0681aac9762dc8184a7ef
     } else if (objectType === 'script') {
       name = 'Script';
       defaultCode = `-- ${name}\nprint("Hello world from " .. script.Name)`;
@@ -3199,7 +3167,6 @@ export default function App() {
 
     const isContainer = objectType === 'model' || objectType === 'folder';
     const isDecalOrTexture = objectType === 'decal' || objectType === 'texture';
-<<<<<<< HEAD
     const isGui = [
       'screengui',
       'frame',
@@ -3213,15 +3180,12 @@ export default function App() {
       'billboardgui',
     ].includes(objectType);
     const isNon3d = isContainer || isDecalOrTexture || isGui;
-=======
->>>>>>> 446cf94665da5c6ca6d0681aac9762dc8184a7ef
 
     const newNode: TreeNodeData = {
       id: newId,
       name,
       type: objectType,
       children: [],
-<<<<<<< HEAD
       position: isNon3d ? undefined : [0, 5, 0],
       rotation: isNon3d ? undefined : [0, 0, 0],
       size: isNon3d ? undefined : [4, 4, 4],
@@ -3292,18 +3256,6 @@ export default function App() {
       lightInfluence: objectType === 'surfacegui' ? 1 : undefined,
       // Decal / Texture
       texture: isDecalOrTexture ? '' : undefined,
-=======
-      position: (isContainer || isDecalOrTexture) ? undefined : [0, 5, 0],
-      rotation: (isContainer || isDecalOrTexture) ? undefined : [0, 0, 0],
-      size: (isContainer || isDecalOrTexture) ? undefined : [4, 4, 4],
-      color: isDecalOrTexture ? '#ffffff' : (isContainer ? undefined : '#a3a2a5'),
-      anchored: (isContainer || isDecalOrTexture) ? undefined : false,
-      canCollide: (isContainer || isDecalOrTexture) ? undefined : true,
-      canTouch: (isContainer || isDecalOrTexture) ? undefined : true,
-      // Decal / Texture
-      texture: isDecalOrTexture ? '' : undefined,
-      face: isDecalOrTexture ? 'Front' : ((objectType === 'spotlight' || objectType === 'surfacelight') ? 'Front' : undefined),
->>>>>>> 446cf94665da5c6ca6d0681aac9762dc8184a7ef
       transparency: isDecalOrTexture ? 0 : undefined,
       studsPerTileU: objectType === 'texture' ? 2 : undefined,
       studsPerTileV: objectType === 'texture' ? 2 : undefined,
@@ -3560,7 +3512,6 @@ export default function App() {
     if (nodeType === 'bloomeffect') return <Sparkles {...getProps('text-[#ffd54f]')} />;
     if (nodeType === 'sunrayseffect') return <Sun {...getProps('text-[#ffb74d]')} />;
     if (nodeType === 'blureffect' || nodeType === 'depthoffieldeffect') return <Eye {...getProps('text-[#ba68c8]')} />;
-<<<<<<< HEAD
     if (nodeType === 'screengui') return <Layout {...getProps('text-[#38bdf8]')} />;
     if (nodeType === 'frame') return <Square {...getProps('text-[#94a3b8]')} />;
     if (nodeType === 'textlabel') return <Type {...getProps('text-[#a3e681]')} />;
@@ -3571,8 +3522,6 @@ export default function App() {
     if (nodeType === 'scrollingframe') return <Scroll {...getProps('text-[#34d399]')} />;
     if (nodeType === 'surfacegui') return <Monitor {...getProps('text-[#38bdf8]')} />;
     if (nodeType === 'billboardgui') return <MessageSquare {...getProps('text-[#a78bfa]')} />;
-=======
->>>>>>> 446cf94665da5c6ca6d0681aac9762dc8184a7ef
 
     if (type === 'object' || type === 'part') return <Box {...getProps('text-[#8a8a8a]')} />;
     if (type === 'script') return <FileCode {...getProps('text-[#a3e681]')} />;
@@ -3741,7 +3690,6 @@ export default function App() {
     };
   }, [activeTabId, currentScriptCode, isScriptTab, runLuaLint]);
 
-<<<<<<< HEAD
   const handleGuiTextUpdate = (nodeId: string, text: string) => {
     const updateNode = (nodes: TreeNodeData[]): TreeNodeData[] => {
       return nodes.map((n) => {
@@ -3757,8 +3705,6 @@ export default function App() {
     }
   };
 
-=======
->>>>>>> 446cf94665da5c6ca6d0681aac9762dc8184a7ef
   const render3DElements = (nodes: TreeNodeData[]) => {
     const elements: React.ReactNode[] = [];
     
@@ -3771,11 +3717,8 @@ export default function App() {
               node={item} 
               isSelected={selectedId === item.id}
               activeTool={activeTool}
-<<<<<<< HEAD
               isInteractive={isRunning && activeTabId === 'gameplay'}
               onUpdateText={handleGuiTextUpdate}
-=======
->>>>>>> 446cf94665da5c6ca6d0681aac9762dc8184a7ef
               onClick={() => {
                 if (activeTool !== 'select') setSelectedId(item.id);
               }}
@@ -4088,7 +4031,6 @@ export default function App() {
 
                 <StudioControls />
               </Canvas>
-<<<<<<< HEAD
 
               {/* 2D SCREENGUI OVERLAY */}
               <ScreenGuiOverlay
@@ -4098,8 +4040,6 @@ export default function App() {
                 displayTree={displayTree}
                 onUpdateText={handleGuiTextUpdate}
               />
-=======
->>>>>>> 446cf94665da5c6ca6d0681aac9762dc8184a7ef
             </div>
           ) : (
             /* CODE EDITOR */
@@ -4328,7 +4268,6 @@ export default function App() {
 
               <div className="my-1 border-t border-[#3f3f3f]" />
 
-<<<<<<< HEAD
               {/* User Interface (GUI) */}
               {([
                 ['screengui', 'ScreenGui', Layout, 'text-[#38bdf8]'],
@@ -4356,8 +4295,6 @@ export default function App() {
 
               <div className="my-1 border-t border-[#3f3f3f]" />
 
-=======
->>>>>>> 446cf94665da5c6ca6d0681aac9762dc8184a7ef
               {/* Lights */}
               {([
                 ['pointlight', 'PointLight', Lightbulb, 'text-[#ffca28]'],

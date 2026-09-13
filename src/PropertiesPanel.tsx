@@ -65,7 +65,6 @@ export function PropertiesPanel({
     atmosphere: true,
     effect: true,
     texture: true,
-<<<<<<< HEAD
     guiLayout: true,
     guiAppearance: true,
     guiText: true,
@@ -74,8 +73,6 @@ export function PropertiesPanel({
     guiTextBox: true,
     guiScreen: true,
     gui3D: true,
-=======
->>>>>>> 446cf94665da5c6ca6d0681aac9762dc8184a7ef
     data: true,
   });
 
@@ -83,14 +80,11 @@ export function PropertiesPanel({
     position: false,
     orientation: false,
     size: false,
-<<<<<<< HEAD
     guiPosition: false,
     guiSize: false,
     guiAnchorPoint: false,
     studsOffset: false,
     canvasSize: false,
-=======
->>>>>>> 446cf94665da5c6ca6d0681aac9762dc8184a7ef
   });
 
   const filterInputRef = useRef<HTMLInputElement>(null);
@@ -156,7 +150,6 @@ export function PropertiesPanel({
   const isTexture = nodeTypeLower === 'texture';
   const isDecalOrTexture = isDecal || isTexture;
 
-<<<<<<< HEAD
   const isGuiObject = [
     'frame',
     'textlabel',
@@ -188,8 +181,6 @@ export function PropertiesPanel({
   const studsOff = selectedNode.studsOffset || [0, 2, 0];
   const cnvSz = selectedNode.canvasSize || (isSurfaceGui ? [800, 600] : [200, 50]);
 
-=======
->>>>>>> 446cf94665da5c6ca6d0681aac9762dc8184a7ef
   const parentNode = findParentNode(tree, selectedNode.id);
   const parentName = parentNode ? parentNode.name : 'Workspace';
 
@@ -227,7 +218,6 @@ export function PropertiesPanel({
     if (selectedNode.type === 'model') return 'Model';
     if (selectedNode.type === 'decal') return 'Decal';
     if (selectedNode.type === 'texture') return 'Texture';
-<<<<<<< HEAD
     if (selectedNode.type === 'screengui') return 'ScreenGui';
     if (selectedNode.type === 'frame') return 'Frame';
     if (selectedNode.type === 'textlabel') return 'TextLabel';
@@ -238,8 +228,6 @@ export function PropertiesPanel({
     if (selectedNode.type === 'scrollingframe') return 'ScrollingFrame';
     if (selectedNode.type === 'surfacegui') return 'SurfaceGui';
     if (selectedNode.type === 'billboardgui') return 'BillboardGui';
-=======
->>>>>>> 446cf94665da5c6ca6d0681aac9762dc8184a7ef
     if (selectedNode.type === 'pointlight') return 'PointLight';
     if (selectedNode.type === 'spotlight') return 'SpotLight';
     if (selectedNode.type === 'surfacelight') return 'SurfaceLight';
@@ -1785,7 +1773,6 @@ export function PropertiesPanel({
           </div>
         )}
 
-<<<<<<< HEAD
         {/* ================= GUI OBJECT LAYOUT SECTION ================= */}
         {isGuiObject && (filterMatch('Position') || filterMatch('Size') || filterMatch('AnchorPoint') || filterMatch('ZIndex') || filterMatch('LayoutOrder') || filterMatch('Visible') || filterMatch('Active') || filterMatch('ClipsDescendants')) && (
           <div>
@@ -2772,8 +2759,6 @@ export function PropertiesPanel({
           </div>
         )}
 
-=======
->>>>>>> 446cf94665da5c6ca6d0681aac9762dc8184a7ef
         {/* ================= DATA / IDENTITY SECTION ================= */}
         {(filterMatch('Name') || filterMatch('ClassName') || filterMatch('Parent')) && (
           <div>

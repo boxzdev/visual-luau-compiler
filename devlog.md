@@ -395,7 +395,6 @@
   - **Editor Status Bar**: Shows colored status button linking directly to the line of error/warning/suggestion.
 - **Verification**:
   - `tsc --noEmit` passed with 0 errors.
-<<<<<<< HEAD
   - `vite build` succeeded with 0 errors.
 
 ## Roblox Studio Accurate GUI Elements & Client/Server Architecture — 2026-09-13
@@ -436,6 +435,3 @@
 - **Verification**:
   - `npm.cmd run lint`: 0 errors.
   - `npm.cmd run build`: Compiled 2606 modules with code 0.
-=======
-  - `vite build` succeeded with 0 errors.
->>>>>>> 446cf94665da5c6ca6d0681aac9762dc8184a7ef

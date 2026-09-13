@@ -105,7 +105,6 @@ export type TreeNodeData = {
   offsetStudsU?: number;
   offsetStudsV?: number;
   zIndex?: number;
-<<<<<<< HEAD
   // GUI Object Properties
   guiPosition?: { xScale: number; xOffset: number; yScale: number; yOffset: number };
   guiSize?: { xScale: number; xOffset: number; yScale: number; yOffset: number };
@@ -150,8 +149,6 @@ export type TreeNodeData = {
   maxDistance?: number;
   adorneeId?: string;
   lightInfluence?: number;
-=======
->>>>>>> 446cf94665da5c6ca6d0681aac9762dc8184a7ef
 };
 
 export const LIGHTING_DEFAULTS = {
@@ -560,12 +557,9 @@ export type LuaBridge = {
   makeCFrame: (x?: number, y?: number, z?: number, rx?: number, ry?: number, rz?: number) => any;
   makeVector3: (x?: number, y?: number, z?: number) => any;
   makeColor3: (r?: number, g?: number, b?: number) => any;
-<<<<<<< HEAD
   makeUDim2?: (xScale?: number, xOffset?: number, yScale?: number, yOffset?: number) => any;
   makeUDim?: (scale?: number, offset?: number) => any;
   makeVector2?: (x?: number, y?: number) => any;
-=======
->>>>>>> 446cf94665da5c6ca6d0681aac9762dc8184a7ef
   // Which side of the client/server boundary this bridge (and the Lua VM it
   // belongs to) represents. Used by RemoteEvent/RemoteFunction to enforce
   // real Roblox rules (e.g. FireServer is only callable from a LocalScript).
@@ -813,7 +807,6 @@ function rehydrateRemoteValue(value: any, ctx: RemoteProxyCtx): any {
       const { position, rotation } = extractCFrameData(value);
       return ctx.bridge.makeCFrame(position[0], position[1], position[2], rotation[0], rotation[1], rotation[2]);
     }
-<<<<<<< HEAD
     if (value.__type === 'UDim2' && ctx.bridge?.makeUDim2) {
       return ctx.bridge.makeUDim2(
         Number(value.X?.Scale ?? value.xScale ?? 0),
@@ -828,8 +821,6 @@ function rehydrateRemoteValue(value: any, ctx: RemoteProxyCtx): any {
     if (value.__type === 'Vector2' && ctx.bridge?.makeVector2) {
       return ctx.bridge.makeVector2(Number(value.X ?? value.x ?? 0), Number(value.Y ?? value.y ?? 0));
     }
-=======
->>>>>>> 446cf94665da5c6ca6d0681aac9762dc8184a7ef
     if (value.__type === 'Instance' && value.__nodeId) {
       return createInstanceProxy(value.__nodeId, ctx.getTree, ctx.updateTree, ctx.onLog, ctx.bridge);
     }
@@ -844,7 +835,6 @@ function rehydrateRemoteValue(value: any, ctx: RemoteProxyCtx): any {
   return value;
 }
 
-<<<<<<< HEAD
 export function makeInstanceUDim2(
   bridge: LuaBridge | undefined,
   pos?: { xScale: number; xOffset: number; yScale: number; yOffset: number }
@@ -887,8 +877,6 @@ export function makeInstanceVector2(bridge: LuaBridge | undefined, x = 0, y = 0)
   };
 }
 
-=======
->>>>>>> 446cf94665da5c6ca6d0681aac9762dc8184a7ef
 function getDefaultPosition(node: TreeNodeData): [number, number, number] {
   if (node.position) return node.position;
   const name = node.name.toLowerCase();
@@ -940,7 +928,6 @@ export function createInstanceProxy(
     const type = getNode()?.type?.toLowerCase();
     return type === 'pointlight' || type === 'spotlight' || type === 'surfacelight';
   };
-<<<<<<< HEAD
   const isGuiNode = () => {
     const type = getNode()?.type?.toLowerCase();
     return ['screengui', 'frame', 'textlabel', 'textbutton', 'imagelabel', 'imagebutton', 'textbox', 'scrollingframe', 'surfacegui', 'billboardgui'].includes(type || '');
@@ -957,15 +944,6 @@ export function createInstanceProxy(
         } else {
           fn(...args);
         }
-=======
-  const makeInstanceSignal = (signalName: 'Touched' | 'TouchEnded') => ({
-    __type: 'RBXScriptSignal',
-    Connect: (fn: any) => {
-      if (typeof fn !== 'function') return null;
-      const listener = (otherNodeId: string) => {
-        const otherInstance = createInstanceProxy(otherNodeId, getTree, updateTree, onLog, bridge);
-        fn(otherInstance);
->>>>>>> 446cf94665da5c6ca6d0681aac9762dc8184a7ef
       };
       const channel = `InstanceSignal:${nodeId}:${signalName}`;
       globalSignalHub.connect(channel, listener);
@@ -987,7 +965,6 @@ export function createInstanceProxy(
     get TouchEnded() {
       return makeInstanceSignal('TouchEnded');
     },
-<<<<<<< HEAD
     get MouseButton1Click() {
       return makeInstanceSignal('MouseButton1Click');
     },
@@ -1009,8 +986,6 @@ export function createInstanceProxy(
     get FocusLost() {
       return makeInstanceSignal('FocusLost');
     },
-=======
->>>>>>> 446cf94665da5c6ca6d0681aac9762dc8184a7ef
 
     get Name() {
       return getNode()?.name || '';
@@ -1028,10 +1003,7 @@ export function createInstanceProxy(
       if (!node) return 'Instance';
       if (node.id === 'workspace') return 'Workspace';
       if (node.id === 'lighting') return 'Lighting';
-<<<<<<< HEAD
       if (node.id === 'startergui') return 'StarterGui';
-=======
->>>>>>> 446cf94665da5c6ca6d0681aac9762dc8184a7ef
       if (node.type === 'part' || node.type === 'object') return 'Part';
       if (node.type === 'spawnlocation') return 'SpawnLocation';
       if (node.type === 'script') return 'Script';
@@ -1055,7 +1027,6 @@ export function createInstanceProxy(
       if (node.type === 'sunrayseffect') return 'SunRaysEffect';
       if (node.type === 'blureffect') return 'BlurEffect';
       if (node.type === 'depthoffieldeffect') return 'DepthOfFieldEffect';
-<<<<<<< HEAD
       if (node.type === 'screengui') return 'ScreenGui';
       if (node.type === 'frame') return 'Frame';
       if (node.type === 'textlabel') return 'TextLabel';
@@ -1066,8 +1037,6 @@ export function createInstanceProxy(
       if (node.type === 'scrollingframe') return 'ScrollingFrame';
       if (node.type === 'surfacegui') return 'SurfaceGui';
       if (node.type === 'billboardgui') return 'BillboardGui';
-=======
->>>>>>> 446cf94665da5c6ca6d0681aac9762dc8184a7ef
       return node.name || 'Instance';
     },
 
@@ -1120,17 +1089,13 @@ export function createInstanceProxy(
 
     get Position() {
       const node = getNode();
-<<<<<<< HEAD
       if (isGuiNode()) {
         return makeInstanceUDim2(bridge, node?.guiPosition);
       }
-=======
->>>>>>> 446cf94665da5c6ca6d0681aac9762dc8184a7ef
       const p = node ? getDefaultPosition(node) : [0, 0, 0];
       return makeInstanceVector3(bridge, p[0], p[1], p[2]);
     },
     set Position(v: any) {
-<<<<<<< HEAD
       if (isGuiNode()) {
         let xs = 0, xo = 0, ys = 0, yo = 0;
         if (v && v.__type === 'UDim2') {
@@ -1151,8 +1116,6 @@ export function createInstanceProxy(
         });
         return;
       }
-=======
->>>>>>> 446cf94665da5c6ca6d0681aac9762dc8184a7ef
       if (v) {
         const x = Number(v.X ?? v.x ?? 0);
         const y = Number(v.Y ?? v.y ?? 0);
@@ -1236,17 +1199,13 @@ export function createInstanceProxy(
 
     get Size() {
       const node = getNode();
-<<<<<<< HEAD
       if (isGuiNode()) {
         return makeInstanceUDim2(bridge, node?.guiSize);
       }
-=======
->>>>>>> 446cf94665da5c6ca6d0681aac9762dc8184a7ef
       const s = node ? getDefaultSize(node) : [4, 4, 4];
       return makeInstanceVector3(bridge, s[0], s[1], s[2]);
     },
     set Size(v: any) {
-<<<<<<< HEAD
       if (isGuiNode()) {
         let xs = 0, xo = 100, ys = 0, yo = 100;
         if (v && v.__type === 'UDim2') {
@@ -1267,8 +1226,6 @@ export function createInstanceProxy(
         });
         return;
       }
-=======
->>>>>>> 446cf94665da5c6ca6d0681aac9762dc8184a7ef
       if (v) {
         const x = Number(v.X ?? v.x ?? 4);
         const y = Number(v.Y ?? v.y ?? 4);
@@ -2130,7 +2087,6 @@ export function createInstanceProxy(
       });
     },
 
-<<<<<<< HEAD
     get AnchorPoint() {
       const ap = getNode()?.anchorPoint || [0, 0];
       return makeInstanceVector2(bridge, ap[0], ap[1]);
@@ -2523,8 +2479,6 @@ export function createInstanceProxy(
       });
     },
 
-=======
->>>>>>> 446cf94665da5c6ca6d0681aac9762dc8184a7ef
     get Parent() {
       const parent = findParentNode(getTree(), nodeId);
       return parent ? createInstanceProxy(parent.id, getTree, updateTree, onLog, bridge) : null;
@@ -2734,7 +2688,6 @@ export function createInstanceProxy(
       if (!node) return false;
       if (className === 'Instance') return true;
       const lower = className.toLowerCase();
-<<<<<<< HEAD
       const nodeType = node.type.toLowerCase();
       if (lower === 'model' && nodeType === 'model') return true;
       if (lower === 'folder' && (nodeType === 'folder' || nodeType === 'folder_script')) return true;
@@ -2756,15 +2709,6 @@ export function createInstanceProxy(
       return (
         nodeType === lower ||
         (nodeType === 'object' && lower === 'part') ||
-=======
-      if (lower === 'model' && node.type.toLowerCase() === 'model') return true;
-      if (lower === 'folder' && (node.type.toLowerCase() === 'folder' || node.type.toLowerCase() === 'folder_script')) return true;
-      if (lower === 'decal' && (node.type.toLowerCase() === 'decal' || node.type.toLowerCase() === 'texture')) return true;
-      if (lower === 'texture' && node.type.toLowerCase() === 'texture') return true;
-      return (
-        node.type.toLowerCase() === lower ||
-        (node.type === 'object' && lower === 'part') ||
->>>>>>> 446cf94665da5c6ca6d0681aac9762dc8184a7ef
         node.name.toLowerCase() === lower
       );
     },
@@ -3478,7 +3422,6 @@ function buildEngineServices(
     }),
   };
 
-<<<<<<< HEAD
   // ---- Players -----------------------------------------------------------
   const getStarterGuiProxy = () => {
     const starterGui = getTree().find((n) => n.id === 'startergui' || n.name.toLowerCase() === 'startergui');
@@ -3523,8 +3466,6 @@ function buildEngineServices(
     PlayerRemoving: makeHubSignal('PlayerRemoving'),
   };
 
-=======
->>>>>>> 446cf94665da5c6ca6d0681aac9762dc8184a7ef
   return services;
 }
 
@@ -4117,7 +4058,6 @@ export class LuaRuntime {
         end
         _G.BrickColor = BrickColor
 
-<<<<<<< HEAD
         -- Vector2 Library
         local Vector2 = {}
         Vector2.__type = "Vector2"
@@ -4309,8 +4249,6 @@ export class LuaRuntime {
         UDim2.__index = UDim2_meta_index
         _G.UDim2 = UDim2
 
-=======
->>>>>>> 446cf94665da5c6ca6d0681aac9762dc8184a7ef
         -- Math enhancements
         math.clamp = function(x, min, max) return math.max(min, math.min(max, x)) end
         math.sign = function(x) if x > 0 then return 1 elseif x < 0 then return -1 else return 0 end end
@@ -4330,7 +4268,6 @@ export class LuaRuntime {
         function __MAKE_COLOR3(r, g, b)
           return Color3.new(r or 0, g or 0, b or 0)
         end
-<<<<<<< HEAD
 
         function __MAKE_UDIM2(xs, xo, ys, yo)
           return UDim2.new(xs, xo, ys, yo)
@@ -4343,8 +4280,6 @@ export class LuaRuntime {
         function __MAKE_VECTOR2(x, y)
           return Vector2.new(x, y)
         end
-=======
->>>>>>> 446cf94665da5c6ca6d0681aac9762dc8184a7ef
       `);
 
       // Inject these at the engine boundary as well as defining them in Lua.
@@ -4391,7 +4326,6 @@ export class LuaRuntime {
           Running: 'Running', Jumping: 'Jumping', Freefall: 'Freefall', Landed: 'Landed',
           Climbing: 'Climbing', Swimming: 'Swimming', Seated: 'Seated', Dead: 'Dead', None: 'None',
         },
-<<<<<<< HEAD
         Font: {
           SourceSans: 'SourceSans',
           SourceSansBold: 'SourceSansBold',
@@ -4403,8 +4337,6 @@ export class LuaRuntime {
         TextXAlignment: { Left: 'Left', Center: 'Center', Right: 'Right' },
         TextYAlignment: { Top: 'Top', Center: 'Center', Bottom: 'Bottom' },
         ScaleType: { Stretch: 'Stretch', Slice: 'Slice', Tile: 'Tile', Fit: 'Fit', Crop: 'Crop' },
-=======
->>>>>>> 446cf94665da5c6ca6d0681aac9762dc8184a7ef
       });
       this.engine.global.set('TweenInfo', {
         new: (time = 1, easingStyle?: any, easingDirection?: any, repeatCount = 0, reverses = false, delayTime = 0) => ({
@@ -4421,23 +4353,17 @@ export class LuaRuntime {
       const makeCFrame = this.engine.global.get('__MAKE_CFRAME');
       const makeVector3 = this.engine.global.get('__MAKE_VECTOR3');
       const makeColor3 = this.engine.global.get('__MAKE_COLOR3');
-<<<<<<< HEAD
       const makeUDim2 = this.engine.global.get('__MAKE_UDIM2');
       const makeUDim = this.engine.global.get('__MAKE_UDIM');
       const makeVector2 = this.engine.global.get('__MAKE_VECTOR2');
-=======
->>>>>>> 446cf94665da5c6ca6d0681aac9762dc8184a7ef
 
       const bridge: LuaBridge = {
         makeCFrame: (x = 0, y = 0, z = 0, rx = 0, ry = 0, rz = 0) => makeCFrame(x, y, z, rx, ry, rz),
         makeVector3: (x = 0, y = 0, z = 0) => makeVector3(x, y, z),
         makeColor3: (r = 0, g = 0, b = 0) => makeColor3(r, g, b),
-<<<<<<< HEAD
         makeUDim2: (xs = 0, xo = 0, ys = 0, yo = 0) => makeUDim2(xs, xo, ys, yo),
         makeUDim: (scale = 0, offset = 0) => makeUDim(scale, offset),
         makeVector2: (x = 0, y = 0) => makeVector2(x, y),
-=======
->>>>>>> 446cf94665da5c6ca6d0681aac9762dc8184a7ef
         side,
       };
 
@@ -4592,7 +4518,6 @@ export class LuaRuntime {
               return Vector3.new(value.X, value.Y, value.Z)
             elseif valueKind == "Color3" then
               return Color3.new(value.R, value.G, value.B)
-<<<<<<< HEAD
             elseif valueKind == "UDim2" then
               local xs = (value.X and (value.X.Scale or value.X.scale)) or value.xScale or 0
               local xo = (value.X and (value.X.Offset or value.X.offset)) or value.xOffset or 0
@@ -4603,8 +4528,6 @@ export class LuaRuntime {
               return UDim.new(value.Scale or value.scale or 0, value.Offset or value.offset or 0)
             elseif valueKind == "Vector2" then
               return Vector2.new(value.X or value.x or 0, value.Y or value.y or 0)
-=======
->>>>>>> 446cf94665da5c6ca6d0681aac9762dc8184a7ef
             elseif valueKind == "Instance" and value.__nodeId then
               return __WRAP_INSTANCE(value)
             end
@@ -4623,7 +4546,6 @@ export class LuaRuntime {
           return setmetatable({}, {
             __index = function(_t, key)
               local value = raw[key]
-<<<<<<< HEAD
               if (key == "Color" or key == "Color3" or key == "BackgroundColor3" or key == "TextColor3" or key == "BorderColor3" or key == "ImageColor3") and value ~= nil then
                 if type(value) == "table" and value.R ~= nil and value.G ~= nil and value.B ~= nil then
                   return Color3.new(value.R, value.G, value.B)
@@ -4638,10 +4560,6 @@ export class LuaRuntime {
               end
               if (key == "AnchorPoint" or key == "CanvasSize") and value ~= nil and type(value) == "table" and value.__type == "Vector2" then
                 return Vector2.new(value.X or value.x or 0, value.Y or value.y or 0)
-=======
-              if (key == "Color" or key == "Color3") and value ~= nil then
-                return Color3.new(value.R, value.G, value.B)
->>>>>>> 446cf94665da5c6ca6d0681aac9762dc8184a7ef
               end
               if type(value) == "function" then
                 return function(_self, ...)
@@ -4725,7 +4643,6 @@ export class LuaRuntime {
           SunRaysEffect: 'sunrayseffect',
           BlurEffect: 'blureffect',
           DepthOfFieldEffect: 'depthoffieldeffect',
-<<<<<<< HEAD
           ScreenGui: 'screengui',
           Frame: 'frame',
           TextLabel: 'textlabel',
@@ -4745,22 +4662,12 @@ export class LuaRuntime {
         else if (parent && (parent.Name === 'Workspace' || parent === workspaceProxy)) parentId = 'workspace';
         else if (parent && parent.Name === 'Lighting') parentId = 'lighting';
         else if (parent && parent.Name === 'StarterGui') parentId = 'startergui';
-=======
-        };
-        const nodeType = typeMap[className] || 'object';
-
-        let parentId = 'workspace';
-        if (parent && parent.__nodeId) parentId = parent.__nodeId;
-        else if (parent && (parent.Name === 'Workspace' || parent === workspaceProxy)) parentId = 'workspace';
-        else if (parent && parent.Name === 'Lighting') parentId = 'lighting';
->>>>>>> 446cf94665da5c6ca6d0681aac9762dc8184a7ef
 
         const newNode: TreeNodeData = {
           id: newId,
           name: className,
           type: nodeType,
           children: [],
-<<<<<<< HEAD
           position: (nodeType === 'decal' || nodeType === 'texture' || (isGui && nodeType !== 'billboardgui')) ? undefined : [0, 5, 0],
           rotation: (nodeType === 'decal' || nodeType === 'texture' || isGui) ? undefined : [0, 0, 0],
           size: (nodeType === 'decal' || nodeType === 'texture' || isGui) ? undefined : [4, 4, 4],
@@ -4802,15 +4709,6 @@ export class LuaRuntime {
           // Default properties for decal / texture
           texture: (nodeType === 'decal' || nodeType === 'texture') ? '' : undefined,
           face: (nodeType === 'spotlight' || nodeType === 'surfacelight' || nodeType === 'decal' || nodeType === 'texture' || nodeType === 'surfacegui') ? 'Front' : undefined,
-=======
-          position: [0, 5, 0],
-          rotation: [0, 0, 0],
-          size: [4, 4, 4],
-          color: (nodeType === 'decal' || nodeType === 'texture') ? '#ffffff' : '#a3a2a5',
-          // Default properties for decal / texture
-          texture: (nodeType === 'decal' || nodeType === 'texture') ? '' : undefined,
-          face: (nodeType === 'spotlight' || nodeType === 'surfacelight' || nodeType === 'decal' || nodeType === 'texture') ? 'Front' : undefined,
->>>>>>> 446cf94665da5c6ca6d0681aac9762dc8184a7ef
           transparency: (nodeType === 'decal' || nodeType === 'texture') ? 0 : undefined,
           studsPerTileU: nodeType === 'texture' ? 2 : undefined,
           studsPerTileV: nodeType === 'texture' ? 2 : undefined,
