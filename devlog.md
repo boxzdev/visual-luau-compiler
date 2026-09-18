@@ -435,3 +435,60 @@
 - **Verification**:
   - `npm.cmd run lint`: 0 errors.
   - `npm.cmd run build`: Compiled 2606 modules with code 0.
+
+## Roblox Studio Insert Button & Selection Tool GUI Upgrade — 2026-09-18
+- **Dedicated Tool GUI for Object Insertion (Roblox Studio Accuracy)**:
+  - Replaced right-click dependency for inserting objects with Roblox Studio's authentic button-driven workflow.
+  - Right-clicking tree items in the Explorer now performs standard row selection without opening the selection popup, reserving insertion exclusively for the dedicated Tool GUI.
+- **Explorer Row Hover/Select Insert Button (`+`)**:
+  - Each item in the Explorer tree now features a circular/rounded `+` button aligned to the right side of the row.
+  - Automatically fades in on row hover (`group-hover:opacity-100`) or stays visible with an active highlight (`bg-[#0078d7]`) when the insert menu is open for that node.
+  - Clicking `+` stops event propagation, targets that specific instance, and opens the Insert Object dialog anchored beside the button.
+- **Explorer Header Insert Tool Button (`+ Insert`)**:
+  - Replaced the static *"Right click to add"* label in the Explorer header with an interactive `+ Insert` toolbar button.
+  - Clicking it dynamically targets the currently selected tree item (or falls back to `Workspace`).
+- **Roblox Studio-Accurate Insert Object Dialog**:
+  - **Dynamic Title & Header**: Displays *"Insert Object into [Instance]"* along with a dedicated close button (`X`).
+  - **Real-Time Search Bar**: Added an auto-focused `Search object...` input with instant live filtering across all 6 categories (Common & 3D, Scripts, User Interface, Lights, Networking, Environment & Effects).
+  - **Keyboard Navigation**: Pressing `Enter` automatically selects and inserts the first matching object; pressing `Escape` or clicking outside dismisses the menu.
+  - **Click Handling**: Clicking inside the search input or scrolling the list preserves focus and does not close the dialog prematurely.
+  - **Official Icons**: Displays the modern extracted Roblox Studio SVG textures (`getRobloxIconUrl`) with themed Lucide icon fallbacks.
+- **Verification**:
+  - `npm.cmd run lint`: 0 errors (`tsc --noEmit`).
+  - `npm.cmd run build`: Compiled 2606 modules with code 0.
+
+## 3D GUI Bug Fixes & Rendering Architecture (SurfaceGui & BillboardGui) — 2026-09-18
+- **Accurate SurfaceGui Pixel-to-Stud Sizing**:
+  - Fixed Drei `<Html transform distanceFactor={...}>` scaling issue. Drei calculates CSS 3D transformation matrices using `ratio = distanceFactor / 400`. The previous `distanceFactor={10}` caused canvas pixel scaling to balloon to 20×15 studs (5x to 20x larger than the parent part).
+  - Configured Drei `<Html distanceFactor={400}>` (normalizing ratio to 1.0) and nested the canvas inside a parent `<group scale={[faceWidth / canvasW, faceHeight / canvasH, 1]}>`. This achieves pixel-perfect face mapping where an 800×600 canvas maps cleanly onto the exact width and height of any part face.
+- **Fixed Vanishing & Flickering 3D GUIs (Drei Occlusion Raycast Bug)**:
+  - Drei's `occlude={!alwaysOnTop}` casted an internal Three.js ray from the camera through the HTML center into `scene`. Because the 3D GUI plane is positioned at `±sz/2 + 0.012` studs directly adjacent to the part mesh, the raycast constantly collided with the parent part's own geometry and applied `display: none;`, causing random flickering and complete disappearance.
+  - Removed Drei raycast `occlude` and implemented native CSS `backfaceVisibility: 'hidden'`, preventing bleed-through from behind the face.
+  - Added camera look-direction dot-product face culling to ensure backfaces are cleanly hidden without unstable raycast artifacts.
+- **Roblox Coordinate Alignment for Part Faces**:
+  - Aligned all 6 NormalId face orientations with Roblox standard coordinate conventions and `PartDecalOrTexture`:
+    - `Front`: `[0, 0, -sz/2 - 0.012]`, rotation `[0, Math.PI, 0]` (Roblox LookVector is `-Z`).
+    - `Back`: `[0, 0, sz/2 + 0.012]`, rotation `[0, 0, 0]` (`+Z`).
+    - `Top`: `[0, sy/2 + 0.012, 0]`, rotation `[-Math.PI / 2, 0, 0]` (`+Y`).
+    - `Bottom`: `[0, -sy/2 - 0.012, 0]`, rotation `[Math.PI / 2, 0, 0]` (`-Y`).
+    - `Right`: `[sx/2 + 0.012, 0, 0]`, rotation `[0, Math.PI / 2, 0]` (`+X`).
+    - `Left`: `[-sx/2 - 0.012, 0, 0]`, rotation `[0, -Math.PI / 2, 0]` (`-X`).
+- **BillboardGui MaxDistance Camera Culling**:
+  - Previously, `BillboardGui.MaxDistance` was ignored.
+  - Implemented dynamic per-frame camera distance checks with `@react-three/fiber` `useFrame`. When `maxDistance > 0` and camera distance exceeds `maxDistance`, the billboard smoothly hides (`display: none; pointerEvents: none;`), matching Roblox Studio behavior.
+  - Maintained `alwaysOnTop` layering with `zIndexRange={[100, 0]}`.
+- **Default Transparency for 3D GUI Containers**:
+  - Fixed `backgroundTransparency` defaulting to `0` in `insertObject` and `Instance.new`.
+  - Previously, adding a `SurfaceGui` or `BillboardGui` instantly covered parts with a solid white opaque box. Now defaults to `1` (transparent container), matching Roblox Studio.
+  - Added empty-container dotted boundary indicators in Edit mode so designers can visualize empty 3D GUIs on parts without obscuring materials.
+- **Adornee Property Support**:
+  - Added support for `SurfaceGui.Adornee` and `BillboardGui.Adornee` (both string IDs and Instance references).
+  - 3D GUIs placed in `StarterGui` or `Workspace` can now adorn any arbitrary target Part in the scene via `gui.Adornee = workspace.TargetPart`.
+- **Luau Runtime Enhancements (`luaRunner.ts`)**:
+  - Exposed `Enum.NormalId` (`Front`, `Back`, `Top`, `Bottom`, `Right`, `Left`).
+  - Added `Adornee`, `LightInfluence`, `Face`, `CanvasSize`, `StudsOffset`, `AlwaysOnTop`, and `MaxDistance` getters and setters in `createInstanceProxy`.
+  - Fixed duplicate `Face` accessor collision in the proxy handler.
+  - Updated `Instance.new("SurfaceGui")` and `Instance.new("BillboardGui")` defaults (`backgroundTransparency: 1`, `canvasSize: [200, 50]` for billboards, `borderSizePixel: 0`).
+- **Verification**:
+  - `npm.cmd run lint`: 0 errors (`tsc --noEmit`).
+  - `npm.cmd run build`: Compiled 2606 modules with code 0 (`vite build`).

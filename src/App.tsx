@@ -53,7 +53,9 @@ import {
   MousePointerClick,
   TextCursor,
   Scroll,
-  Frame
+  Frame,
+  Plus,
+  Search
 } from 'lucide-react';
 import Editor from '@monaco-editor/react';
 import { Canvas, useFrame, useLoader, useThree } from '@react-three/fiber';
@@ -1258,46 +1260,90 @@ function PartSurfaceGui({
 }) {
   const face = (node.face || 'Front').toLowerCase();
   const [sx, sy, sz] = parentSize;
-  const canvasW = node.canvasSize ? node.canvasSize[0] : 800;
-  const canvasH = node.canvasSize ? node.canvasSize[1] : 600;
+  const hx = sx / 2;
+  const hy = sy / 2;
+  const hz = sz / 2;
 
-  let pos: [number, number, number] = [0, 0, sz / 2 + 0.01];
-  let rot: [number, number, number] = [0, 0, 0];
+  const canvasW = node.canvasSize ? Math.max(10, node.canvasSize[0]) : 800;
+  const canvasH = node.canvasSize ? Math.max(10, node.canvasSize[1]) : 600;
+
+  let faceWidth = sx;
+  let faceHeight = sy;
+  const eps = 0.012;
+
+  // Align face orientations with Roblox standard & PartDecalOrTexture:
+  // In Roblox: Front is -Z (along LookVector), Back is +Z, Top is +Y, Bottom is -Y, Right is +X, Left is -X.
+  let pos: [number, number, number] = [0, 0, -hz - eps];
+  let rot: [number, number, number] = [0, Math.PI, 0];
 
   if (face === 'back') {
-    pos = [0, 0, -sz / 2 - 0.01];
-    rot = [0, Math.PI, 0];
+    faceWidth = sx;
+    faceHeight = sy;
+    pos = [0, 0, hz + eps];
+    rot = [0, 0, 0];
   } else if (face === 'top') {
-    pos = [0, sy / 2 + 0.01, 0];
+    faceWidth = sx;
+    faceHeight = sz;
+    pos = [0, hy + eps, 0];
     rot = [-Math.PI / 2, 0, 0];
   } else if (face === 'bottom') {
-    pos = [0, -sy / 2 - 0.01, 0];
+    faceWidth = sx;
+    faceHeight = sz;
+    pos = [0, -hy - eps, 0];
     rot = [Math.PI / 2, 0, 0];
   } else if (face === 'left') {
-    pos = [-sx / 2 - 0.01, 0, 0];
+    faceWidth = sz;
+    faceHeight = sy;
+    pos = [-hx - eps, 0, 0];
     rot = [0, -Math.PI / 2, 0];
   } else if (face === 'right') {
-    pos = [sx / 2 + 0.01, 0, 0];
+    faceWidth = sz;
+    faceHeight = sy;
+    pos = [hx + eps, 0, 0];
     rot = [0, Math.PI / 2, 0];
   }
 
+  // Scale the group so that canvasW x canvasH exactly spans faceWidth x faceHeight studs!
+  const scaleX = faceWidth / canvasW;
+  const scaleY = faceHeight / canvasH;
+
+  const bgTransparency = node.backgroundTransparency ?? 1;
+  const bgColor = node.backgroundColor || '#ffffff';
+  const lightInf = node.lightInfluence ?? 1;
+
+  const children = node.children || [];
+
   return (
-    <group position={pos} rotation={rot}>
+    <group position={pos} rotation={rot} scale={[scaleX, scaleY, 1]}>
       <Html
         transform
-        occlude={!node.alwaysOnTop}
-        distanceFactor={10}
+        distanceFactor={400}
+        zIndexRange={node.alwaysOnTop ? [1000000, 900000] : undefined}
         style={{
           width: `${canvasW}px`,
           height: `${canvasH}px`,
           pointerEvents: isInteractive ? 'auto' : 'none',
           position: 'relative',
           overflow: 'hidden',
-          backgroundColor: hexToRgba(node.backgroundColor || '#ffffff', node.backgroundTransparency ?? 1),
+          backfaceVisibility: 'hidden',
+          WebkitBackfaceVisibility: 'hidden',
+          backgroundColor: bgTransparency >= 1 ? 'transparent' : hexToRgba(bgColor, bgTransparency),
+          filter: lightInf > 0 ? `brightness(${1 - lightInf * 0.15})` : undefined,
+          zIndex: node.alwaysOnTop ? 100 : 1,
         }}
       >
         <div className="w-full h-full relative select-none">
-          {(node.children || []).map((child) => (
+          {children.length === 0 && !isInteractive && (
+            <div className="w-full h-full border-2 border-dashed border-[#0078d7]/60 flex flex-col items-center justify-center p-4 text-center select-none pointer-events-none">
+              <div className="px-2.5 py-1 bg-[#1e1e1e]/85 rounded text-[16px] font-semibold text-[#38bdf8] shadow">
+                {node.name || 'SurfaceGui'} ({face.charAt(0).toUpperCase() + face.slice(1)})
+              </div>
+              <div className="text-[12px] text-[#aaaaaa] mt-1">
+                Insert a Frame, TextLabel, or Button inside this SurfaceGui
+              </div>
+            </div>
+          )}
+          {children.map((child) => (
             <GuiElementNode
               key={child.id}
               node={child}
@@ -1323,25 +1369,57 @@ function PartBillboardGui({
   onUpdateText?: (nodeId: string, text: string) => void;
 }) {
   const studsOffset = node.studsOffset || [0, 2, 0];
-  const canvasW = node.canvasSize ? node.canvasSize[0] : 200;
-  const canvasH = node.canvasSize ? node.canvasSize[1] : 50;
+  const canvasW = node.canvasSize ? Math.max(10, node.canvasSize[0]) : 200;
+  const canvasH = node.canvasSize ? Math.max(10, node.canvasSize[1]) : 50;
+  const maxDistance = node.maxDistance ?? 100;
+
+  const { camera } = useThree();
+  const [isTooFar, setIsTooFar] = useState(false);
+  const groupRef = useRef<THREE.Group>(null);
+
+  useFrame(() => {
+    if (groupRef.current && maxDistance > 0) {
+      const worldPos = new THREE.Vector3();
+      groupRef.current.getWorldPosition(worldPos);
+      const dist = camera.position.distanceTo(worldPos);
+      const tooFar = dist > maxDistance;
+      if (tooFar !== isTooFar) {
+        setIsTooFar(tooFar);
+      }
+    }
+  });
+
+  const bgTransparency = node.backgroundTransparency ?? 1;
+  const bgColor = node.backgroundColor || '#ffffff';
+  const children = node.children || [];
+
+  if (isTooFar) return null;
 
   return (
-    <group position={[studsOffset[0], (parentSize[1] / 2) + studsOffset[1], studsOffset[2]]}>
+    <group 
+      ref={groupRef}
+      position={[studsOffset[0], (parentSize[1] / 2) + studsOffset[1], studsOffset[2]]}
+    >
       <Html
         center
-        occlude={!node.alwaysOnTop}
-        distanceFactor={12}
+        distanceFactor={10}
+        zIndexRange={node.alwaysOnTop !== false ? [1000000, 900000] : undefined}
         style={{
           width: `${canvasW}px`,
           height: `${canvasH}px`,
           pointerEvents: isInteractive ? 'auto' : 'none',
           position: 'relative',
-          backgroundColor: hexToRgba(node.backgroundColor || '#ffffff', node.backgroundTransparency ?? 1),
+          backgroundColor: bgTransparency >= 1 ? 'transparent' : hexToRgba(bgColor, bgTransparency),
+          zIndex: node.alwaysOnTop !== false ? 100 : 1,
         }}
       >
         <div className="w-full h-full relative select-none">
-          {(node.children || []).map((child) => (
+          {children.length === 0 && !isInteractive && (
+            <div className="w-full h-full border border-dashed border-[#a78bfa]/70 rounded bg-[#1e1e1e]/75 flex items-center justify-center px-2 py-1 text-[12px] font-medium text-[#c084fc] shadow select-none pointer-events-none">
+              {node.name || 'BillboardGui'}
+            </div>
+          )}
+          {children.map((child) => (
             <GuiElementNode
               key={child.id}
               node={child}
@@ -1386,14 +1464,7 @@ function ScreenGuiOverlay({
   // RULE: 2D GUI is ALWAYS on the client side!
   // In Server Gameplay mode, 2D GUI is not rendered.
   if (isGameplayMode && gameplayMode === 'server') {
-    return (
-      <div className="absolute top-2 right-2 z-30 pointer-events-none">
-        <div className="px-2.5 py-1 bg-[#181818]/85 backdrop-blur border border-[#383838] rounded text-[11px] text-[#8a8a8a] flex items-center gap-1.5 shadow-md">
-          <span className="w-1.5 h-1.5 rounded-full bg-[#38bdf8] animate-pulse" />
-          Server View: 2D ScreenGui is client-only
-        </div>
-      </div>
-    );
+    return null;
   }
 
   // In Local Gameplay mode, GUI is fully interactive.
@@ -1470,6 +1541,7 @@ function DraggablePart({
   globalShadows = true,
   isInteractive = false,
   onUpdateText,
+  adornedGuis = [],
   onClick, 
   onTransformChange 
 }: { 
@@ -1479,6 +1551,7 @@ function DraggablePart({
   globalShadows?: boolean;
   isInteractive?: boolean;
   onUpdateText?: (nodeId: string, text: string) => void;
+  adornedGuis?: TreeNodeData[];
   onClick: () => void; 
   onTransformChange: (data: { position: [number, number, number]; rotation: [number, number, number]; scale: [number, number, number] }) => void 
 }) {
@@ -1524,6 +1597,13 @@ function DraggablePart({
 
   const shape = node.shape || 'Block';
 
+  const effectiveSize: [number, number, number] =
+    shape === 'Ball'
+      ? [size[0], size[0], size[0]]
+      : shape === 'Cylinder'
+      ? [size[0], size[1], size[0]]
+      : size;
+
   const showGizmo = isSelected && (activeTool === 'translate' || activeTool === 'scale' || activeTool === 'rotate');
 
   // Save transform when dragging ends
@@ -1554,10 +1634,13 @@ function DraggablePart({
     (c) => ['decal', 'texture'].includes(c.type?.toLowerCase())
   );
 
-  // Find child 3D GUIs (SurfaceGui, BillboardGui)
-  const childGuis = (node.children || []).filter(
-    (c) => ['surfacegui', 'billboardgui'].includes(c.type?.toLowerCase()) && c.enabled !== false
-  );
+  // Find child and adorned 3D GUIs (SurfaceGui, BillboardGui)
+  const childGuis = [
+    ...(node.children || []).filter(
+      (c) => ['surfacegui', 'billboardgui'].includes(c.type?.toLowerCase()) && c.enabled !== false
+    ),
+    ...(adornedGuis || []).filter((g) => g.enabled !== false),
+  ];
 
   return (
     <>
@@ -1594,10 +1677,10 @@ function DraggablePart({
 
         {/* Dynamic child decals and textures attached to Part */}
         {childDecalsAndTextures.map((child) => (
-          <PartDecalOrTexture key={child.id} node={child} parentSize={size} />
+          <PartDecalOrTexture key={child.id} node={child} parentSize={effectiveSize} />
         ))}
 
-        {/* Dynamic child 3D GUIs (SurfaceGui & BillboardGui) attached to Part */}
+        {/* Dynamic child 3D GUIs (SurfaceGui & BillboardGui) attached or adorned to Part */}
         {childGuis.map((gui) => {
           const gType = gui.type?.toLowerCase();
           if (gType === 'surfacegui') {
@@ -1605,7 +1688,7 @@ function DraggablePart({
               <PartSurfaceGui
                 key={gui.id}
                 node={gui}
-                parentSize={size}
+                parentSize={effectiveSize}
                 isInteractive={isInteractive}
                 onUpdateText={onUpdateText}
               />
@@ -1616,7 +1699,7 @@ function DraggablePart({
               <PartBillboardGui
                 key={gui.id}
                 node={gui}
-                parentSize={size}
+                parentSize={effectiveSize}
                 isInteractive={isInteractive}
                 onUpdateText={onUpdateText}
               />
@@ -3070,6 +3153,7 @@ export default function App() {
     y: 0,
     targetId: null,
   });
+  const [insertSearchQuery, setInsertSearchQuery] = useState('');
 
   // Auto scroll output
   useEffect(() => {
@@ -3078,10 +3162,21 @@ export default function App() {
 
   // Close context menu on click outside
   useEffect(() => {
-    const handleClick = () => setContextMenu({ ...contextMenu, visible: false });
+    const handleClick = () => setContextMenu((prev) => (prev.visible ? { ...prev, visible: false } : prev));
     document.addEventListener('click', handleClick);
     return () => document.removeEventListener('click', handleClick);
-  }, [contextMenu]);
+  }, []);
+
+  // Close context menu on Escape key
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && contextMenu.visible) {
+        setContextMenu((prev) => ({ ...prev, visible: false }));
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [contextMenu.visible]);
 
   // Handle deleting nodes with Backspace or Delete
   useEffect(() => {
@@ -3143,19 +3238,48 @@ export default function App() {
     setLogs([]);
   };
 
+  const openInsertObjectMenu = (
+    e: React.MouseEvent,
+    id: string,
+    anchorPos?: { x: number; y: number }
+  ) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setSelectedId(id);
+    setInsertSearchQuery('');
+
+    const menuWidth = 260;
+    const menuHeight = 380;
+
+    let targetX = 0;
+    let targetY = 0;
+
+    if (anchorPos) {
+      targetX = anchorPos.x;
+      targetY = anchorPos.y;
+    } else {
+      const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+      targetX = rect.right + 6;
+      if (targetX + menuWidth > window.innerWidth) {
+        targetX = Math.max(10, rect.left - menuWidth - 6);
+      }
+      targetY = rect.top - 10;
+    }
+
+    const x = Math.max(10, Math.min(targetX, window.innerWidth - menuWidth - 16));
+    const y = Math.max(10, Math.min(targetY, window.innerHeight - menuHeight - 16));
+
+    setContextMenu({
+      visible: true,
+      x,
+      y,
+      targetId: id,
+    });
+  };
+
   const handleContextMenu = (e: React.MouseEvent, id: string) => {
     e.preventDefault();
     setSelectedId(id);
-    const menuHeight = 300;
-    const menuWidth = 210;
-    const x = Math.min(e.clientX, window.innerWidth - menuWidth - 10);
-    const y = Math.min(e.clientY, window.innerHeight - menuHeight - 10);
-    setContextMenu({
-      visible: true,
-      x: Math.max(10, x),
-      y: Math.max(10, y),
-      targetId: id,
-    });
   };
 
   const handleRename = (id: string, newName: string) => {
@@ -3403,7 +3527,7 @@ export default function App() {
         : objectType === 'textbox'
         ? '#1e1e1e'
         : undefined,
-      backgroundTransparency: ['textlabel', 'imagelabel'].includes(objectType) ? 1 : 0,
+      backgroundTransparency: ['textlabel', 'imagelabel', 'screengui', 'surfacegui', 'billboardgui'].includes(objectType) ? 1 : 0,
       borderColor: '#1b2a34',
       borderSizePixel: ['screengui', 'surfacegui', 'billboardgui'].includes(objectType) ? 0 : 1,
       visible: isGui ? true : undefined,
@@ -3772,7 +3896,7 @@ export default function App() {
           onDragOver={(e) => handleDragOver(e, node.id)}
           onDragLeave={(e) => handleDragLeave(e, node.id)}
           onDrop={(e) => handleDrop(e, node.id)}
-          className={`flex items-center h-[26px] px-2 cursor-default select-none whitespace-nowrap text-[12.5px] ${
+          className={`group flex items-center h-[26px] px-2 cursor-default select-none whitespace-nowrap text-[12.5px] ${
             dropTargetId === node.id 
               ? 'bg-[#2a3d5c] ring-1 ring-inset ring-[#0078d7]' 
               : selectedId === node.id 
@@ -3831,6 +3955,22 @@ export default function App() {
               {node.name}
             </span>
           )}
+
+          <button
+            type="button"
+            title={`Insert Object into ${node.name}`}
+            className={`w-[18px] h-[18px] rounded-[3px] flex items-center justify-center transition-all flex-shrink-0 ml-1 ${
+              contextMenu.visible && contextMenu.targetId === node.id
+                ? 'opacity-100 bg-[#0078d7] text-white'
+                : 'opacity-0 group-hover:opacity-100 text-[#a0a0a0] hover:text-white hover:bg-[#454545]'
+            }`}
+            onClick={(e) => {
+              e.stopPropagation();
+              openInsertObjectMenu(e, node.id);
+            }}
+          >
+            <Plus size={13} strokeWidth={2.5} />
+          </button>
         </div>
         {node.expanded && node.children.length > 0 && (
           <div>{renderTree(node.children, level + 1)}</div>
@@ -3895,6 +4035,20 @@ export default function App() {
   const render3DElements = (nodes: TreeNodeData[]) => {
     const elements: React.ReactNode[] = [];
     
+    // Collect 3D GUIs with an Adornee pointing to a part
+    const adorneeMap = new Map<string, TreeNodeData[]>();
+    const findAdorned = (items: TreeNodeData[]) => {
+      for (const item of items) {
+        if (['surfacegui', 'billboardgui'].includes(item.type?.toLowerCase()) && item.adorneeId && item.enabled !== false) {
+          const arr = adorneeMap.get(item.adorneeId) || [];
+          arr.push(item);
+          adorneeMap.set(item.adorneeId, arr);
+        }
+        if (item.children && item.children.length > 0) findAdorned(item.children);
+      }
+    };
+    findAdorned(nodes);
+
     const traverse = (items: TreeNodeData[]) => {
       for (const item of items) {
         if (item.type === 'spawnlocation' || item.name.toLowerCase() === 'spawnlocation' || item.name.toLowerCase() === 'baseplate' || item.type === 'object' || item.type === 'part') {
@@ -3906,6 +4060,7 @@ export default function App() {
               activeTool={activeTool}
               isInteractive={isRunning && activeTabId === 'gameplay'}
               onUpdateText={handleGuiTextUpdate}
+              adornedGuis={adorneeMap.get(item.id)}
               onClick={() => {
                 if (activeTool !== 'select') setSelectedId(item.id);
               }}
@@ -3945,7 +4100,18 @@ export default function App() {
         <div className="flex-1 flex flex-col min-h-[160px] overflow-hidden">
           <div className="h-[34px] flex-shrink-0 flex items-center justify-between px-3 bg-[#2c2c2c] border-b border-[#050505]">
             <span className="text-[13px] font-medium tracking-wide">Explorer</span>
-            <span className="text-[11px] text-[#8a8a8a]">Right click to add</span>
+            <button
+              type="button"
+              className="flex items-center gap-1 text-[11.5px] font-medium bg-[#383838] hover:bg-[#0078d7] text-[#cccccc] hover:text-white px-2 py-0.5 rounded-[3px] transition-colors cursor-pointer"
+              title="Insert Object into selected instance or Workspace"
+              onClick={(e) => {
+                e.stopPropagation();
+                openInsertObjectMenu(e, selectedId || 'workspace');
+              }}
+            >
+              <Plus size={12} strokeWidth={2.5} />
+              <span>Insert</span>
+            </button>
           </div>
 
           <div className="flex-1 flex flex-col min-h-0 p-2 gap-2">
@@ -4417,150 +4583,189 @@ export default function App() {
         </div>
       </main>
 
-      {/* CONTEXT MENU */}
+      {/* INSERT OBJECT DIALOG (ROBLOX STUDIO STYLE) */}
       {contextMenu.visible && (() => {
         const targetId = contextMenu.targetId || 'workspace';
+        const targetNode = findNodeById(displayTree, targetId);
+        const targetName = targetNode?.name || (targetId === 'workspace' ? 'Workspace' : targetId);
+
+        const filterQuery = insertSearchQuery.trim().toLowerCase();
+
+        const sections = [
+          {
+            title: 'Common & 3D',
+            items: [
+              { type: 'object' as const, label: 'Part', icon: Box, colorClass: 'text-[#8a8a8a]' },
+              { type: 'model' as const, label: 'Model', icon: Boxes, colorClass: 'text-[#00bcd4]' },
+              { type: 'folder' as const, label: 'Folder', icon: Folder, colorClass: 'text-[#fdd835]' },
+              { type: 'decal' as const, label: 'Decal', icon: ImageIcon, colorClass: 'text-[#f472b6]' },
+              { type: 'texture' as const, label: 'Texture', icon: Grid, colorClass: 'text-[#38bdf8]' },
+            ],
+          },
+          {
+            title: 'Scripts',
+            items: [
+              { type: 'script' as const, label: 'Script', icon: FileCode, colorClass: 'text-[#a3e681]' },
+              { type: 'localscript' as const, label: 'LocalScript', icon: FileCode, colorClass: 'text-[#38bdf8]' },
+              { type: 'modulescript' as const, label: 'ModuleScript', icon: FileJson, colorClass: 'text-[#f59e0b]' },
+            ],
+          },
+          {
+            title: 'User Interface (GUI)',
+            items: [
+              { type: 'screengui' as const, label: 'ScreenGui', icon: Layout, colorClass: 'text-[#38bdf8]' },
+              { type: 'frame' as const, label: 'Frame', icon: Square, colorClass: 'text-[#94a3b8]' },
+              { type: 'textlabel' as const, label: 'TextLabel', icon: Type, colorClass: 'text-[#a3e681]' },
+              { type: 'textbutton' as const, label: 'TextButton', icon: MousePointer, colorClass: 'text-[#fbbf24]' },
+              { type: 'imagelabel' as const, label: 'ImageLabel', icon: ImageIcon, colorClass: 'text-[#f472b6]' },
+              { type: 'imagebutton' as const, label: 'ImageButton', icon: MousePointerClick, colorClass: 'text-[#f43f5e]' },
+              { type: 'textbox' as const, label: 'TextBox', icon: TextCursor, colorClass: 'text-[#c084fc]' },
+              { type: 'scrollingframe' as const, label: 'ScrollingFrame', icon: Scroll, colorClass: 'text-[#34d399]' },
+              { type: 'surfacegui' as const, label: 'SurfaceGui', icon: Monitor, colorClass: 'text-[#38bdf8]' },
+              { type: 'billboardgui' as const, label: 'BillboardGui', icon: MessageSquare, colorClass: 'text-[#a78bfa]' },
+            ],
+          },
+          {
+            title: 'Lights',
+            items: [
+              { type: 'pointlight' as const, label: 'PointLight', icon: Lightbulb, colorClass: 'text-[#ffca28]' },
+              { type: 'spotlight' as const, label: 'SpotLight', icon: Lightbulb, colorClass: 'text-[#ffca28]' },
+              { type: 'surfacelight' as const, label: 'SurfaceLight', icon: Lightbulb, colorClass: 'text-[#ffca28]' },
+            ],
+          },
+          {
+            title: 'Networking',
+            items: [
+              { type: 'remoteevent' as const, label: 'RemoteEvent', icon: Zap, colorClass: 'text-[#fb923c]' },
+              { type: 'remotefunction' as const, label: 'RemoteFunction', icon: ArrowLeftRight, colorClass: 'text-[#c084fc]' },
+            ],
+          },
+          {
+            title: 'Environment & Effects',
+            items: [
+              { type: 'sky' as const, label: 'Sky', icon: Cloud, colorClass: 'text-[#64b5f6]' },
+              { type: 'atmosphere' as const, label: 'Atmosphere', icon: Flame, colorClass: 'text-[#ff8a65]' },
+              { type: 'colorcorrectioneffect' as const, label: 'ColorCorrectionEffect', icon: Sliders, colorClass: 'text-[#4dd0e1]' },
+              { type: 'bloomeffect' as const, label: 'BloomEffect', icon: Sparkles, colorClass: 'text-[#ffd54f]' },
+              { type: 'sunrayseffect' as const, label: 'SunRaysEffect', icon: Sun, colorClass: 'text-[#ffb74d]' },
+              { type: 'blureffect' as const, label: 'BlurEffect', icon: Eye, colorClass: 'text-[#ba68c8]' },
+            ],
+          },
+        ];
+
+        const filteredSections = sections
+          .map((section) => ({
+            ...section,
+            items: section.items.filter(
+              (item) =>
+                !filterQuery ||
+                item.label.toLowerCase().includes(filterQuery) ||
+                item.type.toLowerCase().includes(filterQuery)
+            ),
+          }))
+          .filter((section) => section.items.length > 0);
 
         return (
           <div
-            className="fixed z-50 w-52 bg-[#2c2c2c] border border-[#050505] shadow-2xl rounded-[4px] flex flex-col max-h-[300px] select-none"
+            className="fixed z-50 w-64 bg-[#252526] border border-[#3e3e42] shadow-2xl rounded-md flex flex-col max-h-[380px] select-none text-[#cccccc]"
             style={{ top: contextMenu.y, left: contextMenu.x }}
+            onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex-shrink-0 px-3 py-1.5 bg-[#252525] border-b border-[#383838] flex items-center justify-between">
-              <span className="text-[11px] font-semibold text-[#8a8a8a] uppercase tracking-wider">
-                Insert Object
-              </span>
+            {/* Header */}
+            <div className="flex-shrink-0 px-3 py-2 bg-[#2d2d2d] border-b border-[#3e3e42] rounded-t-md flex items-center justify-between">
+              <div className="flex flex-col min-w-0 pr-2">
+                <span className="text-[12px] font-semibold text-white tracking-wide truncate">
+                  Insert Object
+                </span>
+                <span className="text-[10.5px] text-[#8a8a8a] truncate">
+                  into {targetName}
+                </span>
+              </div>
+              <button
+                type="button"
+                className="w-5 h-5 flex items-center justify-center text-[#8a8a8a] hover:text-white hover:bg-[#3e3e42] rounded transition-colors cursor-pointer"
+                onClick={() => setContextMenu({ visible: false, x: 0, y: 0, targetId: null })}
+                title="Close"
+              >
+                <X size={13} />
+              </button>
             </div>
 
+            {/* Search Input (Roblox Studio Style) */}
+            <div className="p-2 border-b border-[#333333] bg-[#1e1e1e]">
+              <div className="flex items-center gap-1.5 bg-[#252526] border border-[#3e3e42] focus-within:border-[#0078d7] rounded px-2 py-1">
+                <Search size={13} className="text-[#8a8a8a] flex-shrink-0" />
+                <input
+                  autoFocus
+                  type="text"
+                  placeholder="Search object..."
+                  value={insertSearchQuery}
+                  onChange={(e) => setInsertSearchQuery(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Escape') {
+                      setContextMenu({ visible: false, x: 0, y: 0, targetId: null });
+                    } else if (
+                      e.key === 'Enter' &&
+                      filteredSections.length > 0 &&
+                      filteredSections[0].items.length > 0
+                    ) {
+                      insertObject(targetId, filteredSections[0].items[0].type);
+                    }
+                  }}
+                  className="bg-transparent text-[12px] text-white placeholder-[#707070] outline-none w-full"
+                />
+                {insertSearchQuery && (
+                  <button
+                    type="button"
+                    onClick={() => setInsertSearchQuery('')}
+                    className="text-[#8a8a8a] hover:text-white cursor-pointer"
+                  >
+                    <X size={11} />
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* Items List */}
             <div className="flex-1 overflow-y-auto custom-scrollbar py-1">
-              {/* Containers & 3D */}
-              {([
-                ['model', 'Model', Boxes, 'text-[#00bcd4]'],
-                ['folder', 'Folder', Folder, 'text-[#fdd835]'],
-                ['object', 'Part', Box, 'text-[#8a8a8a]'],
-                ['decal', 'Decal', ImageIcon, 'text-[#f472b6]'],
-                ['texture', 'Texture', Grid, 'text-[#38bdf8]'],
-              ] as const).map(([objType, label, FallbackIcon, colorClass]) => (
-                <button
-                  key={objType}
-                  className="group w-full text-left px-3 py-1.5 text-[12.5px] hover:bg-[#0078d7] hover:text-white flex items-center gap-2"
-                  onClick={() => insertObject(targetId, objType)}
-                >
-                  {getRobloxIconUrl(label, objType)
-                    ? <img src={getRobloxIconUrl(label, objType)!} alt="" className="w-3.5 h-3.5 flex-shrink-0 object-contain select-none pointer-events-none" draggable={false} />
-                    : <FallbackIcon size={14} className={`${colorClass} group-hover:text-white`} />
-                  } {label}
-                </button>
-              ))}
-              
-              <div className="my-1 border-t border-[#3f3f3f]" />
-
-              {/* Scripts */}
-              {([
-                ['script', 'Script', FileCode, 'text-[#a3e681]'],
-                ['localscript', 'LocalScript', FileCode, 'text-[#38bdf8]'],
-                ['modulescript', 'ModuleScript', FileJson, 'text-[#f59e0b]'],
-              ] as const).map(([objType, label, FallbackIcon, colorClass]) => (
-                <button
-                  key={objType}
-                  className="group w-full text-left px-3 py-1.5 text-[12.5px] hover:bg-[#0078d7] hover:text-white flex items-center gap-2"
-                  onClick={() => insertObject(targetId, objType)}
-                >
-                  {getRobloxIconUrl(label, objType)
-                    ? <img src={getRobloxIconUrl(label, objType)!} alt="" className="w-3.5 h-3.5 flex-shrink-0 object-contain select-none pointer-events-none" draggable={false} />
-                    : <FallbackIcon size={14} className={`${colorClass} group-hover:text-white`} />
-                  } {label}
-                </button>
-              ))}
-
-              <div className="my-1 border-t border-[#3f3f3f]" />
-
-              {/* User Interface (GUI) */}
-              {([
-                ['screengui', 'ScreenGui', Layout, 'text-[#38bdf8]'],
-                ['frame', 'Frame', Square, 'text-[#94a3b8]'],
-                ['textlabel', 'TextLabel', Type, 'text-[#a3e681]'],
-                ['textbutton', 'TextButton', MousePointer, 'text-[#fbbf24]'],
-                ['imagelabel', 'ImageLabel', ImageIcon, 'text-[#f472b6]'],
-                ['imagebutton', 'ImageButton', MousePointerClick, 'text-[#f43f5e]'],
-                ['textbox', 'TextBox', TextCursor, 'text-[#c084fc]'],
-                ['scrollingframe', 'ScrollingFrame', Scroll, 'text-[#34d399]'],
-                ['surfacegui', 'SurfaceGui', Monitor, 'text-[#38bdf8]'],
-                ['billboardgui', 'BillboardGui', MessageSquare, 'text-[#a78bfa]'],
-              ] as const).map(([objType, label, FallbackIcon, colorClass]) => (
-                <button
-                  key={objType}
-                  className="group w-full text-left px-3 py-1.5 text-[12.5px] hover:bg-[#0078d7] hover:text-white flex items-center gap-2"
-                  onClick={() => insertObject(targetId, objType)}
-                >
-                  {getRobloxIconUrl(label, objType)
-                    ? <img src={getRobloxIconUrl(label, objType)!} alt="" className="w-3.5 h-3.5 flex-shrink-0 object-contain select-none pointer-events-none" draggable={false} />
-                    : <FallbackIcon size={14} className={`${colorClass} group-hover:text-white`} />
-                  } {label}
-                </button>
-              ))}
-
-              <div className="my-1 border-t border-[#3f3f3f]" />
-
-              {/* Lights */}
-              {([
-                ['pointlight', 'PointLight', Lightbulb, 'text-[#ffca28]'],
-                ['spotlight', 'SpotLight', Lightbulb, 'text-[#ffca28]'],
-                ['surfacelight', 'SurfaceLight', Lightbulb, 'text-[#ffca28]'],
-              ] as const).map(([objType, label, FallbackIcon, colorClass]) => (
-                <button
-                  key={objType}
-                  className="group w-full text-left px-3 py-1.5 text-[12.5px] hover:bg-[#0078d7] hover:text-white flex items-center gap-2"
-                  onClick={() => insertObject(targetId, objType)}
-                >
-                  {getRobloxIconUrl(label, objType)
-                    ? <img src={getRobloxIconUrl(label, objType)!} alt="" className="w-3.5 h-3.5 flex-shrink-0 object-contain select-none pointer-events-none" draggable={false} />
-                    : <FallbackIcon size={14} className={`${colorClass} group-hover:text-white`} />
-                  } {label}
-                </button>
-              ))}
-
-              <div className="my-1 border-t border-[#3f3f3f]" />
-
-              {/* Networking */}
-              {([
-                ['remoteevent', 'RemoteEvent', Zap, 'text-[#fb923c]'],
-                ['remotefunction', 'RemoteFunction', ArrowLeftRight, 'text-[#c084fc]'],
-              ] as const).map(([objType, label, FallbackIcon, colorClass]) => (
-                <button
-                  key={objType}
-                  className="group w-full text-left px-3 py-1.5 text-[12.5px] hover:bg-[#0078d7] hover:text-white flex items-center gap-2"
-                  onClick={() => insertObject(targetId, objType)}
-                >
-                  {getRobloxIconUrl(label, objType)
-                    ? <img src={getRobloxIconUrl(label, objType)!} alt="" className="w-3.5 h-3.5 flex-shrink-0 object-contain select-none pointer-events-none" draggable={false} />
-                    : <FallbackIcon size={14} className={`${colorClass} group-hover:text-white`} />
-                  } {label}
-                </button>
-              ))}
-
-              <div className="my-1 border-t border-[#3f3f3f]" />
-
-              {/* Environment & Effects */}
-              {([
-                ['sky', 'Sky', Cloud, 'text-[#64b5f6]'],
-                ['atmosphere', 'Atmosphere', Flame, 'text-[#ff8a65]'],
-                ['colorcorrectioneffect', 'ColorCorrectionEffect', Sliders, 'text-[#4dd0e1]'],
-                ['bloomeffect', 'BloomEffect', Sparkles, 'text-[#ffd54f]'],
-                ['sunrayseffect', 'SunRaysEffect', Sun, 'text-[#ffb74d]'],
-                ['blureffect', 'BlurEffect', Eye, 'text-[#ba68c8]'],
-              ] as const).map(([objType, label, FallbackIcon, colorClass]) => (
-                <button
-                  key={objType}
-                  className="group w-full text-left px-3 py-1.5 text-[12.5px] hover:bg-[#0078d7] hover:text-white flex items-center gap-2"
-                  onClick={() => insertObject(targetId, objType)}
-                >
-                  {getRobloxIconUrl(label, objType)
-                    ? <img src={getRobloxIconUrl(label, objType)!} alt="" className="w-3.5 h-3.5 flex-shrink-0 object-contain select-none pointer-events-none" draggable={false} />
-                    : <FallbackIcon size={14} className={`${colorClass} group-hover:text-white`} />
-                  } {label}
-                </button>
-              ))}
+              {filteredSections.length === 0 ? (
+                <div className="py-6 text-center text-[12px] text-[#8a8a8a]">
+                  No matching objects found
+                </div>
+              ) : (
+                filteredSections.map((section, sIdx) => (
+                  <div key={section.title}>
+                    {sIdx > 0 && <div className="my-1 border-t border-[#333333]" />}
+                    <div className="px-3 py-1 text-[10.5px] font-semibold text-[#808080] uppercase tracking-wider">
+                      {section.title}
+                    </div>
+                    {section.items.map((item) => {
+                      const { type: objType, label, icon: FallbackIcon, colorClass } = item;
+                      const iconUrl = getRobloxIconUrl(label, objType);
+                      return (
+                        <button
+                          key={objType}
+                          type="button"
+                          className="group w-full text-left px-3 py-1.5 text-[12px] text-[#d6d6d6] hover:bg-[#0078d7] hover:text-white flex items-center gap-2 transition-colors cursor-pointer"
+                          onClick={() => insertObject(targetId, objType)}
+                        >
+                          {iconUrl ? (
+                            <img
+                              src={iconUrl}
+                              alt=""
+                              className="w-4 h-4 flex-shrink-0 object-contain select-none pointer-events-none"
+                              draggable={false}
+                            />
+                          ) : (
+                            <FallbackIcon size={14} className={`${colorClass} group-hover:text-white flex-shrink-0`} />
+                          )}
+                          <span className="truncate">{label}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                ))
+              )}
             </div>
           </div>
         );

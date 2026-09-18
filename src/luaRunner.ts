@@ -2445,6 +2445,32 @@ export function createInstanceProxy(
       });
     },
 
+    get LightInfluence() {
+      return getNode()?.lightInfluence ?? 1;
+    },
+    set LightInfluence(v: number) {
+      const val = Math.max(0, Math.min(1, Number(v) || 0));
+      updateTree((tree) => {
+        const update = (nodes: TreeNodeData[]): TreeNodeData[] =>
+          nodes.map((n) => (n.id === nodeId ? { ...n, lightInfluence: val } : { ...n, children: update(n.children) }));
+        return update(tree);
+      });
+    },
+
+    get Adornee() {
+      const adorneeId = getNode()?.adorneeId;
+      if (!adorneeId) return null;
+      return createInstanceProxy(adorneeId, getTree, updateTree, onLog, bridge);
+    },
+    set Adornee(v: any) {
+      const targetId = v?.__nodeId || null;
+      updateTree((tree) => {
+        const update = (nodes: TreeNodeData[]): TreeNodeData[] =>
+          nodes.map((n) => (n.id === nodeId ? { ...n, adorneeId: targetId } : { ...n, children: update(n.children) }));
+        return update(tree);
+      });
+    },
+
     get IgnoreGuiInset() {
       return !!getNode()?.ignoreGuiInset;
     },
@@ -4681,9 +4707,9 @@ export class LuaRuntime {
             : undefined,
           anchorPoint: isGui ? [0, 0] : undefined,
           backgroundColor: nodeType === 'textbutton' ? '#0078d7' : isGui ? '#ffffff' : undefined,
-          backgroundTransparency: nodeType === 'screengui' ? 1 : isGui ? 0 : undefined,
+          backgroundTransparency: (nodeType === 'screengui' || nodeType === 'surfacegui' || nodeType === 'billboardgui') ? 1 : isGui ? 0 : undefined,
           borderColor: isGui ? '#000000' : undefined,
-          borderSizePixel: isGui ? 1 : undefined,
+          borderSizePixel: ['screengui', 'surfacegui', 'billboardgui'].includes(nodeType) ? 0 : isGui ? 1 : undefined,
           visible: isGui ? true : undefined,
           active: ['textbutton', 'imagebutton', 'textbox'].includes(nodeType),
           text: nodeType === 'textlabel' ? 'Label' : nodeType === 'textbutton' ? 'Button' : nodeType === 'textbox' ? '' : undefined,
@@ -4699,10 +4725,11 @@ export class LuaRuntime {
           imageColor: ['imagelabel', 'imagebutton'].includes(nodeType) ? '#ffffff' : undefined,
           imageTransparency: ['imagelabel', 'imagebutton'].includes(nodeType) ? 0 : undefined,
           scaleType: ['imagelabel', 'imagebutton'].includes(nodeType) ? 'Stretch' : undefined,
-          canvasSize: nodeType === 'surfacegui' ? [800, 600] : undefined,
+          canvasSize: nodeType === 'surfacegui' ? [800, 600] : (nodeType === 'billboardgui' ? [200, 50] : undefined),
           studsOffset: nodeType === 'billboardgui' ? [0, 2, 0] : undefined,
           alwaysOnTop: nodeType === 'billboardgui' ? true : false,
-          maxDistance: nodeType === 'billboardgui' ? 1000 : undefined,
+          maxDistance: nodeType === 'billboardgui' ? 100 : undefined,
+          lightInfluence: nodeType === 'surfacegui' ? 1 : undefined,
           ignoreGuiInset: nodeType === 'screengui' ? false : undefined,
           resetOnSpawn: nodeType === 'screengui' ? true : undefined,
           displayOrder: nodeType === 'screengui' ? 0 : undefined,
@@ -4760,6 +4787,17 @@ export class LuaRuntime {
           end
         }
         _G.Instance = Instance
+
+        Enum = Enum or {}
+        Enum.NormalId = {
+          Front = { Name = "Front", Value = 0 },
+          Back = { Name = "Back", Value = 1 },
+          Top = { Name = "Top", Value = 2 },
+          Bottom = { Name = "Bottom", Value = 3 },
+          Right = { Name = "Right", Value = 4 },
+          Left = { Name = "Left", Value = 5 }
+        }
+        _G.Enum = Enum
       `);
 
       this.engine.global.set('__GET_SCRIPT_INSTANCE', (scriptId: string) => {
