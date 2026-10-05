@@ -179,7 +179,7 @@ export function PropertiesPanel({
   const textCol = selectedNode.textColor || '#ffffff';
   const imgCol = selectedNode.imageColor || '#ffffff';
   const studsOff = selectedNode.studsOffset || [0, 2, 0];
-  const cnvSz = selectedNode.canvasSize || (isSurfaceGui ? [800, 600] : [200, 50]);
+  const cnvSz = selectedNode.canvasSize || (isBillboardGui && selectedNode.guiSize ? [selectedNode.guiSize.xOffset || 200, selectedNode.guiSize.yOffset || 50] : (isSurfaceGui ? [800, 600] : [200, 50]));
 
   const parentNode = findParentNode(tree, selectedNode.id);
   const parentName = parentNode ? parentNode.name : 'Workspace';
@@ -2626,7 +2626,13 @@ export function PropertiesPanel({
                         type="number"
                         min="10"
                         value={cnvSz[0]}
-                        onChange={(e) => onUpdateProperty(selectedNode.id, 'canvasSize', [parseInt(e.target.value, 10) || 800, cnvSz[1]])}
+                        onChange={(e) => {
+                          const w = parseInt(e.target.value, 10) || (isSurfaceGui ? 800 : 200);
+                          onUpdateProperty(selectedNode.id, 'canvasSize', [w, cnvSz[1]]);
+                          if (isBillboardGui) {
+                            onUpdateProperty(selectedNode.id, 'guiSize', { xScale: 0, xOffset: w, yScale: 0, yOffset: cnvSz[1] });
+                          }
+                        }}
                         className="w-14 bg-[#181818] border border-transparent hover:border-[#3e3e42] focus:border-[#0078d7] px-1 py-0.5 rounded text-[11px] font-mono text-[#cccccc] outline-none"
                       />
                       <span className="text-[#666]">×</span>
@@ -2634,7 +2640,13 @@ export function PropertiesPanel({
                         type="number"
                         min="10"
                         value={cnvSz[1]}
-                        onChange={(e) => onUpdateProperty(selectedNode.id, 'canvasSize', [cnvSz[0], parseInt(e.target.value, 10) || 600])}
+                        onChange={(e) => {
+                          const h = parseInt(e.target.value, 10) || (isSurfaceGui ? 600 : 50);
+                          onUpdateProperty(selectedNode.id, 'canvasSize', [cnvSz[0], h]);
+                          if (isBillboardGui) {
+                            onUpdateProperty(selectedNode.id, 'guiSize', { xScale: 0, xOffset: cnvSz[0], yScale: 0, yOffset: h });
+                          }
+                        }}
                         className="w-14 bg-[#181818] border border-transparent hover:border-[#3e3e42] focus:border-[#0078d7] px-1 py-0.5 rounded text-[11px] font-mono text-[#cccccc] outline-none"
                       />
                     </div>
@@ -2742,14 +2754,25 @@ export function PropertiesPanel({
                         className="w-full bg-[#181818] border border-transparent hover:border-[#3e3e42] focus:border-[#0078d7] px-1.5 py-0.5 rounded text-[11.5px] text-[#cccccc] outline-none"
                       >
                         <option value="">Parent Part (Default)</option>
-                        {tree
-                          .flatMap((n) => [n, ...(n.children || [])])
-                          .filter((c) => c.type === 'part' || c.type === 'object' || c.type === 'spawnlocation')
-                          .map((c) => (
+                        {(() => {
+                          const getParts = (nodes: TreeNodeData[]): TreeNodeData[] => {
+                            const result: TreeNodeData[] = [];
+                            for (const n of nodes) {
+                              if (n.type === 'part' || n.type === 'object' || n.type === 'spawnlocation' || n.name?.toLowerCase() === 'baseplate') {
+                                result.push(n);
+                              }
+                              if (n.children && n.children.length > 0) {
+                                result.push(...getParts(n.children));
+                              }
+                            }
+                            return result;
+                          };
+                          return getParts(tree).map((c) => (
                             <option key={c.id} value={c.id}>
                               {c.name}
                             </option>
-                          ))}
+                          ));
+                        })()}
                       </select>
                     </div>
                   </div>

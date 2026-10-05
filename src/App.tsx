@@ -968,6 +968,7 @@ function GuiElementNode({
     pointerEvents: (isInteractive || editable) ? 'auto' : 'none',
     cursor: editable ? 'move' : undefined,
     touchAction: editable ? 'none' : undefined,
+    containerType: 'size',
   };
 
   const handleClick = (e: React.MouseEvent) => {
@@ -1029,7 +1030,7 @@ function GuiElementNode({
     const textColor = hexToRgba(node.textColor || '#ffffff', node.textTransparency ?? 0);
     return {
       color: textColor,
-      fontSize: node.textScaled ? 'clamp(10px, 4cqi, 32px)' : `${node.textSize ?? 14}px`,
+      fontSize: node.textScaled ? 'clamp(8px, 60cqh, 120px)' : `${node.textSize ?? 14}px`,
       fontFamily: getFontFamily(node.font),
       whiteSpace: node.textWrapped !== false ? 'pre-wrap' : 'nowrap',
       overflow: 'hidden',
@@ -1252,11 +1253,13 @@ function PartSurfaceGui({
   parentSize,
   isInteractive,
   onUpdateText,
+  selectedGuiId,
 }: {
   node: TreeNodeData;
   parentSize: [number, number, number];
   isInteractive: boolean;
   onUpdateText?: (nodeId: string, text: string) => void;
+  selectedGuiId?: string | null;
 }) {
   const face = (node.face || 'Front').toLowerCase();
   const [sx, sy, sz] = parentSize;
@@ -1275,32 +1278,38 @@ function PartSurfaceGui({
   // In Roblox: Front is -Z (along LookVector), Back is +Z, Top is +Y, Bottom is -Y, Right is +X, Left is -X.
   let pos: [number, number, number] = [0, 0, -hz - eps];
   let rot: [number, number, number] = [0, Math.PI, 0];
+  let localNormal: [number, number, number] = [0, 0, -1];
 
   if (face === 'back') {
     faceWidth = sx;
     faceHeight = sy;
     pos = [0, 0, hz + eps];
     rot = [0, 0, 0];
+    localNormal = [0, 0, 1];
   } else if (face === 'top') {
     faceWidth = sx;
     faceHeight = sz;
     pos = [0, hy + eps, 0];
     rot = [-Math.PI / 2, 0, 0];
+    localNormal = [0, 1, 0];
   } else if (face === 'bottom') {
     faceWidth = sx;
     faceHeight = sz;
     pos = [0, -hy - eps, 0];
     rot = [Math.PI / 2, 0, 0];
+    localNormal = [0, -1, 0];
   } else if (face === 'left') {
     faceWidth = sz;
     faceHeight = sy;
     pos = [-hx - eps, 0, 0];
     rot = [0, -Math.PI / 2, 0];
+    localNormal = [-1, 0, 0];
   } else if (face === 'right') {
     faceWidth = sz;
     faceHeight = sy;
     pos = [hx + eps, 0, 0];
     rot = [0, Math.PI / 2, 0];
+    localNormal = [1, 0, 0];
   }
 
   // Scale the group so that canvasW x canvasH exactly spans faceWidth x faceHeight studs!
@@ -1310,49 +1319,68 @@ function PartSurfaceGui({
   const bgTransparency = node.backgroundTransparency ?? 1;
   const bgColor = node.backgroundColor || '#ffffff';
   const lightInf = node.lightInfluence ?? 1;
+  const isSelected = selectedGuiId === node.id;
 
   const children = node.children || [];
 
+  const groupRef = useRef<THREE.Group>(null);
+  const [isFacingCamera, setIsFacingCamera] = useState(true);
+
+  // Scratch objects for backface culling (no per-frame garbage)
+  const normalVecRef = useRef(new THREE.Vector3());
+  const quatRef = useRef(new THREE.Quaternion());
+  const worldPosRef = useRef(new THREE.Vector3());
+  const camDirRef = useRef(new THREE.Vector3());
+
+  useFrame(({ camera }) => {
+    if (!node.alwaysOnTop && groupRef.current) {
+      groupRef.current.getWorldQuaternion(quatRef.current);
+      normalVecRef.current.set(...localNormal).applyQuaternion(quatRef.current);
+      groupRef.current.getWorldPosition(worldPosRef.current);
+      camDirRef.current.subVectors(camera.position, worldPosRef.current);
+      const facing = normalVecRef.current.dot(camDirRef.current) > 0.01;
+      if (facing !== isFacingCamera) {
+        setIsFacingCamera(facing);
+      }
+    } else if (!isFacingCamera) {
+      setIsFacingCamera(true);
+    }
+  });
+
+  const shouldRenderHtml = (node.alwaysOnTop || isFacingCamera) && (children.length > 0 || bgTransparency < 1 || isSelected);
+
   return (
-    <group position={pos} rotation={rot} scale={[scaleX, scaleY, 1]}>
-      <Html
-        transform
-        distanceFactor={400}
-        zIndexRange={node.alwaysOnTop ? [1000000, 900000] : undefined}
-        style={{
-          width: `${canvasW}px`,
-          height: `${canvasH}px`,
-          pointerEvents: isInteractive ? 'auto' : 'none',
-          position: 'relative',
-          overflow: 'hidden',
-          backfaceVisibility: 'hidden',
-          WebkitBackfaceVisibility: 'hidden',
-          backgroundColor: bgTransparency >= 1 ? 'transparent' : hexToRgba(bgColor, bgTransparency),
-          filter: lightInf > 0 ? `brightness(${1 - lightInf * 0.15})` : undefined,
-          zIndex: node.alwaysOnTop ? 100 : 1,
-        }}
-      >
-        <div className="w-full h-full relative select-none">
-          {children.length === 0 && !isInteractive && (
-            <div className="w-full h-full border-2 border-dashed border-[#0078d7]/60 flex flex-col items-center justify-center p-4 text-center select-none pointer-events-none">
-              <div className="px-2.5 py-1 bg-[#1e1e1e]/85 rounded text-[16px] font-semibold text-[#38bdf8] shadow">
-                {node.name || 'SurfaceGui'} ({face.charAt(0).toUpperCase() + face.slice(1)})
-              </div>
-              <div className="text-[12px] text-[#aaaaaa] mt-1">
-                Insert a Frame, TextLabel, or Button inside this SurfaceGui
-              </div>
-            </div>
-          )}
-          {children.map((child) => (
-            <GuiElementNode
-              key={child.id}
-              node={child}
-              isInteractive={isInteractive}
-              onUpdateText={onUpdateText}
-            />
-          ))}
-        </div>
-      </Html>
+    <group ref={groupRef} position={pos} rotation={rot} scale={[scaleX, scaleY, 1]}>
+      {shouldRenderHtml && (
+        <Html
+          transform
+          distanceFactor={400}
+          pointerEvents={isInteractive ? 'auto' : 'none'}
+          zIndexRange={node.alwaysOnTop ? [30000000, 20000000] : undefined}
+          style={{
+            width: `${canvasW}px`,
+            height: `${canvasH}px`,
+            pointerEvents: isInteractive ? 'auto' : 'none',
+            position: 'relative',
+            overflow: 'hidden',
+            backgroundColor: bgTransparency >= 1 ? 'transparent' : hexToRgba(bgColor, bgTransparency),
+            filter: lightInf > 0 ? `brightness(${1 - lightInf * 0.15})` : undefined,
+            outline: isSelected ? '2px solid #0078d7' : undefined,
+            outlineOffset: '-2px',
+          }}
+        >
+          <div className="w-full h-full relative select-none">
+            {children.map((child) => (
+              <GuiElementNode
+                key={child.id}
+                node={child}
+                isInteractive={isInteractive}
+                onUpdateText={onUpdateText}
+              />
+            ))}
+          </div>
+        </Html>
+      )}
     </group>
   );
 }
@@ -1362,73 +1390,81 @@ function PartBillboardGui({
   parentSize,
   isInteractive,
   onUpdateText,
+  selectedGuiId,
 }: {
   node: TreeNodeData;
   parentSize: [number, number, number];
   isInteractive: boolean;
   onUpdateText?: (nodeId: string, text: string) => void;
+  selectedGuiId?: string | null;
 }) {
   const studsOffset = node.studsOffset || [0, 2, 0];
-  const canvasW = node.canvasSize ? Math.max(10, node.canvasSize[0]) : 200;
-  const canvasH = node.canvasSize ? Math.max(10, node.canvasSize[1]) : 50;
+  const canvasW = (node.guiSize?.xOffset && node.guiSize.xOffset > 0)
+    ? node.guiSize.xOffset
+    : (node.canvasSize ? Math.max(10, node.canvasSize[0]) : 200);
+  const canvasH = (node.guiSize?.yOffset && node.guiSize.yOffset > 0)
+    ? node.guiSize.yOffset
+    : (node.canvasSize ? Math.max(10, node.canvasSize[1]) : 50);
   const maxDistance = node.maxDistance ?? 100;
 
   const { camera } = useThree();
   const [isTooFar, setIsTooFar] = useState(false);
   const groupRef = useRef<THREE.Group>(null);
+  const worldPosRef = useRef(new THREE.Vector3());
 
   useFrame(() => {
     if (groupRef.current && maxDistance > 0) {
-      const worldPos = new THREE.Vector3();
-      groupRef.current.getWorldPosition(worldPos);
-      const dist = camera.position.distanceTo(worldPos);
+      groupRef.current.getWorldPosition(worldPosRef.current);
+      const dist = camera.position.distanceTo(worldPosRef.current);
       const tooFar = dist > maxDistance;
       if (tooFar !== isTooFar) {
         setIsTooFar(tooFar);
       }
+    } else if (isTooFar) {
+      setIsTooFar(false);
     }
   });
 
   const bgTransparency = node.backgroundTransparency ?? 1;
   const bgColor = node.backgroundColor || '#ffffff';
   const children = node.children || [];
+  const isSelected = selectedGuiId === node.id;
 
-  if (isTooFar) return null;
+  const shouldRenderHtml = !isTooFar && (children.length > 0 || bgTransparency < 1 || isSelected);
 
   return (
     <group 
       ref={groupRef}
       position={[studsOffset[0], (parentSize[1] / 2) + studsOffset[1], studsOffset[2]]}
     >
-      <Html
-        center
-        distanceFactor={10}
-        zIndexRange={node.alwaysOnTop !== false ? [1000000, 900000] : undefined}
-        style={{
-          width: `${canvasW}px`,
-          height: `${canvasH}px`,
-          pointerEvents: isInteractive ? 'auto' : 'none',
-          position: 'relative',
-          backgroundColor: bgTransparency >= 1 ? 'transparent' : hexToRgba(bgColor, bgTransparency),
-          zIndex: node.alwaysOnTop !== false ? 100 : 1,
-        }}
-      >
-        <div className="w-full h-full relative select-none">
-          {children.length === 0 && !isInteractive && (
-            <div className="w-full h-full border border-dashed border-[#a78bfa]/70 rounded bg-[#1e1e1e]/75 flex items-center justify-center px-2 py-1 text-[12px] font-medium text-[#c084fc] shadow select-none pointer-events-none">
-              {node.name || 'BillboardGui'}
-            </div>
-          )}
-          {children.map((child) => (
-            <GuiElementNode
-              key={child.id}
-              node={child}
-              isInteractive={isInteractive}
-              onUpdateText={onUpdateText}
-            />
-          ))}
-        </div>
-      </Html>
+      {shouldRenderHtml && (
+        <Html
+          center
+          distanceFactor={10}
+          pointerEvents={isInteractive ? 'auto' : 'none'}
+          zIndexRange={node.alwaysOnTop !== false ? [30000000, 20000000] : undefined}
+          style={{
+            width: `${canvasW}px`,
+            height: `${canvasH}px`,
+            pointerEvents: isInteractive ? 'auto' : 'none',
+            position: 'relative',
+            backgroundColor: bgTransparency >= 1 ? 'transparent' : hexToRgba(bgColor, bgTransparency),
+            outline: isSelected ? '2px solid #a78bfa' : undefined,
+            outlineOffset: '-2px',
+          }}
+        >
+          <div className="w-full h-full relative select-none">
+            {children.map((child) => (
+              <GuiElementNode
+                key={child.id}
+                node={child}
+                isInteractive={isInteractive}
+                onUpdateText={onUpdateText}
+              />
+            ))}
+          </div>
+        </Html>
+      )}
     </group>
   );
 }
@@ -1542,6 +1578,7 @@ function DraggablePart({
   isInteractive = false,
   onUpdateText,
   adornedGuis = [],
+  selectedGuiId,
   onClick, 
   onTransformChange 
 }: { 
@@ -1552,6 +1589,7 @@ function DraggablePart({
   isInteractive?: boolean;
   onUpdateText?: (nodeId: string, text: string) => void;
   adornedGuis?: TreeNodeData[];
+  selectedGuiId?: string | null;
   onClick: () => void; 
   onTransformChange: (data: { position: [number, number, number]; rotation: [number, number, number]; scale: [number, number, number] }) => void 
 }) {
@@ -1634,13 +1672,22 @@ function DraggablePart({
     (c) => ['decal', 'texture'].includes(c.type?.toLowerCase())
   );
 
-  // Find child and adorned 3D GUIs (SurfaceGui, BillboardGui)
-  const childGuis = [
-    ...(node.children || []).filter(
-      (c) => ['surfacegui', 'billboardgui'].includes(c.type?.toLowerCase()) && c.enabled !== false
-    ),
-    ...(adornedGuis || []).filter((g) => g.enabled !== false),
-  ];
+  // Find child and adorned 3D GUIs (SurfaceGui, BillboardGui) with deduplication & adornee handling
+  const guiMap = new Map<string, TreeNodeData>();
+  for (const c of (node.children || [])) {
+    const cType = c.type?.toLowerCase();
+    if (['surfacegui', 'billboardgui'].includes(cType) && c.enabled !== false) {
+      if (!c.adorneeId || c.adorneeId === node.id) {
+        guiMap.set(c.id, c);
+      }
+    }
+  }
+  for (const g of (adornedGuis || [])) {
+    if (g.enabled !== false) {
+      guiMap.set(g.id, g);
+    }
+  }
+  const childGuis = Array.from(guiMap.values());
 
   return (
     <>
@@ -1691,6 +1738,7 @@ function DraggablePart({
                 parentSize={effectiveSize}
                 isInteractive={isInteractive}
                 onUpdateText={onUpdateText}
+                selectedGuiId={selectedGuiId}
               />
             );
           }
@@ -1702,6 +1750,7 @@ function DraggablePart({
                 parentSize={effectiveSize}
                 isInteractive={isInteractive}
                 onUpdateText={onUpdateText}
+                selectedGuiId={selectedGuiId}
               />
             );
           }
@@ -3510,7 +3559,7 @@ export default function App() {
         : undefined,
       guiSize: ['frame', 'imagelabel', 'imagebutton'].includes(objectType)
         ? { xScale: 0, xOffset: 100, yScale: 0, yOffset: 100 }
-        : ['textlabel', 'textbutton', 'textbox'].includes(objectType)
+        : ['textlabel', 'textbutton', 'textbox', 'billboardgui'].includes(objectType)
         ? { xScale: 0, xOffset: 200, yScale: 0, yOffset: 50 }
         : objectType === 'scrollingframe'
         ? { xScale: 0, xOffset: 200, yScale: 0, yOffset: 200 }
@@ -4061,8 +4110,9 @@ export default function App() {
               isInteractive={isRunning && activeTabId === 'gameplay'}
               onUpdateText={handleGuiTextUpdate}
               adornedGuis={adorneeMap.get(item.id)}
+              selectedGuiId={selectedId}
               onClick={() => {
-                if (activeTool !== 'select') setSelectedId(item.id);
+                setSelectedId(item.id);
               }}
               onTransformChange={(data) => {
                 const updateNode = (nodes: TreeNodeData[]): TreeNodeData[] => {

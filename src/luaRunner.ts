@@ -1221,7 +1221,16 @@ export function createInstanceProxy(
         }
         updateTree((tree) => {
           const update = (nodes: TreeNodeData[]): TreeNodeData[] =>
-            nodes.map((n) => (n.id === nodeId ? { ...n, guiSize: { xScale: xs, xOffset: xo, yScale: ys, yOffset: yo } } : { ...n, children: update(n.children) }));
+            nodes.map((n) => {
+              if (n.id === nodeId) {
+                const next: TreeNodeData = { ...n, guiSize: { xScale: xs, xOffset: xo, yScale: ys, yOffset: yo } };
+                if (n.type === 'billboardgui') {
+                  next.canvasSize = [xo || 200, yo || 50];
+                }
+                return next;
+              }
+              return { ...n, children: update(n.children) };
+            });
           return update(tree);
         });
         return;
@@ -2402,7 +2411,16 @@ export function createInstanceProxy(
       const y = Number(v?.Y ?? v?.y ?? (Array.isArray(v) ? v[1] : 600)) || 600;
       updateTree((tree) => {
         const update = (nodes: TreeNodeData[]): TreeNodeData[] =>
-          nodes.map((n) => (n.id === nodeId ? { ...n, canvasSize: [x, y] } : { ...n, children: update(n.children) }));
+          nodes.map((n) => {
+            if (n.id === nodeId) {
+              const next: TreeNodeData = { ...n, canvasSize: [x, y] };
+              if (n.type === 'billboardgui') {
+                next.guiSize = { xScale: 0, xOffset: x, yScale: 0, yOffset: y };
+              }
+              return next;
+            }
+            return { ...n, children: update(n.children) };
+          });
         return update(tree);
       });
     },
@@ -4694,7 +4712,7 @@ export class LuaRuntime {
           name: className,
           type: nodeType,
           children: [],
-          position: (nodeType === 'decal' || nodeType === 'texture' || (isGui && nodeType !== 'billboardgui')) ? undefined : [0, 5, 0],
+          position: (nodeType === 'decal' || nodeType === 'texture' || isGui) ? undefined : [0, 5, 0],
           rotation: (nodeType === 'decal' || nodeType === 'texture' || isGui) ? undefined : [0, 0, 0],
           size: (nodeType === 'decal' || nodeType === 'texture' || isGui) ? undefined : [4, 4, 4],
           color: (nodeType === 'decal' || nodeType === 'texture') ? '#ffffff' : (isGui ? undefined : '#a3a2a5'),
