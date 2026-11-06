@@ -4418,42 +4418,6 @@ export default function App() {
                 </>
               )}
             </button>
-
-            {/* Simulation View Switcher — Authentic Roblox Studio Test Bar (Current: Server / Client) */}
-            {isRunning && (
-              <button
-                onClick={() => {
-                  setGameplayMode((prev) => (prev === 'server' ? 'client' : 'server'));
-                  setActiveTabId('gameplay');
-                }}
-                className={`flex items-center gap-2 px-3 py-1.5 rounded-[4px] text-[12px] font-medium transition-all border shadow-sm select-none cursor-pointer ${
-                  gameplayMode === 'server'
-                    ? 'bg-[#182333] hover:bg-[#1e2f47] text-[#38bdf8] border-[#0284c7]/60'
-                    : 'bg-[#064e3b]/50 hover:bg-[#064e3b]/70 text-[#34d399] border-[#059669]/60'
-                }`}
-                title="Toggle between Server and Client simulation (Roblox Studio style)"
-              >
-                {gameplayMode === 'server' ? (
-                  <>
-                    {SERVICE_ICONS['serverscriptservice'] ? (
-                      <img src={SERVICE_ICONS['serverscriptservice']} alt="" className="w-4 h-4 object-contain pointer-events-none" draggable={false} />
-                    ) : (
-                      <RobloxServerIcon size={14} />
-                    )}
-                    <span>Current: <strong className="font-semibold text-white">Server</strong></span>
-                  </>
-                ) : (
-                  <>
-                    {CLASS_ICONS['networkclient'] || CLASS_ICONS['player'] ? (
-                      <img src={CLASS_ICONS['networkclient'] || CLASS_ICONS['player']} alt="" className="w-4 h-4 object-contain pointer-events-none" draggable={false} />
-                    ) : (
-                      <RobloxClientIcon size={14} />
-                    )}
-                    <span>Current: <strong className="font-semibold text-white">Client</strong></span>
-                  </>
-                )}
-              </button>
-            )}
             
             <div className="w-[1px] h-[20px] bg-[#3e3e42] mx-1"></div>
             
