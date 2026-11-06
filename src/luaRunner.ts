@@ -149,6 +149,26 @@ export type TreeNodeData = {
   maxDistance?: number;
   adorneeId?: string;
   lightInfluence?: number;
+  // UI Modifier Properties (UICorner, UIStroke, UIPadding, UIListLayout, UIGridLayout, UIAspectRatioConstraint, etc.)
+  cornerRadius?: { scale: number; offset: number };
+  strokeThickness?: number;
+  strokeColor?: string;
+  strokeTransparency?: number;
+  applyStrokeMode?: 'Contextual' | 'Border' | string;
+  paddingTop?: { scale: number; offset: number };
+  paddingBottom?: { scale: number; offset: number };
+  paddingLeft?: { scale: number; offset: number };
+  paddingRight?: { scale: number; offset: number };
+  fillDirection?: 'Horizontal' | 'Vertical' | string;
+  horizontalAlignment?: 'Left' | 'Center' | 'Right' | string;
+  verticalAlignment?: 'Top' | 'Center' | 'Bottom' | string;
+  layoutPadding?: { scale: number; offset: number };
+  sortOrder?: 'LayoutOrder' | 'Name' | string;
+  cellSize?: { xScale: number; xOffset: number; yScale: number; yOffset: number };
+  startCorner?: 'TopLeft' | 'TopRight' | 'BottomLeft' | 'BottomRight' | string;
+  aspectRatio?: number;
+  aspectType?: 'FitWithinMaxSize' | 'ScaleWithParentSize' | string;
+  dominantAxis?: 'Width' | 'Height' | string;
 };
 
 export const LIGHTING_DEFAULTS = {
@@ -835,6 +855,104 @@ function rehydrateRemoteValue(value: any, ctx: RemoteProxyCtx): any {
   return value;
 }
 
+export function makeInstanceUDim(bridge: LuaBridge | undefined, scale = 0, offset = 0): any {
+  if (bridge?.makeUDim) {
+    return bridge.makeUDim(scale, offset);
+  }
+  return {
+    __type: 'UDim',
+    Scale: scale,
+    Offset: offset,
+    scale,
+    offset,
+    toString: () => `${scale}, ${offset}`,
+  };
+}
+
+export const orphanNodes = new Map<string, TreeNodeData>();
+
+export function findNodeEverywhere(tree: TreeNodeData[], id: string): TreeNodeData | null {
+  const inTree = findNodeById(tree, id);
+  if (inTree) return inTree;
+  for (const root of orphanNodes.values()) {
+    const found = findNodeById([root], id);
+    if (found) return found;
+  }
+  return null;
+}
+
+export function parseEasing(style?: any, dir?: any) {
+  const s = typeof style === 'object' && style?.Name ? String(style.Name) : String(style || 'Quad');
+  const d = typeof dir === 'object' && dir?.Name ? String(dir.Name) : String(dir || 'Out');
+  return { style: s, dir: d };
+}
+
+export function getEasingMultiplier(progress: number, style: string, dir: string): number {
+  const t = Math.max(0, Math.min(1, progress));
+  const easeIn = (p: number, st: string): number => {
+    switch (st.toLowerCase()) {
+      case 'linear': return p;
+      case 'sine': return 1 - Math.cos((p * Math.PI) / 2);
+      case 'quad': return p * p;
+      case 'cubic': return p * p * p;
+      case 'quart': return p * p * p * p;
+      case 'quint': return p * p * p * p * p;
+      case 'exponential': return p === 0 ? 0 : Math.pow(2, 10 * (p - 1));
+      case 'circular': return 1 - Math.sqrt(1 - p * p);
+      case 'back': { const c = 1.70158; return (c + 1) * p * p * p - c * p * p; }
+      case 'bounce': {
+        const bounceOut = (x: number) => {
+          const n1 = 7.5625, d1 = 2.75;
+          if (x < 1 / d1) return n1 * x * x;
+          if (x < 2 / d1) return n1 * (x -= 1.5 / d1) * x + 0.75;
+          if (x < 2.5 / d1) return n1 * (x -= 2.25 / d1) * x + 0.9375;
+          return n1 * (x -= 2.625 / d1) * x + 0.984375;
+        };
+        return 1 - bounceOut(1 - p);
+      }
+      case 'elastic': {
+        const c4 = (2 * Math.PI) / 3;
+        return p === 0 ? 0 : p === 1 ? 1 : -Math.pow(2, 10 * p - 10) * Math.sin((p * 10 - 10.75) * c4);
+      }
+      default: return p * p;
+    }
+  };
+
+  const easeOut = (p: number, st: string): number => {
+    switch (st.toLowerCase()) {
+      case 'linear': return p;
+      case 'sine': return Math.sin((p * Math.PI) / 2);
+      case 'quad': return 1 - (1 - p) * (1 - p);
+      case 'cubic': return 1 - Math.pow(1 - p, 3);
+      case 'quart': return 1 - Math.pow(1 - p, 4);
+      case 'quint': return 1 - Math.pow(1 - p, 5);
+      case 'exponential': return p === 1 ? 1 : 1 - Math.pow(2, -10 * p);
+      case 'circular': return Math.sqrt(1 - Math.pow(p - 1, 2));
+      case 'back': { const c = 1.70158; return 1 + (c + 1) * Math.pow(p - 1, 3) + c * Math.pow(p - 1, 2); }
+      case 'bounce': {
+        const n1 = 7.5625, d1 = 2.75;
+        let x = p;
+        if (x < 1 / d1) return n1 * x * x;
+        if (x < 2 / d1) return n1 * (x -= 1.5 / d1) * x + 0.75;
+        if (x < 2.5 / d1) return n1 * (x -= 2.25 / d1) * x + 0.9375;
+        return n1 * (x -= 2.625 / d1) * x + 0.984375;
+      }
+      case 'elastic': {
+        const c4 = (2 * Math.PI) / 3;
+        return p === 0 ? 0 : p === 1 ? 1 : Math.pow(2, -10 * p) * Math.sin((p * 10 - 0.75) * c4) + 1;
+      }
+      default: return 1 - (1 - p) * (1 - p);
+    }
+  };
+
+  const dLower = dir.toLowerCase();
+  if (dLower === 'in') return easeIn(t, style);
+  if (dLower === 'inout') {
+    return t < 0.5 ? easeIn(t * 2, style) / 2 : (easeOut((t - 0.5) * 2, style) + 1) / 2;
+  }
+  return easeOut(t, style);
+}
+
 export function makeInstanceUDim2(
   bridge: LuaBridge | undefined,
   pos?: { xScale: number; xOffset: number; yScale: number; yOffset: number }
@@ -923,7 +1041,30 @@ export function createInstanceProxy(
   onLog: (type: LogType, message: string) => void,
   bridge?: LuaBridge
 ): any {
-  const getNode = () => findNodeById(getTree(), nodeId);
+  const getNode = () => findNodeEverywhere(getTree(), nodeId);
+  const updateNode = (updater: (node: TreeNodeData) => TreeNodeData) => {
+    for (const [orphanId, root] of orphanNodes.entries()) {
+      let matched = false;
+      const updateOrphan = (nodes: TreeNodeData[]): TreeNodeData[] =>
+        nodes.map((n) => {
+          if (n.id === nodeId) {
+            matched = true;
+            return updater(n);
+          }
+          return { ...n, children: updateOrphan(n.children) };
+        });
+      const updatedRoots = updateOrphan([root]);
+      if (matched) {
+        orphanNodes.set(orphanId, updatedRoots[0]);
+        break;
+      }
+    }
+    updateTree((tree) => {
+      const update = (nodes: TreeNodeData[]): TreeNodeData[] =>
+        nodes.map((n) => (n.id === nodeId ? updater(n) : { ...n, children: update(n.children) }));
+      return update(tree);
+    });
+  };
   const isLightNode = () => {
     const type = getNode()?.type?.toLowerCase();
     return type === 'pointlight' || type === 'spotlight' || type === 'surfacelight';
@@ -974,6 +1115,27 @@ export function createInstanceProxy(
     get MouseButton1Up() {
       return makeInstanceSignal('MouseButton1Up');
     },
+    get MouseButton2Click() {
+      return makeInstanceSignal('MouseButton2Click');
+    },
+    get MouseButton2Down() {
+      return makeInstanceSignal('MouseButton2Down');
+    },
+    get MouseButton2Up() {
+      return makeInstanceSignal('MouseButton2Up');
+    },
+    get MouseMoved() {
+      return makeInstanceSignal('MouseMoved');
+    },
+    get InputBegan() {
+      return makeInstanceSignal('InputBegan');
+    },
+    get InputEnded() {
+      return makeInstanceSignal('InputEnded');
+    },
+    get InputChanged() {
+      return makeInstanceSignal('InputChanged');
+    },
     get Activated() {
       return makeInstanceSignal('Activated');
     },
@@ -986,16 +1148,15 @@ export function createInstanceProxy(
     get FocusLost() {
       return makeInstanceSignal('FocusLost');
     },
+    get Focused() {
+      return makeInstanceSignal('Focused');
+    },
 
     get Name() {
       return getNode()?.name || '';
     },
     set Name(newName: string) {
-      updateTree((tree) => {
-        const update = (nodes: TreeNodeData[]): TreeNodeData[] =>
-          nodes.map((n) => (n.id === nodeId ? { ...n, name: newName } : { ...n, children: update(n.children) }));
-        return update(tree);
-      });
+      updateNode((n) => ({ ...n, name: newName }));
     },
 
     get ClassName() {
@@ -1030,6 +1191,21 @@ export function createInstanceProxy(
       if (node.type === 'screengui') return 'ScreenGui';
       if (node.type === 'frame') return 'Frame';
       if (node.type === 'textlabel') return 'TextLabel';
+      if (node.type === 'textbutton') return 'TextButton';
+      if (node.type === 'imagelabel') return 'ImageLabel';
+      if (node.type === 'imagebutton') return 'ImageButton';
+      if (node.type === 'textbox') return 'TextBox';
+      if (node.type === 'scrollingframe') return 'ScrollingFrame';
+      if (node.type === 'surfacegui') return 'SurfaceGui';
+      if (node.type === 'billboardgui') return 'BillboardGui';
+      if (node.type === 'uicorner') return 'UICorner';
+      if (node.type === 'uistroke') return 'UIStroke';
+      if (node.type === 'uipadding') return 'UIPadding';
+      if (node.type === 'uilistlayout') return 'UIListLayout';
+      if (node.type === 'uigridlayout') return 'UIGridLayout';
+      if (node.type === 'uiaspectratioconstraint') return 'UIAspectRatioConstraint';
+      if (node.type === 'uisizeconstraint') return 'UISizeConstraint';
+      if (node.type === 'uigradient') return 'UIGradient';
       if (node.type === 'textbutton') return 'TextButton';
       if (node.type === 'imagelabel') return 'ImageLabel';
       if (node.type === 'imagebutton') return 'ImageButton';
@@ -2523,46 +2699,377 @@ export function createInstanceProxy(
       });
     },
 
+    // UI Modifier Properties
+    get CornerRadius() {
+      const cr = getNode()?.cornerRadius || { scale: 0, offset: 8 };
+      return makeInstanceUDim(bridge, cr.scale ?? 0, cr.offset ?? 8);
+    },
+    set CornerRadius(v: any) {
+      const scale = Number(v?.Scale ?? v?.scale ?? 0) || 0;
+      const offset = Number(v?.Offset ?? v?.offset ?? (typeof v === 'number' ? v : 0)) || 0;
+      updateNode((n) => ({ ...n, cornerRadius: { scale, offset } }));
+    },
+
+    get Thickness() {
+      return getNode()?.strokeThickness ?? 1;
+    },
+    set Thickness(v: number) {
+      const val = Math.max(0, Number(v) || 0);
+      updateNode((n) => ({ ...n, strokeThickness: val }));
+    },
+
+    get ApplyStrokeMode() {
+      return getNode()?.applyStrokeMode ?? 'Border';
+    },
+    set ApplyStrokeMode(v: any) {
+      const str = typeof v === 'object' && v?.Name ? String(v.Name) : String(v || 'Border');
+      updateNode((n) => ({ ...n, applyStrokeMode: str }));
+    },
+
+    get PaddingTop() {
+      const p = getNode()?.paddingTop || { scale: 0, offset: 0 };
+      return makeInstanceUDim(bridge, p.scale, p.offset);
+    },
+    set PaddingTop(v: any) {
+      const scale = Number(v?.Scale ?? v?.scale ?? 0) || 0;
+      const offset = Number(v?.Offset ?? v?.offset ?? (typeof v === 'number' ? v : 0)) || 0;
+      updateNode((n) => ({ ...n, paddingTop: { scale, offset } }));
+    },
+
+    get PaddingBottom() {
+      const p = getNode()?.paddingBottom || { scale: 0, offset: 0 };
+      return makeInstanceUDim(bridge, p.scale, p.offset);
+    },
+    set PaddingBottom(v: any) {
+      const scale = Number(v?.Scale ?? v?.scale ?? 0) || 0;
+      const offset = Number(v?.Offset ?? v?.offset ?? (typeof v === 'number' ? v : 0)) || 0;
+      updateNode((n) => ({ ...n, paddingBottom: { scale, offset } }));
+    },
+
+    get PaddingLeft() {
+      const p = getNode()?.paddingLeft || { scale: 0, offset: 0 };
+      return makeInstanceUDim(bridge, p.scale, p.offset);
+    },
+    set PaddingLeft(v: any) {
+      const scale = Number(v?.Scale ?? v?.scale ?? 0) || 0;
+      const offset = Number(v?.Offset ?? v?.offset ?? (typeof v === 'number' ? v : 0)) || 0;
+      updateNode((n) => ({ ...n, paddingLeft: { scale, offset } }));
+    },
+
+    get PaddingRight() {
+      const p = getNode()?.paddingRight || { scale: 0, offset: 0 };
+      return makeInstanceUDim(bridge, p.scale, p.offset);
+    },
+    set PaddingRight(v: any) {
+      const scale = Number(v?.Scale ?? v?.scale ?? 0) || 0;
+      const offset = Number(v?.Offset ?? v?.offset ?? (typeof v === 'number' ? v : 0)) || 0;
+      updateNode((n) => ({ ...n, paddingRight: { scale, offset } }));
+    },
+
+    get Padding() {
+      const p = getNode()?.layoutPadding || { scale: 0, offset: 0 };
+      return makeInstanceUDim(bridge, p.scale, p.offset);
+    },
+    set Padding(v: any) {
+      const scale = Number(v?.Scale ?? v?.scale ?? 0) || 0;
+      const offset = Number(v?.Offset ?? v?.offset ?? (typeof v === 'number' ? v : 0)) || 0;
+      updateNode((n) => ({ ...n, layoutPadding: { scale, offset } }));
+    },
+
+    get FillDirection() {
+      return getNode()?.fillDirection ?? 'Vertical';
+    },
+    set FillDirection(v: any) {
+      const str = typeof v === 'object' && v?.Name ? String(v.Name) : String(v || 'Vertical');
+      updateNode((n) => ({ ...n, fillDirection: str }));
+    },
+
+    get HorizontalAlignment() {
+      return getNode()?.horizontalAlignment ?? 'Left';
+    },
+    set HorizontalAlignment(v: any) {
+      const str = typeof v === 'object' && v?.Name ? String(v.Name) : String(v || 'Left');
+      updateNode((n) => ({ ...n, horizontalAlignment: str }));
+    },
+
+    get VerticalAlignment() {
+      return getNode()?.verticalAlignment ?? 'Top';
+    },
+    set VerticalAlignment(v: any) {
+      const str = typeof v === 'object' && v?.Name ? String(v.Name) : String(v || 'Top');
+      updateNode((n) => ({ ...n, verticalAlignment: str }));
+    },
+
+    get SortOrder() {
+      return getNode()?.sortOrder ?? 'LayoutOrder';
+    },
+    set SortOrder(v: any) {
+      const str = typeof v === 'object' && v?.Name ? String(v.Name) : String(v || 'LayoutOrder');
+      updateNode((n) => ({ ...n, sortOrder: str }));
+    },
+
+    get AspectRatio() {
+      return getNode()?.aspectRatio ?? 1;
+    },
+    set AspectRatio(v: number) {
+      const val = Math.max(0.001, Number(v) || 1);
+      updateNode((n) => ({ ...n, aspectRatio: val }));
+    },
+
+    get AspectType() {
+      return getNode()?.aspectType ?? 'FitWithinMaxSize';
+    },
+    set AspectType(v: any) {
+      const str = typeof v === 'object' && v?.Name ? String(v.Name) : String(v || 'FitWithinMaxSize');
+      updateNode((n) => ({ ...n, aspectType: str }));
+    },
+
+    get DominantAxis() {
+      return getNode()?.dominantAxis ?? 'Width';
+    },
+    set DominantAxis(v: any) {
+      const str = typeof v === 'object' && v?.Name ? String(v.Name) : String(v || 'Width');
+      updateNode((n) => ({ ...n, dominantAxis: str }));
+    },
+
+    get AbsolutePosition() {
+      const node = getNode();
+      const pos = node?.guiPosition || { xScale: 0, xOffset: 0, yScale: 0, yOffset: 0 };
+      const x = Math.round(pos.xScale * 800 + pos.xOffset);
+      const y = Math.round(pos.yScale * 600 + pos.yOffset);
+      return makeInstanceVector2(bridge, x, y);
+    },
+
+    get AbsoluteSize() {
+      const node = getNode();
+      const sz = node?.guiSize || { xScale: 0, xOffset: 100, yScale: 0, yOffset: 100 };
+      const w = Math.round(sz.xScale * 800 + sz.xOffset);
+      const h = Math.round(sz.yScale * 600 + sz.yOffset);
+      return makeInstanceVector2(bridge, Math.max(0, w), Math.max(0, h));
+    },
+
+    CaptureFocus: () => {
+      globalSignalHub.fire(`InstanceSignal:${nodeId}:Focused`);
+    },
+    ReleaseFocus: (submitted?: boolean) => {
+      globalSignalHub.fire(`InstanceSignal:${nodeId}:FocusLost`, submitted ?? false);
+    },
+
+    TweenPosition: (
+      endPosition: any,
+      easingDirection?: any,
+      easingStyle?: any,
+      time?: number,
+      _override?: boolean,
+      callback?: any
+    ) => {
+      const node = getNode();
+      if (!node) return false;
+      const startPos = node.guiPosition || { xScale: 0, xOffset: 0, yScale: 0, yOffset: 0 };
+      let xs = 0, xo = 0, ys = 0, yo = 0;
+      if (endPosition && endPosition.__type === 'UDim2') {
+        xs = Number(endPosition.X?.Scale ?? 0);
+        xo = Number(endPosition.X?.Offset ?? 0);
+        ys = Number(endPosition.Y?.Scale ?? 0);
+        yo = Number(endPosition.Y?.Offset ?? 0);
+      } else if (endPosition && typeof endPosition === 'object') {
+        xs = Number(endPosition.xScale ?? endPosition.X?.Scale ?? 0);
+        xo = Number(endPosition.xOffset ?? endPosition.X?.Offset ?? 0);
+        ys = Number(endPosition.yScale ?? endPosition.Y?.Scale ?? 0);
+        yo = Number(endPosition.yOffset ?? endPosition.Y?.Offset ?? 0);
+      }
+      const duration = time !== undefined ? Math.max(0.01, Number(time) || 0.01) : 1;
+      const { style, dir } = parseEasing(easingStyle, easingDirection);
+      const startTime = Date.now();
+      const timer = setInterval(() => {
+        const elapsed = (Date.now() - startTime) / 1000;
+        const progress = Math.min(1, elapsed / duration);
+        const t = getEasingMultiplier(progress, style, dir);
+        const curXs = startPos.xScale + (xs - startPos.xScale) * t;
+        const curXo = startPos.xOffset + (xo - startPos.xOffset) * t;
+        const curYs = startPos.yScale + (ys - startPos.yScale) * t;
+        const curYo = startPos.yOffset + (yo - startPos.yOffset) * t;
+        updateNode((n) => ({
+          ...n,
+          guiPosition: { xScale: curXs, xOffset: curXo, yScale: curYs, yOffset: curYo },
+        }));
+        if (progress >= 1) {
+          clearInterval(timer);
+          if (typeof callback === 'function') {
+            try { callback('Completed'); } catch (_) {}
+          }
+        }
+      }, 16);
+      return true;
+    },
+
+    TweenSize: (
+      endSize: any,
+      easingDirection?: any,
+      easingStyle?: any,
+      time?: number,
+      _override?: boolean,
+      callback?: any
+    ) => {
+      const node = getNode();
+      if (!node) return false;
+      const startSize = node.guiSize || { xScale: 0, xOffset: 100, yScale: 0, yOffset: 100 };
+      let xs = 0, xo = 100, ys = 0, yo = 100;
+      if (endSize && endSize.__type === 'UDim2') {
+        xs = Number(endSize.X?.Scale ?? 0);
+        xo = Number(endSize.X?.Offset ?? 0);
+        ys = Number(endSize.Y?.Scale ?? 0);
+        yo = Number(endSize.Y?.Offset ?? 0);
+      } else if (endSize && typeof endSize === 'object') {
+        xs = Number(endSize.xScale ?? endSize.X?.Scale ?? 0);
+        xo = Number(endSize.xOffset ?? endSize.X?.Offset ?? 0);
+        ys = Number(endSize.yScale ?? endSize.Y?.Scale ?? 0);
+        yo = Number(endSize.yOffset ?? endSize.Y?.Offset ?? 0);
+      }
+      const duration = time !== undefined ? Math.max(0.01, Number(time) || 0.01) : 1;
+      const { style, dir } = parseEasing(easingStyle, easingDirection);
+      const startTime = Date.now();
+      const timer = setInterval(() => {
+        const elapsed = (Date.now() - startTime) / 1000;
+        const progress = Math.min(1, elapsed / duration);
+        const t = getEasingMultiplier(progress, style, dir);
+        const curXs = startSize.xScale + (xs - startSize.xScale) * t;
+        const curXo = startSize.xOffset + (xo - startSize.xOffset) * t;
+        const curYs = startSize.yScale + (ys - startSize.yScale) * t;
+        const curYo = startSize.yOffset + (yo - startSize.yOffset) * t;
+        updateNode((n) => ({
+          ...n,
+          guiSize: { xScale: curXs, xOffset: curXo, yScale: curYs, yOffset: curYo },
+        }));
+        if (progress >= 1) {
+          clearInterval(timer);
+          if (typeof callback === 'function') {
+            try { callback('Completed'); } catch (_) {}
+          }
+        }
+      }, 16);
+      return true;
+    },
+
+    TweenSizeAndPosition: (
+      endSize: any,
+      endPosition: any,
+      easingDirection?: any,
+      easingStyle?: any,
+      time?: number,
+      override?: boolean,
+      callback?: any
+    ) => {
+      (rawInstance as any).TweenSize(endSize, easingDirection, easingStyle, time, override);
+      (rawInstance as any).TweenPosition(endPosition, easingDirection, easingStyle, time, override, callback);
+      return true;
+    },
+
+    __setParentById: (targetParentId: string | null) => {
+      let targetNode: TreeNodeData | null = null;
+      if (orphanNodes.has(nodeId)) {
+        targetNode = orphanNodes.get(nodeId)!;
+        orphanNodes.delete(nodeId);
+      } else {
+        for (const [orphanId, root] of orphanNodes.entries()) {
+          let foundInOrphan = false;
+          const remove = (nodes: TreeNodeData[]): TreeNodeData[] =>
+            nodes
+              .filter((n) => {
+                if (n.id === nodeId) {
+                  targetNode = n;
+                  foundInOrphan = true;
+                  return false;
+                }
+                return true;
+              })
+              .map((n) => ({ ...n, children: remove(n.children) }));
+          const updatedRoots = remove([root]);
+          if (foundInOrphan) {
+            if (updatedRoots.length > 0) {
+              orphanNodes.set(orphanId, updatedRoots[0]);
+            } else {
+              orphanNodes.delete(orphanId);
+            }
+            break;
+          }
+        }
+      }
+
+      if (!targetNode) {
+        updateTree((tree) => {
+          const remove = (nodes: TreeNodeData[]): TreeNodeData[] =>
+            nodes
+              .filter((n) => {
+                if (n.id === nodeId) {
+                  targetNode = n;
+                  return false;
+                }
+                return true;
+              })
+              .map((n) => ({ ...n, children: remove(n.children) }));
+          return remove(tree);
+        });
+      }
+
+      if (!targetNode) return;
+
+      if (!targetParentId) {
+        orphanNodes.set(nodeId, targetNode);
+        return;
+      }
+
+      let insertedInOrphans = false;
+      for (const [orphanId, root] of orphanNodes.entries()) {
+        const insertInOrphan = (nodes: TreeNodeData[]): TreeNodeData[] =>
+          nodes.map((n) => {
+            if (n.id === targetParentId) {
+              insertedInOrphans = true;
+              return { ...n, children: [...n.children, targetNode!], expanded: true };
+            }
+            return { ...n, children: insertInOrphan(n.children) };
+          });
+        const updatedRoots = insertInOrphan([root]);
+        if (insertedInOrphans) {
+          orphanNodes.set(orphanId, updatedRoots[0]);
+          break;
+        }
+      }
+
+      if (!insertedInOrphans) {
+        updateTree((tree) => {
+          const insert = (nodes: TreeNodeData[]): TreeNodeData[] =>
+            nodes.map((n) => {
+              if (n.id === targetParentId) {
+                return { ...n, children: [...n.children, targetNode!], expanded: true };
+              }
+              return { ...n, children: insert(n.children) };
+            });
+          return insert(tree);
+        });
+      }
+    },
+
     get Parent() {
-      const parent = findParentNode(getTree(), nodeId);
-      return parent ? createInstanceProxy(parent.id, getTree, updateTree, onLog, bridge) : null;
+      const inTree = findParentNode(getTree(), nodeId);
+      if (inTree) return createInstanceProxy(inTree.id, getTree, updateTree, onLog, bridge);
+      for (const root of orphanNodes.values()) {
+        const inOrphan = findParentNode([root], nodeId);
+        if (inOrphan) return createInstanceProxy(inOrphan.id, getTree, updateTree, onLog, bridge);
+      }
+      return null;
     },
     set Parent(newParent: any) {
       if (newParent === null || newParent === undefined) {
-        updateTree((tree) => {
-          const remove = (nodes: TreeNodeData[]): TreeNodeData[] =>
-            nodes.filter((n) => n.id !== nodeId).map((n) => ({ ...n, children: remove(n.children) }));
-          return remove(tree);
-        });
+        (this as any).__setParentById(null);
       } else {
-        const targetParentId = newParent.__nodeId || (newParent.Name === 'Workspace' ? 'workspace' : null);
-        if (targetParentId) {
-          updateTree((tree) => {
-            let targetNode: TreeNodeData | null = null;
-            const remove = (nodes: TreeNodeData[]): TreeNodeData[] =>
-              nodes
-                .filter((n) => {
-                  if (n.id === nodeId) {
-                    targetNode = n;
-                    return false;
-                  }
-                  return true;
-                })
-                .map((n) => ({ ...n, children: remove(n.children) }));
-
-            const treeWithoutNode = remove(tree);
-            if (!targetNode) return tree;
-
-            const insert = (nodes: TreeNodeData[]): TreeNodeData[] =>
-              nodes.map((n) => {
-                if (n.id === targetParentId) {
-                  return { ...n, children: [...n.children, targetNode!], expanded: true };
-                }
-                return { ...n, children: insert(n.children) };
-              });
-            return insert(treeWithoutNode);
-          });
-        }
+        const targetParentId = typeof newParent === 'string'
+          ? newParent
+          : (newParent.__nodeId ||
+             (newParent.Name === 'Workspace' || newParent.name === 'Workspace' ? 'workspace' : null) ||
+             (newParent.Name === 'StarterGui' || newParent.name === 'StarterGui' ? 'startergui' : null) ||
+             (newParent.Name === 'Lighting' || newParent.name === 'Lighting' ? 'lighting' : null));
+        (this as any).__setParentById(targetParentId);
       }
     },
 
@@ -2758,6 +3265,19 @@ export function createInstanceProxy(
     },
 
     Destroy: () => {
+      if (orphanNodes.has(nodeId)) {
+        orphanNodes.delete(nodeId);
+      }
+      for (const [orphanId, root] of orphanNodes.entries()) {
+        const remove = (nodes: TreeNodeData[]): TreeNodeData[] =>
+          nodes.filter((n) => n.id !== nodeId).map((n) => ({ ...n, children: remove(n.children) }));
+        const updated = remove([root]);
+        if (updated.length > 0) {
+          orphanNodes.set(orphanId, updated[0]);
+        } else {
+          orphanNodes.delete(orphanId);
+        }
+      }
       updateTree((tree) => {
         const remove = (nodes: TreeNodeData[]): TreeNodeData[] =>
           nodes.filter((n) => n.id !== nodeId).map((n) => ({ ...n, children: remove(n.children) }));
@@ -3187,6 +3707,7 @@ function buildEngineServices(
       let timer: ReturnType<typeof setInterval> | null = null;
       const { signal, fire } = makeSimpleSignal();
       const duration = Math.max(0, Number(info?.Time) || 0);
+      const easing = parseEasing(info?.EasingStyle, info?.EasingDirection);
       const starts = new Map<string, any>();
       const interpolate = (start: any, target: any, alpha: number) => {
         if (typeof start === 'number' && typeof target === 'number') {
@@ -3203,6 +3724,28 @@ function buildEngineServices(
             start.Z + (target.Z - start.Z) * alpha
           );
         }
+        if (start && target && (start.__type === 'UDim2' || (start.X && start.Y && target.X && target.Y))) {
+          const xs = Number(start.X?.Scale ?? start.xScale ?? 0);
+          const txs = Number(target.X?.Scale ?? target.xScale ?? 0);
+          const xo = Number(start.X?.Offset ?? start.xOffset ?? 0);
+          const txo = Number(target.X?.Offset ?? target.xOffset ?? 0);
+          const ys = Number(start.Y?.Scale ?? start.yScale ?? 0);
+          const tys = Number(target.Y?.Scale ?? target.yScale ?? 0);
+          const yo = Number(start.Y?.Offset ?? start.yOffset ?? 0);
+          const tyo = Number(target.Y?.Offset ?? target.yOffset ?? 0);
+          return makeInstanceUDim2(bridge, {
+            xScale: xs + (txs - xs) * alpha,
+            xOffset: xo + (txo - xo) * alpha,
+            yScale: ys + (tys - ys) * alpha,
+            yOffset: yo + (tyo - yo) * alpha,
+          });
+        }
+        if (start && target && (start.__type === 'Color3' || (start.R !== undefined && target.R !== undefined))) {
+          const r = Number(start.R ?? 1) + (Number(target.R ?? 1) - Number(start.R ?? 1)) * alpha;
+          const g = Number(start.G ?? 1) + (Number(target.G ?? 1) - Number(start.G ?? 1)) * alpha;
+          const b = Number(start.B ?? 1) + (Number(target.B ?? 1) - Number(start.B ?? 1)) * alpha;
+          return bridge?.makeColor3 ? bridge.makeColor3(r, g, b) : { __type: 'Color3', R: r, G: g, B: b };
+        }
         return alpha >= 1 ? target : start;
       };
       return {
@@ -3216,11 +3759,12 @@ function buildEngineServices(
           });
           const startedAt = Date.now();
           const step = () => {
-            const alpha = duration === 0 ? 1 : Math.min(1, (Date.now() - startedAt) / (duration * 1000));
+            const progress = duration === 0 ? 1 : Math.min(1, (Date.now() - startedAt) / (duration * 1000));
+            const alpha = getEasingMultiplier(progress, easing.style, easing.dir);
             Object.entries(goals || {}).forEach(([property, value]) => {
               instance[property] = interpolate(starts.get(property), value, alpha);
             });
-            if (alpha >= 1) {
+            if (progress >= 1) {
               if (timer) clearInterval(timer);
               timer = null;
               completed = true;
@@ -4694,6 +5238,7 @@ export class LuaRuntime {
   ) {
     if (this.isRunning) return;
     this.isRunning = true;
+    orphanNodes.clear();
 
     try {
       const luaFactory = getLuaFactory();
@@ -5136,7 +5681,66 @@ export class LuaRuntime {
         end
         _G.Color3 = Color3
 
-        -- TweenInfo and Enum values used by TweenService scripts
+        -- ColorSequence, NumberSequence, and NumberRange
+        local ColorSequenceKeypoint = {}
+        ColorSequenceKeypoint.__index = ColorSequenceKeypoint
+        function ColorSequenceKeypoint.new(time, color)
+          return setmetatable({ Time = tonumber(time) or 0, Value = color, __type = "ColorSequenceKeypoint" }, ColorSequenceKeypoint)
+        end
+        _G.ColorSequenceKeypoint = ColorSequenceKeypoint
+
+        local ColorSequence = {}
+        ColorSequence.__index = ColorSequence
+        ColorSequence.__type = "ColorSequence"
+        function ColorSequence.new(...)
+          local args = {...}
+          local keypoints = {}
+          if #args == 1 and type(args[1]) == "table" and args[1].__type == "Color3" then
+            keypoints = { ColorSequenceKeypoint.new(0, args[1]), ColorSequenceKeypoint.new(1, args[1]) }
+          elseif #args == 2 and type(args[1]) == "table" and type(args[2]) == "table" then
+            keypoints = { ColorSequenceKeypoint.new(0, args[1]), ColorSequenceKeypoint.new(1, args[2]) }
+          elseif type(args[1]) == "table" then
+            keypoints = args[1]
+          end
+          return setmetatable({ Keypoints = keypoints, __type = "ColorSequence" }, ColorSequence)
+        end
+        _G.ColorSequence = ColorSequence
+
+        local NumberSequenceKeypoint = {}
+        NumberSequenceKeypoint.__index = NumberSequenceKeypoint
+        function NumberSequenceKeypoint.new(time, val, envelope)
+          return setmetatable({ Time = tonumber(time) or 0, Value = tonumber(val) or 0, Envelope = tonumber(envelope) or 0, __type = "NumberSequenceKeypoint" }, NumberSequenceKeypoint)
+        end
+        _G.NumberSequenceKeypoint = NumberSequenceKeypoint
+
+        local NumberSequence = {}
+        NumberSequence.__index = NumberSequence
+        NumberSequence.__type = "NumberSequence"
+        function NumberSequence.new(...)
+          local args = {...}
+          local keypoints = {}
+          if #args == 1 and type(args[1]) == "number" then
+            keypoints = { NumberSequenceKeypoint.new(0, args[1]), NumberSequenceKeypoint.new(1, args[1]) }
+          elseif #args == 2 and type(args[1]) == "number" and type(args[2]) == "number" then
+            keypoints = { NumberSequenceKeypoint.new(0, args[1]), NumberSequenceKeypoint.new(1, args[2]) }
+          elseif type(args[1]) == "table" then
+            keypoints = args[1]
+          end
+          return setmetatable({ Keypoints = keypoints, __type = "NumberSequence" }, NumberSequence)
+        end
+        _G.NumberSequence = NumberSequence
+
+        local NumberRange = {}
+        NumberRange.__index = NumberRange
+        NumberRange.__type = "NumberRange"
+        function NumberRange.new(min, max)
+          local a = tonumber(min) or 0
+          local b = max ~= nil and (tonumber(max) or 0) or a
+          return setmetatable({ Min = math.min(a, b), Max = math.max(a, b), __type = "NumberRange" }, NumberRange)
+        end
+        _G.NumberRange = NumberRange
+
+        -- TweenInfo and Enum values used by TweenService and GUI scripts
         local TweenInfo = {}
         TweenInfo.__index = TweenInfo
         TweenInfo.__type = "TweenInfo"
@@ -5154,11 +5758,77 @@ export class LuaRuntime {
         _G.TweenInfo = TweenInfo
 
         _G.Enum = {
-          EasingStyle = { Linear = "Linear", Sine = "Sine", Back = "Back", Quad = "Quad", Cubic = "Cubic", Quart = "Quart", Quint = "Quint", Bounce = "Bounce", Elastic = "Elastic", Exponential = "Exponential", Circular = "Circular" },
+          EasingStyle = {
+            Linear = "Linear", Sine = "Sine", Back = "Back", Quad = "Quad",
+            Cubic = "Cubic", Quart = "Quart", Quint = "Quint", Bounce = "Bounce",
+            Elastic = "Elastic", Exponential = "Exponential", Circular = "Circular"
+          },
           EasingDirection = { In = "In", Out = "Out", InOut = "InOut" },
           PlaybackState = { Begin = "Begin", Delayed = "Delayed", Playing = "Playing", Paused = "Paused", Completed = "Completed", Canceled = "Canceled" },
+          TweenStatus = { Completed = "Completed", Canceled = "Canceled" },
+          Font = {
+            SourceSans = "SourceSans",
+            SourceSansBold = "SourceSansBold",
+            SourceSansItalic = "SourceSansItalic",
+            SourceSansLight = "SourceSansLight",
+            SourceSansSemibold = "SourceSansSemibold",
+            Arial = "Arial",
+            ArialBold = "ArialBold",
+            Gotham = "Gotham",
+            GothamBold = "GothamBold",
+            GothamMedium = "GothamMedium",
+            GothamBlack = "GothamBlack",
+            Roboto = "Roboto",
+            RobotoMono = "RobotoMono",
+            FredokaOne = "FredokaOne",
+            Highway = "Highway",
+            SciFi = "SciFi",
+            Fantasy = "Fantasy",
+            Arcade = "Arcade",
+          },
+          TextXAlignment = { Left = "Left", Center = "Center", Right = "Right" },
+          TextYAlignment = { Top = "Top", Center = "Center", Bottom = "Bottom" },
+          FillDirection = { Horizontal = "Horizontal", Vertical = "Vertical" },
+          HorizontalAlignment = { Left = "Left", Center = "Center", Right = "Right" },
+          VerticalAlignment = { Top = "Top", Center = "Center", Bottom = "Bottom" },
+          SortOrder = { LayoutOrder = "LayoutOrder", Name = "Name" },
+          ApplyStrokeMode = { Contextual = "Contextual", Border = "Border" },
+          ScaleType = { Stretch = "Stretch", Slice = "Slice", Tile = "Tile", Fit = "Fit", Crop = "Crop" },
+          AspectType = { FitWithinMaxSize = "FitWithinMaxSize", ScaleWithParentSize = "ScaleWithParentSize" },
+          DominantAxis = { Width = "Width", Height = "Height" },
+          StartCorner = { TopLeft = "TopLeft", TopRight = "TopRight", BottomLeft = "BottomLeft", BottomRight = "BottomRight" },
           Technology = { Compatibility = "Compatibility", Voxel = "Voxel", ShadowMap = "ShadowMap", Future = "Future" },
           NormalId = { Top = "Top", Bottom = "Bottom", Front = "Front", Back = "Back", Left = "Left", Right = "Right" },
+          Material = { Plastic = "Plastic", SmoothPlastic = "SmoothPlastic", Neon = "Neon", Wood = "Wood", Metal = "Metal", Glass = "Glass", Brick = "Brick", Concrete = "Concrete" },
+          PartType = { Ball = "Ball", Block = "Block", Cylinder = "Cylinder", Wedge = "Wedge" },
+          UserInputType = {
+            MouseButton1 = "MouseButton1",
+            MouseButton2 = "MouseButton2",
+            MouseButton3 = "MouseButton3",
+            MouseMovement = "MouseMovement",
+            MouseWheel = "MouseWheel",
+            Touch = "Touch",
+            Keyboard = "Keyboard",
+            Gamepad1 = "Gamepad1",
+          },
+          UserInputState = {
+            Begin = "Begin",
+            Change = "Change",
+            End = "End",
+            Cancel = "Cancel",
+            None = "None",
+          },
+          KeyCode = {
+            Unknown = "Unknown",
+            A = "A", B = "B", C = "C", D = "D", E = "E", F = "F", G = "G", H = "H", I = "I", J = "J",
+            K = "K", L = "L", M = "M", N = "N", O = "O", P = "P", Q = "Q", R = "R", S = "S", T = "T",
+            U = "U", V = "V", W = "W", X = "X", Y = "Y", Z = "Z",
+            Zero = "Zero", One = "One", Two = "Two", Three = "Three", Four = "Four", Five = "Five",
+            Six = "Six", Seven = "Seven", Eight = "Eight", Nine = "Nine",
+            Space = "Space", Return = "Return", Escape = "Escape", Tab = "Tab", Backspace = "Backspace",
+            LeftShift = "LeftShift", RightShift = "RightShift", LeftControl = "LeftControl", RightControl = "RightControl",
+            LeftAlt = "LeftAlt", RightAlt = "RightAlt", Up = "Up", Down = "Down", Left = "Left", Right = "Right",
+          },
         }
 
         -- BrickColor Library
@@ -5701,7 +6371,12 @@ export class LuaRuntime {
 
         function __WRAP_INSTANCE(raw)
           if raw == nil then return nil end
-          return setmetatable({}, {
+          local proxy = {
+            __nodeId = raw.__nodeId,
+            __type = "Instance",
+            __raw = raw,
+          }
+          return setmetatable(proxy, {
             __index = function(_t, key)
               local value = raw[key]
               if (key == "Color" or key == "Color3" or key == "BackgroundColor3" or key == "TextColor3" or key == "BorderColor3" or key == "ImageColor3") and value ~= nil then
@@ -5716,7 +6391,10 @@ export class LuaRuntime {
                 local yo = (value.Y and (value.Y.Offset or value.Y.offset)) or value.yOffset or 0
                 return UDim2.new(xs, xo, ys, yo)
               end
-              if (key == "AnchorPoint" or key == "CanvasSize") and value ~= nil and type(value) == "table" and value.__type == "Vector2" then
+              if (key == "CornerRadius" or key == "PaddingTop" or key == "PaddingBottom" or key == "PaddingLeft" or key == "PaddingRight" or key == "Padding") and value ~= nil and type(value) == "table" and value.__type == "UDim" then
+                return UDim.new(value.Scale or value.scale or 0, value.Offset or value.offset or 0)
+              end
+              if (key == "AnchorPoint" or key == "CanvasSize" or key == "AbsolutePosition" or key == "AbsoluteSize") and value ~= nil and type(value) == "table" and value.__type == "Vector2" then
                 return Vector2.new(value.X or value.x or 0, value.Y or value.y or 0)
               end
               if type(value) == "function" then
@@ -5735,7 +6413,33 @@ export class LuaRuntime {
               return __WRAP_INSTANCE_VALUE(value)
             end,
             __newindex = function(_t, key, value)
+              if key == "Parent" then
+                local parentId = nil
+                if type(value) == "table" then
+                  parentId = value.__nodeId
+                  if not parentId and value.__raw then
+                    parentId = value.__raw.__nodeId
+                  end
+                  if not parentId and (value.Name == "Workspace" or value.name == "Workspace") then
+                    parentId = "workspace"
+                  end
+                  if not parentId and (value.Name == "StarterGui" or value.name == "StarterGui") then
+                    parentId = "startergui"
+                  end
+                elseif type(value) == "string" then
+                  parentId = value
+                end
+                if raw.__setParentById then
+                  raw:__setParentById(parentId)
+                else
+                  raw.Parent = value
+                end
+                return
+              end
               raw[key] = value
+            end,
+            __tostring = function()
+              return raw.Name or "Instance"
             end,
           })
         end
@@ -5819,25 +6523,41 @@ export class LuaRuntime {
           ScrollingFrame: 'scrollingframe',
           SurfaceGui: 'surfacegui',
           BillboardGui: 'billboardgui',
+          UICorner: 'uicorner',
+          UIStroke: 'uistroke',
+          UIPadding: 'uipadding',
+          UIListLayout: 'uilistlayout',
+          UIGridLayout: 'uigridlayout',
+          UIAspectRatioConstraint: 'uiaspectratioconstraint',
+          UISizeConstraint: 'uisizeconstraint',
+          UIGradient: 'uigradient',
         };
         const nodeType = typeMap[className] || 'object';
         const isGui = ['screengui', 'frame', 'textlabel', 'textbutton', 'imagelabel', 'imagebutton', 'textbox', 'scrollingframe', 'surfacegui', 'billboardgui'].includes(nodeType);
+        const isUiModifier = ['uicorner', 'uistroke', 'uipadding', 'uilistlayout', 'uigridlayout', 'uiaspectratioconstraint', 'uisizeconstraint', 'uigradient'].includes(nodeType);
 
-        let parentId = isGui && nodeType === 'screengui' ? 'startergui' : 'workspace';
-        if (parent && parent.__nodeId) parentId = parent.__nodeId;
-        else if (parent && (parent.Name === 'Workspace' || parent === workspaceProxy)) parentId = 'workspace';
-        else if (parent && parent.Name === 'Lighting') parentId = 'lighting';
-        else if (parent && parent.Name === 'StarterGui') parentId = 'startergui';
+        let parentId: string | null = null;
+        if (typeof parent === 'string' && parent) {
+          parentId = parent;
+        } else if (parent && parent.__nodeId) {
+          parentId = parent.__nodeId;
+        } else if (parent && (parent.Name === 'Workspace' || parent.name === 'Workspace' || parent === workspaceProxy)) {
+          parentId = 'workspace';
+        } else if (parent && (parent.Name === 'Lighting' || parent.name === 'Lighting')) {
+          parentId = 'lighting';
+        } else if (parent && (parent.Name === 'StarterGui' || parent.name === 'StarterGui')) {
+          parentId = 'startergui';
+        }
 
         const newNode: TreeNodeData = {
           id: newId,
           name: className,
           type: nodeType,
           children: [],
-          position: (nodeType === 'decal' || nodeType === 'texture' || isGui) ? undefined : [0, 5, 0],
-          rotation: (nodeType === 'decal' || nodeType === 'texture' || isGui) ? undefined : [0, 0, 0],
-          size: (nodeType === 'decal' || nodeType === 'texture' || isGui) ? undefined : [4, 4, 4],
-          color: (nodeType === 'decal' || nodeType === 'texture') ? '#ffffff' : (isGui ? undefined : '#a3a2a5'),
+          position: (nodeType === 'decal' || nodeType === 'texture' || isGui || isUiModifier) ? undefined : [0, 5, 0],
+          rotation: (nodeType === 'decal' || nodeType === 'texture' || isGui || isUiModifier) ? undefined : [0, 0, 0],
+          size: (nodeType === 'decal' || nodeType === 'texture' || isGui || isUiModifier) ? undefined : [4, 4, 4],
+          color: (nodeType === 'decal' || nodeType === 'texture') ? '#ffffff' : (isGui || isUiModifier ? undefined : '#a3a2a5'),
           // GUI object properties
           guiPosition: isGui ? { xScale: 0, xOffset: 0, yScale: 0, yOffset: 0 } : undefined,
           guiSize: isGui
@@ -5873,6 +6593,26 @@ export class LuaRuntime {
           ignoreGuiInset: nodeType === 'screengui' ? false : undefined,
           resetOnSpawn: nodeType === 'screengui' ? true : undefined,
           displayOrder: nodeType === 'screengui' ? 0 : undefined,
+          // UI Modifiers
+          cornerRadius: nodeType === 'uicorner' ? { scale: 0, offset: 8 } : undefined,
+          strokeThickness: nodeType === 'uistroke' ? 1 : undefined,
+          strokeColor: nodeType === 'uistroke' ? '#000000' : undefined,
+          strokeTransparency: nodeType === 'uistroke' ? 0 : undefined,
+          applyStrokeMode: nodeType === 'uistroke' ? 'Border' : undefined,
+          paddingTop: nodeType === 'uipadding' ? { scale: 0, offset: 0 } : undefined,
+          paddingBottom: nodeType === 'uipadding' ? { scale: 0, offset: 0 } : undefined,
+          paddingLeft: nodeType === 'uipadding' ? { scale: 0, offset: 0 } : undefined,
+          paddingRight: nodeType === 'uipadding' ? { scale: 0, offset: 0 } : undefined,
+          fillDirection: nodeType === 'uilistlayout' ? 'Vertical' : undefined,
+          horizontalAlignment: nodeType === 'uilistlayout' ? 'Left' : undefined,
+          verticalAlignment: nodeType === 'uilistlayout' ? 'Top' : undefined,
+          layoutPadding: (nodeType === 'uilistlayout' || nodeType === 'uigridlayout') ? { scale: 0, offset: 0 } : undefined,
+          sortOrder: (nodeType === 'uilistlayout' || nodeType === 'uigridlayout') ? 'LayoutOrder' : undefined,
+          cellSize: nodeType === 'uigridlayout' ? { xScale: 0, xOffset: 100, yScale: 0, yOffset: 100 } : undefined,
+          startCorner: nodeType === 'uigridlayout' ? 'TopLeft' : undefined,
+          aspectRatio: nodeType === 'uiaspectratioconstraint' ? 1 : undefined,
+          aspectType: nodeType === 'uiaspectratioconstraint' ? 'FitWithinMaxSize' : undefined,
+          dominantAxis: nodeType === 'uiaspectratioconstraint' ? 'Width' : undefined,
           // Default properties for decal / texture
           texture: (nodeType === 'decal' || nodeType === 'texture') ? '' : undefined,
           face: (nodeType === 'spotlight' || nodeType === 'surfacelight' || nodeType === 'decal' || nodeType === 'texture' || nodeType === 'surfacegui') ? 'Front' : undefined,
@@ -5906,16 +6646,39 @@ export class LuaRuntime {
           effectSize: (nodeType === 'bloomeffect' || nodeType === 'blureffect') ? 24 : undefined,
         };
 
-        updateTree((tree) => {
-          const addChild = (nodes: TreeNodeData[]): TreeNodeData[] =>
-            nodes.map((n) => {
-              if (n.id === parentId) {
-                return { ...n, children: [...n.children, newNode], expanded: true };
-              }
-              return { ...n, children: addChild(n.children) };
+        if (parentId) {
+          let insertedInOrphans = false;
+          for (const [orphanId, root] of orphanNodes.entries()) {
+            const insertInOrphan = (nodes: TreeNodeData[]): TreeNodeData[] =>
+              nodes.map((n) => {
+                if (n.id === parentId) {
+                  insertedInOrphans = true;
+                  return { ...n, children: [...n.children, newNode], expanded: true };
+                }
+                return { ...n, children: insertInOrphan(n.children) };
+              });
+            const updatedRoots = insertInOrphan([root]);
+            if (insertedInOrphans) {
+              orphanNodes.set(orphanId, updatedRoots[0]);
+              break;
+            }
+          }
+
+          if (!insertedInOrphans) {
+            updateTree((tree) => {
+              const addChild = (nodes: TreeNodeData[]): TreeNodeData[] =>
+                nodes.map((n) => {
+                  if (n.id === parentId) {
+                    return { ...n, children: [...n.children, newNode], expanded: true };
+                  }
+                  return { ...n, children: addChild(n.children) };
+                });
+              return addChild(tree);
             });
-          return addChild(tree);
-        });
+          }
+        } else {
+          orphanNodes.set(newId, newNode);
+        }
 
         return createInstanceProxy(newId, getTree, updateTree, onLog, bridge);
       });
@@ -5923,7 +6686,22 @@ export class LuaRuntime {
       await this.engine.doString(`
         Instance = {
           new = function(className, parent)
-            return __WRAP_INSTANCE(__CREATE_INSTANCE_RAW(className, parent))
+            local parentId = nil
+            if type(parent) == "table" then
+              parentId = parent.__nodeId
+              if not parentId and parent.__raw then
+                parentId = parent.__raw.__nodeId
+              end
+              if not parentId and (parent.Name == "Workspace" or parent.name == "Workspace") then
+                parentId = "workspace"
+              end
+              if not parentId and (parent.Name == "StarterGui" or parent.name == "StarterGui") then
+                parentId = "startergui"
+              end
+            elseif type(parent) == "string" then
+              parentId = parent
+            end
+            return __WRAP_INSTANCE(__CREATE_INSTANCE_RAW(className, parentId or parent))
           end
         }
         _G.Instance = Instance
@@ -6153,6 +6931,7 @@ export class LuaRuntime {
 
   stop() {
     this.isRunning = false;
+    orphanNodes.clear();
     if (this.schedulerTimeout) clearTimeout(this.schedulerTimeout);
     globalSignalHub.reset();
     if (this.engine) {

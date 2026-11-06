@@ -901,6 +901,7 @@ function GuiElementNode({
   selectedGuiId = null,
   onSelectGui,
   onGuiTransformChange,
+  isInsideLayout = false,
 }: {
   node: TreeNodeData;
   isInteractive: boolean;
@@ -912,6 +913,7 @@ function GuiElementNode({
   selectedGuiId?: string | null;
   onSelectGui?: (nodeId: string) => void;
   onGuiTransformChange?: (nodeId: string, guiPosition: GuiUDim2, guiSize: GuiUDim2) => void;
+  isInsideLayout?: boolean;
 }) {
   const [isHovered, setIsHovered] = useState(false);
   const [isPressed, setIsPressed] = useState(false);
@@ -930,6 +932,82 @@ function GuiElementNode({
   const sz = liveTransform?.size || node.guiSize || { xScale: 0, xOffset: 100, yScale: 0, yOffset: 100 };
   const anchor = node.anchorPoint || [0, 0];
   const isSelectedForTransform = editable && selectedGuiId === node.id;
+
+  // Inspect children for UI Modifiers
+  const uiCorner = (node.children || []).find((c) => (c.type || '').toLowerCase() === 'uicorner');
+  const uiStroke = (node.children || []).find((c) => (c.type || '').toLowerCase() === 'uistroke');
+  const uiPadding = (node.children || []).find((c) => (c.type || '').toLowerCase() === 'uipadding');
+  const uiListLayout = (node.children || []).find((c) => (c.type || '').toLowerCase() === 'uilistlayout');
+  const uiGridLayout = (node.children || []).find((c) => (c.type || '').toLowerCase() === 'uigridlayout');
+  const uiAspectRatio = (node.children || []).find((c) => (c.type || '').toLowerCase() === 'uiaspectratioconstraint');
+  const hasChildLayout = !!(uiListLayout || uiGridLayout);
+
+  let borderRadius: string | undefined = undefined;
+  if (uiCorner) {
+    const cr = uiCorner.cornerRadius || { scale: 0, offset: 8 };
+    if (cr.scale > 0 && cr.offset > 0) {
+      borderRadius = `calc(${cr.scale * 100}% + ${cr.offset}px)`;
+    } else if (cr.scale > 0) {
+      borderRadius = `${cr.scale * 100}%`;
+    } else {
+      borderRadius = `${cr.offset}px`;
+    }
+  }
+
+  let outline: string | undefined = undefined;
+  if (uiStroke) {
+    const thick = uiStroke.strokeThickness ?? 1;
+    const strokeColor = hexToRgba(uiStroke.strokeColor || '#000000', uiStroke.strokeTransparency ?? 0);
+    outline = `${thick}px solid ${strokeColor}`;
+  }
+
+  let paddingStyle: React.CSSProperties = {};
+  if (uiPadding) {
+    const pt = uiPadding.paddingTop || { scale: 0, offset: 0 };
+    const pb = uiPadding.paddingBottom || { scale: 0, offset: 0 };
+    const pl = uiPadding.paddingLeft || { scale: 0, offset: 0 };
+    const pr = uiPadding.paddingRight || { scale: 0, offset: 0 };
+    paddingStyle = {
+      paddingTop: `calc(${pt.scale * 100}% + ${pt.offset}px)`,
+      paddingBottom: `calc(${pb.scale * 100}% + ${pb.offset}px)`,
+      paddingLeft: `calc(${pl.scale * 100}% + ${pl.offset}px)`,
+      paddingRight: `calc(${pr.scale * 100}% + ${pr.offset}px)`,
+    };
+  }
+
+  let containerLayoutStyle: React.CSSProperties = {};
+  if (uiListLayout) {
+    const isHorizontal = uiListLayout.fillDirection === 'Horizontal';
+    const hAlign = uiListLayout.horizontalAlignment || 'Left';
+    const vAlign = uiListLayout.verticalAlignment || 'Top';
+    const pad = uiListLayout.layoutPadding || { scale: 0, offset: 0 };
+    const gap = `calc(${pad.scale * 100}% + ${pad.offset}px)`;
+
+    const justify = isHorizontal
+      ? (hAlign === 'Center' ? 'center' : hAlign === 'Right' ? 'flex-end' : 'flex-start')
+      : (vAlign === 'Center' ? 'center' : vAlign === 'Bottom' ? 'flex-end' : 'flex-start');
+    const align = isHorizontal
+      ? (vAlign === 'Center' ? 'center' : vAlign === 'Bottom' ? 'flex-end' : 'flex-start')
+      : (hAlign === 'Center' ? 'center' : hAlign === 'Right' ? 'flex-end' : 'flex-start');
+
+    containerLayoutStyle = {
+      display: 'flex',
+      flexDirection: isHorizontal ? 'row' : 'column',
+      justifyContent: justify,
+      alignItems: align,
+      gap,
+    };
+  } else if (uiGridLayout) {
+    const pad = uiGridLayout.layoutPadding || { scale: 0, offset: 0 };
+    const gap = `calc(${pad.scale * 100}% + ${pad.offset}px)`;
+    containerLayoutStyle = {
+      display: 'flex',
+      flexWrap: 'wrap',
+      gap,
+    };
+  }
+
+  const aspectRatio = uiAspectRatio?.aspectRatio ? `${uiAspectRatio.aspectRatio}` : undefined;
 
   // Starts a move (whole-body) or resize (edge/corner handle) drag. Mouse
   // deltas are added directly to the pixel offset of position/size, since
@@ -1077,23 +1155,30 @@ function GuiElementNode({
   const border = borderSize > 0 ? `${borderSize}px solid ${node.borderColor || '#1b2a34'}` : 'none';
   const zIndex = node.zIndex ?? 1;
   const clips = !!node.clipsDescendants;
+  const isPositionedByLayout = isInsideLayout && !editable;
 
   const baseStyle: React.CSSProperties = {
-    position: 'absolute',
-    left,
-    top,
+    position: isPositionedByLayout ? 'relative' : 'absolute',
+    left: isPositionedByLayout ? undefined : left,
+    top: isPositionedByLayout ? undefined : top,
     width,
     height,
-    transform,
+    transform: isPositionedByLayout ? undefined : transform,
     backgroundColor: bg,
     border,
+    borderRadius,
+    outline,
+    aspectRatio,
     boxSizing: 'border-box',
     zIndex,
-    overflow: clips ? 'hidden' : 'visible',
+    overflow: (clips || uiCorner) ? 'hidden' : 'visible',
     pointerEvents: (isInteractive || editable) ? 'auto' : 'none',
     cursor: editable ? 'move' : undefined,
     touchAction: editable ? 'none' : undefined,
     containerType: 'size',
+    flexShrink: isPositionedByLayout ? 0 : undefined,
+    ...paddingStyle,
+    ...containerLayoutStyle,
   };
 
   const handleClick = (e: React.MouseEvent) => {
@@ -1103,22 +1188,54 @@ function GuiElementNode({
     fireInstanceSignal(node.id, 'Activated');
   };
 
-  const handleMouseDown = (e: React.PointerEvent) => {
+  const handleContextMenu = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!isInteractive) return;
+    fireInstanceSignal(node.id, 'MouseButton2Click', e.clientX, e.clientY);
+  };
+
+  const handlePointerDown = (e: React.PointerEvent) => {
     e.stopPropagation();
     if (editable) {
       startGuiDrag(e, 'move');
       return;
     }
-    setIsPressed(true);
-    if (!isInteractive) return;
-    fireInstanceSignal(node.id, 'MouseButton1Down', e.clientX, e.clientY);
+    if (e.button === 0) {
+      setIsPressed(true);
+      if (isInteractive) {
+        fireInstanceSignal(node.id, 'MouseButton1Down', e.clientX, e.clientY);
+        fireInstanceSignal(node.id, 'InputBegan', { UserInputType: 'MouseButton1' });
+      }
+    } else if (e.button === 2) {
+      if (isInteractive) {
+        fireInstanceSignal(node.id, 'MouseButton2Down', e.clientX, e.clientY);
+        fireInstanceSignal(node.id, 'InputBegan', { UserInputType: 'MouseButton2' });
+      }
+    }
   };
 
-  const handleMouseUp = (e: React.PointerEvent) => {
+  const handlePointerUp = (e: React.PointerEvent) => {
     e.stopPropagation();
-    setIsPressed(false);
-    if (!isInteractive) return;
-    fireInstanceSignal(node.id, 'MouseButton1Up', e.clientX, e.clientY);
+    if (e.button === 0) {
+      setIsPressed(false);
+      if (isInteractive) {
+        fireInstanceSignal(node.id, 'MouseButton1Up', e.clientX, e.clientY);
+        fireInstanceSignal(node.id, 'InputEnded', { UserInputType: 'MouseButton1' });
+      }
+    } else if (e.button === 2) {
+      if (isInteractive) {
+        fireInstanceSignal(node.id, 'MouseButton2Up', e.clientX, e.clientY);
+        fireInstanceSignal(node.id, 'InputEnded', { UserInputType: 'MouseButton2' });
+      }
+    }
+  };
+
+  const handlePointerMove = (e: React.PointerEvent) => {
+    if (isInteractive) {
+      fireInstanceSignal(node.id, 'MouseMoved', e.clientX, e.clientY);
+      fireInstanceSignal(node.id, 'InputChanged', { UserInputType: 'MouseMovement' });
+    }
   };
 
   const handleMouseEnter = (e: React.MouseEvent) => {
@@ -1134,22 +1251,28 @@ function GuiElementNode({
     fireInstanceSignal(node.id, 'MouseLeave', e.clientX, e.clientY);
   };
 
-  const renderChildren = () => (
-    (node.children || [])
-      .filter((c) => ['frame', 'textlabel', 'textbutton', 'imagelabel', 'imagebutton', 'textbox', 'scrollingframe'].includes((c.type || '').toLowerCase()))
-      .map((child) => (
-        <GuiElementNode
-          key={child.id}
-          node={child}
-          isInteractive={isInteractive}
-          onUpdateText={onUpdateText}
-          editable={editable}
-          selectedGuiId={selectedGuiId}
-          onSelectGui={onSelectGui}
-          onGuiTransformChange={onGuiTransformChange}
-        />
-      ))
-  );
+  const renderChildren = () => {
+    let children = (node.children || [])
+      .filter((c) => ['frame', 'textlabel', 'textbutton', 'imagelabel', 'imagebutton', 'textbox', 'scrollingframe'].includes((c.type || '').toLowerCase()));
+
+    if (uiListLayout && uiListLayout.sortOrder === 'LayoutOrder') {
+      children = [...children].sort((a, b) => (a.layoutOrder ?? 0) - (b.layoutOrder ?? 0));
+    }
+
+    return children.map((child) => (
+      <GuiElementNode
+        key={child.id}
+        node={child}
+        isInteractive={isInteractive}
+        onUpdateText={onUpdateText}
+        editable={editable}
+        selectedGuiId={selectedGuiId}
+        onSelectGui={onSelectGui}
+        onGuiTransformChange={onGuiTransformChange}
+        isInsideLayout={hasChildLayout}
+      />
+    ));
+  };
 
   const getTextStyle = (): React.CSSProperties => {
     const textColor = hexToRgba(node.textColor || '#ffffff', node.textTransparency ?? 0);
@@ -1176,7 +1299,10 @@ function GuiElementNode({
     return (
       <div
         style={baseStyle}
-        onPointerDown={handleMouseDown}
+        onContextMenu={handleContextMenu}
+        onPointerDown={handlePointerDown}
+        onPointerUp={handlePointerUp}
+        onPointerMove={handlePointerMove}
         onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}
       >
@@ -1190,7 +1316,10 @@ function GuiElementNode({
     return (
       <div
         style={baseStyle}
-        onPointerDown={handleMouseDown}
+        onContextMenu={handleContextMenu}
+        onPointerDown={handlePointerDown}
+        onPointerUp={handlePointerUp}
+        onPointerMove={handlePointerMove}
         onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}
       >
@@ -1209,11 +1338,13 @@ function GuiElementNode({
         style={{
           ...baseStyle,
           cursor: editable ? 'move' : isInteractive ? 'pointer' : 'default',
-          outline: 'none',
+          outline: outline || 'none',
         }}
         onClick={handleClick}
-        onPointerDown={handleMouseDown}
-        onPointerUp={handleMouseUp}
+        onContextMenu={handleContextMenu}
+        onPointerDown={handlePointerDown}
+        onPointerUp={handlePointerUp}
+        onPointerMove={handlePointerMove}
         onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}
       >
@@ -1233,7 +1364,10 @@ function GuiElementNode({
     return (
       <div
         style={baseStyle}
-        onPointerDown={handleMouseDown}
+        onContextMenu={handleContextMenu}
+        onPointerDown={handlePointerDown}
+        onPointerUp={handlePointerUp}
+        onPointerMove={handlePointerMove}
         onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}
       >
@@ -1266,11 +1400,13 @@ function GuiElementNode({
         style={{
           ...baseStyle,
           cursor: editable ? 'move' : isInteractive ? 'pointer' : 'default',
-          outline: 'none',
+          outline: outline || 'none',
         }}
         onClick={handleClick}
-        onPointerDown={handleMouseDown}
-        onPointerUp={handleMouseUp}
+        onContextMenu={handleContextMenu}
+        onPointerDown={handlePointerDown}
+        onPointerUp={handlePointerUp}
+        onPointerMove={handlePointerMove}
         onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}
       >
@@ -1296,7 +1432,13 @@ function GuiElementNode({
 
   if (typeLower === 'textbox') {
     return (
-      <div style={baseStyle} onPointerDown={handleMouseDown}>
+      <div
+        style={baseStyle}
+        onContextMenu={handleContextMenu}
+        onPointerDown={handlePointerDown}
+        onPointerUp={handlePointerUp}
+        onPointerMove={handlePointerMove}
+      >
         <input
           type="text"
           value={node.text ?? ''}
@@ -1311,6 +1453,9 @@ function GuiElementNode({
             pointerEvents: editable ? 'none' : undefined,
           }}
           onFocus={() => {
+            if (isInteractive) {
+              fireInstanceSignal(node.id, 'Focused');
+            }
             if (node.clearTextOnFocus && onUpdateText) {
               onUpdateText(node.id, '');
             }
@@ -1347,7 +1492,10 @@ function GuiElementNode({
           overflow: editable ? 'hidden' : 'auto',
         }}
         className="custom-scrollbar"
-        onPointerDown={handleMouseDown}
+        onContextMenu={handleContextMenu}
+        onPointerDown={handlePointerDown}
+        onPointerUp={handlePointerUp}
+        onPointerMove={handlePointerMove}
         onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}
       >
@@ -1366,7 +1514,13 @@ function GuiElementNode({
   }
 
   return (
-    <div style={baseStyle} onPointerDown={handleMouseDown}>
+    <div
+      style={baseStyle}
+      onContextMenu={handleContextMenu}
+      onPointerDown={handlePointerDown}
+      onPointerUp={handlePointerUp}
+      onPointerMove={handlePointerMove}
+    >
       {renderChildren()}
       {transformOverlay}
     </div>
@@ -2561,6 +2715,9 @@ const DATATYPE_CONSTRUCTORS: Array<[string, string, string]> = [
   ['NumberSequence.new', 'NumberSequence.new(${1:value})', 'NumberSequence.new(value) or (n0, n1)'],
   ['NumberRange.new', 'NumberRange.new(${1:min}, ${2:max})', 'NumberRange.new(min, max?)'],
   ['ColorSequence.new', 'ColorSequence.new(${1:color})', 'ColorSequence.new(color)'],
+  ['ColorSequenceKeypoint.new', 'ColorSequenceKeypoint.new(${1:time}, ${2:color})', 'ColorSequenceKeypoint.new(time, color)'],
+  ['NumberSequence.new', 'NumberSequence.new(${1:value})', 'NumberSequence.new(value) or (n0, n1)'],
+  ['NumberSequenceKeypoint.new', 'NumberSequenceKeypoint.new(${1:time}, ${2:value})', 'NumberSequenceKeypoint.new(time, value, envelope?)'],
   ['Rect.new', 'Rect.new(${1:minX}, ${2:minY}, ${3:maxX}, ${4:maxY})', 'Rect.new(minX, minY, maxX, maxY)'],
   ['PhysicalProperties.new', 'PhysicalProperties.new(${1:density}, ${2:friction}, ${3:elasticity})', 'PhysicalProperties.new(density, friction, elasticity, ...)'],
 ];
@@ -2605,6 +2762,12 @@ const INSTANCE_METHODS: Array<[string, string, string]> = [
   ['IsDescendantOf', 'IsDescendantOf(${1:other})', 'IsDescendantOf(other)'],
   ['Clone', 'Clone()', 'Clone() — deep copy (must be Archivable)'],
   ['Destroy', 'Destroy()', 'Destroy() — removes and locks the Parent'],
+  ['ClearAllChildren', 'ClearAllChildren()', 'ClearAllChildren() — removes all children'],
+  ['TweenPosition', 'TweenPosition(${1:UDim2.new()}, ${2:Enum.EasingDirection.Out}, ${3:Enum.EasingStyle.Quad}, ${4:1})', 'gui:TweenPosition(endPos, direction?, style?, time?, override?, callback?)'],
+  ['TweenSize', 'TweenSize(${1:UDim2.new()}, ${2:Enum.EasingDirection.Out}, ${3:Enum.EasingStyle.Quad}, ${4:1})', 'gui:TweenSize(endSize, direction?, style?, time?, override?, callback?)'],
+  ['TweenSizeAndPosition', 'TweenSizeAndPosition(${1:endSize}, ${2:endPos}, ${3:Enum.EasingDirection.Out}, ${4:Enum.EasingStyle.Quad}, ${5:1})', 'gui:TweenSizeAndPosition(endSize, endPos, ...)'],
+  ['CaptureFocus', 'CaptureFocus()', 'textBox:CaptureFocus() — takes keyboard focus'],
+  ['ReleaseFocus', 'ReleaseFocus(${1:true})', 'textBox:ReleaseFocus(submitted?) — releases keyboard focus'],
   ['GetAttribute', 'GetAttribute("${1:Name}")', 'GetAttribute(name)'],
   ['SetAttribute', 'SetAttribute("${1:Name}", ${2:value})', 'SetAttribute(name, value)'],
   ['GetPropertyChangedSignal', 'GetPropertyChangedSignal("${1:Property}")', 'GetPropertyChangedSignal(property)'],
@@ -2819,6 +2982,61 @@ function registerRobloxCompletions(monaco: any) {
             detail: `Service: ${service}`,
             range,
           });
+        }
+        return { suggestions };
+      }
+
+      // Instance.new("..." class completions
+      const instanceNewMatch = /Instance\.new\s*\(\s*["']([^"']*)$/.exec(textUntilPosition);
+      if (instanceNewMatch) {
+        const CREATABLE_CLASSES: Array<[string, string]> = [
+          ['ScreenGui', '2D screen overlay container for user interfaces'],
+          ['Frame', 'Rectangular 2D container for layout and UI components'],
+          ['TextLabel', 'Displays formatted text on screen'],
+          ['TextButton', 'Clickable button with text label and interactive states'],
+          ['ImageLabel', 'Displays a 2D image asset or decal'],
+          ['ImageButton', 'Clickable interactive button rendering an image asset'],
+          ['TextBox', 'Interactive user text input field'],
+          ['ScrollingFrame', 'Scrollable 2D container for large content'],
+          ['SurfaceGui', 'Renders 2D GUI elements onto the face of a 3D Part'],
+          ['BillboardGui', 'Renders 2D GUI elements floating above 3D Parts'],
+          ['UICorner', 'Rounds the corners of parent GUI element'],
+          ['UIStroke', 'Adds border stroke or text outline to parent GUI element'],
+          ['UIPadding', 'Adds padding inside the borders of parent GUI element'],
+          ['UIListLayout', 'Sequentially organizes sibling GUI objects vertically or horizontally'],
+          ['UIGridLayout', 'Organizes sibling GUI objects in a grid pattern'],
+          ['UIAspectRatioConstraint', 'Maintains a constant aspect ratio for parent GUI object'],
+          ['UISizeConstraint', 'Enforces minimum and maximum size boundaries'],
+          ['UIGradient', 'Applies a color and transparency gradient over parent GUI object'],
+          ['Part', 'Basic 3D geometric primitive block'],
+          ['Model', 'Hierarchical grouping of Parts and instances'],
+          ['Folder', 'Organizational container for project assets'],
+          ['Script', 'Server-side Lua script'],
+          ['LocalScript', 'Client-side Lua script'],
+          ['ModuleScript', 'Reusable Lua code module loaded via require()'],
+          ['RemoteEvent', 'Two-way network event between client and server'],
+          ['RemoteFunction', 'Two-way network request-response between client and server'],
+          ['PointLight', 'Omnidirectional point light source'],
+          ['SpotLight', 'Cone-shaped directional light source'],
+          ['SurfaceLight', 'Emits light outward from a Part face'],
+          ['Decal', 'Applies a 2D texture onto a Part face'],
+          ['Texture', 'Repeats a tiled 2D texture over a Part surface'],
+        ];
+
+        const query = instanceNewMatch[1].toLowerCase();
+        const startCol = position.column - instanceNewMatch[1].length;
+        const replaceRange = new monaco.Range(position.lineNumber, startCol, position.lineNumber, position.column);
+
+        for (const [cls, desc] of CREATABLE_CLASSES) {
+          if (!query || cls.toLowerCase().includes(query)) {
+            suggestions.push({
+              label: cls,
+              kind: monaco.languages.CompletionItemKind.Class,
+              insertText: cls,
+              detail: desc,
+              range: replaceRange,
+            });
+          }
         }
         return { suggestions };
       }

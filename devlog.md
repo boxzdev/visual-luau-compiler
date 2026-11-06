@@ -585,3 +585,36 @@
   - Added 40+ new instance and service method completion snippets in `INSTANCE_METHODS` for seamless code autocompletion.
 - **Documentation**:
   - Updated `roblox_service.md` with complete reference tables, method signatures, and dedicated documentation of impossible/restricted internal services.
+
+## Pure GUI Code Scripting Method & Runtime Enhancements — 2026-11-06
+- **Pure GUI Code Scripting Architecture**:
+  - Full support for dynamically creating, styling, nesting, animating, and controlling 2D and 3D user interfaces entirely via Luau/Lua scripts without using Explorer templates.
+  - Supported GUI classes: `ScreenGui`, `Frame`, `TextLabel`, `TextButton`, `ImageLabel`, `ImageButton`, `TextBox`, `ScrollingFrame`, `SurfaceGui`, `BillboardGui`.
+- **Resolved Lua->JS FFI Marshaling Bug**:
+  - Fixed an issue where assigning `element.Parent = screenGui` or calling `Instance.new("Frame", screenGui)` dropped `__nodeId` across the Wasmoon FFI boundary due to metatable shallow copying.
+  - Implemented own-key identity caching (`__nodeId`, `__type`, `__raw`) on wrapped instances and routed parenting through `__setParentById(targetParentId)`.
+- **Orphan Node Management for Unparented Hierarchies**:
+  - Modeled true Roblox behavior where instances created without a parent (`local gui = Instance.new("ScreenGui")`) remain unparented root orphans.
+  - Child elements, modifiers, and scripts can be attached to unparented parents; when the root `ScreenGui` is assigned `gui.Parent = playerGui`, the entire hierarchy cleanly mounts to the DataModel and renders live in the viewport.
+- **UI Modifiers & Responsive Viewport Rendering**:
+  - Implemented full property suites for UI modifiers:
+    - `UICorner` (`CornerRadius` via `UDim` scale & offset)
+    - `UIStroke` (`Thickness`, `Color`, `Transparency`, `ApplyStrokeMode`)
+    - `UIPadding` (`PaddingTop`, `PaddingBottom`, `PaddingLeft`, `PaddingRight`)
+    - `UIListLayout` (`FillDirection`, `HorizontalAlignment`, `VerticalAlignment`, `Padding`, `SortOrder`)
+    - `UIGridLayout` (`CellSize`, `CellPadding`, `StartCorner`)
+    - `UIAspectRatioConstraint` (`AspectRatio`, `AspectType`, `DominantAxis`)
+  - Updated React `GuiElementNode` to render rounded corners (`borderRadius`), outlines (`outline`), internal padding, flex layouts (`display: flex`, directional gaps, alignment), and aspect ratios dynamically.
+- **Programmatic GUI Animation & Tweening**:
+  - Added `:TweenPosition()`, `:TweenSize()`, and `:TweenSizeAndPosition()` directly on GUI instances with standard Roblox easing styles (`Linear`, `Sine`, `Quad`, `Cubic`, `Bounce`, `Elastic`, `Back`) and directions (`In`, `Out`, `InOut`).
+  - Upgraded `TweenService:Create` to interpolate `UDim2` positions/sizes, `Color3` colors, and transparencies smoothly at 60 FPS.
+- **Interactive Signals & Input Methods**:
+  - Added right-click signals: `MouseButton2Click`, `MouseButton2Down`, `MouseButton2Up`.
+  - Added pointer motion: `MouseMoved`, `InputChanged`.
+  - Added input lifecycle: `InputBegan`, `InputEnded`.
+  - Added focus management: `Focused`, `FocusLost`, `CaptureFocus()`, `ReleaseFocus(submitted?)`.
+  - Added layout measurements: `.AbsolutePosition` and `.AbsoluteSize` (`Vector2`).
+- **Monaco Autocomplete & Datatypes**:
+  - Added contextual autocomplete for `Instance.new("..."` suggesting all 30+ creatable classes with descriptive summaries.
+  - Added constructors: `UDim.new`, `ColorSequence.new`, `ColorSequenceKeypoint.new`, `NumberSequence.new`, `NumberSequenceKeypoint.new`, `NumberRange.new`.
+  - Added GUI method completions: `TweenPosition`, `TweenSize`, `TweenSizeAndPosition`, `CaptureFocus`, `ReleaseFocus`, `ClearAllChildren`.

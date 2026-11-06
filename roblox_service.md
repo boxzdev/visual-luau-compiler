@@ -672,11 +672,170 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 ---
 
-### 5. StarterGui & PlayerGui
-- **`StarterGui`** (`game:GetService("StarterGui")`):  
-  Holds 2D prototypes (`ScreenGui`, `Frame`, `TextButton`, etc.).
-- **Client Replication**:  
-  When Gameplay runs, `StarterGui` contents are made accessible on the client via `game:GetService("Players").LocalPlayer.PlayerGui`. Interactive buttons and inputs fire client signals (`Activated`, `MouseButton1Click`).
+### 5. StarterGui, PlayerGui & Pure GUI Code Scripting Method
+
+The project provides full support for the **Pure GUI Code Scripting Method**, allowing user interfaces to be designed, styled, animated, and made interactive entirely via Lua/Luau code at runtime without requiring pre-made Explorer UI templates.
+
+#### 1. Dynamic Creation via `Instance.new`
+Every Roblox GUI class can be instantiated programmatically:
+- **`ScreenGui`**: Fullscreen 2D canvas overlay.
+- **`Frame`**: 2D rectangular container with positioning, sizing, background, and clipping.
+- **`TextLabel`**: Formatted static or dynamic text display.
+- **`TextButton`**: Interactive push-button with hover, pressed states, and click signals.
+- **`ImageLabel` & `ImageButton`**: Image containers supporting asset URLs and decal textures.
+- **`TextBox`**: Interactive editable text input field with focus signals.
+- **`ScrollingFrame`**: Scrollable 2D viewport container.
+- **`SurfaceGui` & `BillboardGui`**: 3D-projected UI elements adorning Parts.
+
+#### 2. Dual Parenting & Hierarchy Construction
+Instances can be parented using either standard Roblox pattern:
+1. **Direct second argument**: `local frame = Instance.new("Frame", screenGui)`
+2. **Property assignment**: `frame.Parent = screenGui`
+
+**Orphan Instance Management**: When an instance is created without a parent (`local gui = Instance.new("ScreenGui")`), it is managed as an unparented root orphan. Scripts can attach child elements, modifiers, and scripts to this unparented subtree, and then parent the `ScreenGui` to `game.Players.LocalPlayer:WaitForChild("PlayerGui")` or `game:GetService("StarterGui")`. The entire hierarchy instantly mounts to the active DataModel and renders in the viewport.
+
+#### 3. UI Modifiers & Modern Styling
+Child modifiers placed under GUI elements automatically alter their rendering:
+- **`UICorner`**:
+  - `CornerRadius`: `UDim` (e.g. `UDim.new(0, 12)` or `UDim.new(0.5, 0)`). Clips backgrounds and children to rounded borders.
+- **`UIStroke`**:
+  - `Thickness`: Border line width in pixels.
+  - `Color`: `Color3` (e.g. `Color3.fromRGB(0, 162, 255)`).
+  - `Transparency`: `0` (opaque) to `1` (invisible).
+  - `ApplyStrokeMode`: `Enum.ApplyStrokeMode.Border` or `Contextual`.
+- **`UIPadding`**:
+  - `PaddingTop`, `PaddingBottom`, `PaddingLeft`, `PaddingRight`: `UDim` values adding internal padding.
+- **`UIListLayout`**:
+  - `FillDirection`: `Enum.FillDirection.Vertical` or `Horizontal`.
+  - `Padding`: `UDim` spacing between elements.
+  - `HorizontalAlignment` / `VerticalAlignment`: `Left`, `Center`, `Right`, `Top`, `Bottom`.
+  - `SortOrder`: `Enum.SortOrder.LayoutOrder` or `Name`. Sibling elements are automatically positioned sequentially.
+- **`UIGridLayout`**:
+  - `CellSize`: `UDim2` size for each grid item.
+  - `CellPadding`: `UDim2` spacing between grid items.
+  - `StartCorner`: Grid origin corner.
+- **`UIAspectRatioConstraint`**:
+  - `AspectRatio`: Ratio of width to height maintained across responsive resizing.
+
+#### 4. GUI Animation & Tweening
+GuiObjects support programmatic easing methods and TweenService:
+- **`:TweenPosition(endPos, easingDirection?, easingStyle?, time?, override?, callback?)`**:
+  Smoothly animates `guiPosition` over `time` seconds using standard easing curves (`Linear`, `Sine`, `Quad`, `Cubic`, `Bounce`, `Elastic`, `Back`, etc.).
+- **`:TweenSize(endSize, easingDirection?, easingStyle?, time?, override?, callback?)`**:
+  Smoothly animates `guiSize` with responsive easing.
+- **`:TweenSizeAndPosition(endSize, endPos, easingDirection?, easingStyle?, time?, override?, callback?)`**:
+  Simultaneously animates both size and position.
+- **`TweenService:Create(guiObject, tweenInfo, { Size = ..., Position = ..., BackgroundColor3 = ... })`**:
+  Full `TweenService` tweening with `UDim2`, `Vector3`, `Color3`, and numeric interpolation.
+
+#### 5. Interactive Signals & Keyboard Control
+- **`MouseButton1Click` / `Activated`**: Left mouse click or touch tap.
+- **`MouseButton1Down` / `MouseButton1Up`**: Left button press and release.
+- **`MouseButton2Click` / `MouseButton2Down` / `MouseButton2Up`**: Right mouse click and hold interactions.
+- **`MouseEnter` / `MouseLeave`**: Hover detection.
+- **`MouseMoved`**: Pointer movement coordinates over the element.
+- **`InputBegan` / `InputEnded` / `InputChanged`**: Universal input events with `UserInputType`.
+- **`Focused` / `FocusLost(enterPressed)`**: Text input focus acquisition and release.
+- **`:CaptureFocus()` / `:ReleaseFocus(submitted?)`**: Programmatic input focus controls.
+- **`:ClearAllChildren()`**: Programmatic batch removal of all child elements.
+- **`.AbsolutePosition` & `.AbsoluteSize`**: Read-only pixel coordinates and dimensions (`Vector2`).
+
+#### 6. Complete Pure GUI Code Scripting Example
+The following script demonstrates creating a complete, modern, animated UI hierarchy entirely from code in a `LocalScript`:
+
+```lua
+-- LocalScript inside StarterPlayerScripts or StarterGui
+local Players = game:GetService("Players")
+local TweenService = game:GetService("TweenService")
+local player = Players.LocalPlayer
+local playerGui = player:WaitForChild("PlayerGui")
+
+-- 1. Create ScreenGui
+local screenGui = Instance.new("ScreenGui")
+screenGui.Name = "CodeGuiDemo"
+screenGui.ResetOnSpawn = false
+screenGui.Parent = playerGui
+
+-- 2. Create Background Card Frame
+local card = Instance.new("Frame")
+card.Name = "CardFrame"
+card.Size = UDim2.new(0, 320, 0, 220)
+card.Position = UDim2.new(0.5, -160, 0.5, -110)
+card.BackgroundColor3 = Color3.fromRGB(24, 24, 28)
+card.BorderSizePixel = 0
+card.Parent = screenGui
+
+-- Rounded corners & modern outline
+local corner = Instance.new("UICorner")
+corner.CornerRadius = UDim.new(0, 16)
+corner.Parent = card
+
+local stroke = Instance.new("UIStroke")
+stroke.Thickness = 2
+stroke.Color = Color3.fromRGB(60, 60, 75)
+stroke.Parent = card
+
+-- 3. Header Label
+local header = Instance.new("TextLabel")
+header.Name = "TitleLabel"
+header.Size = UDim2.new(1, 0, 0, 48)
+header.Position = UDim2.new(0, 0, 0, 12)
+header.BackgroundTransparency = 1
+header.Text = "Pure Luau GUI"
+header.TextColor3 = Color3.fromRGB(255, 255, 255)
+header.TextSize = 20
+header.Font = Enum.Font.GothamBold
+header.Parent = card
+
+-- 4. Interactive TextBox
+local textBox = Instance.new("TextBox")
+textBox.Name = "InputBox"
+textBox.Size = UDim2.new(0.85, 0, 0, 36)
+textBox.Position = UDim2.new(0.075, 0, 0, 65)
+textBox.BackgroundColor3 = Color3.fromRGB(36, 36, 42)
+textBox.TextColor3 = Color3.fromRGB(220, 220, 230)
+textBox.PlaceholderText = "Type something..."
+textBox.TextSize = 14
+textBox.ClearTextOnFocus = false
+textBox.Parent = card
+
+local boxCorner = Instance.new("UICorner")
+boxCorner.CornerRadius = UDim.new(0, 8)
+boxCorner.Parent = textBox
+
+-- 5. Animated Action Button
+local button = Instance.new("TextButton")
+button.Name = "ActionButton"
+button.Size = UDim2.new(0.85, 0, 0, 42)
+button.Position = UDim2.new(0.075, 0, 0, 120)
+button.BackgroundColor3 = Color3.fromRGB(0, 120, 215)
+button.Text = "Click Me"
+button.TextColor3 = Color3.fromRGB(255, 255, 255)
+button.TextSize = 15
+button.Font = Enum.Font.GothamBold
+button.Parent = card
+
+local btnCorner = Instance.new("UICorner")
+btnCorner.CornerRadius = UDim.new(0, 10)
+btnCorner.Parent = button
+
+-- 6. Interactive Events and Tweening
+local clickCount = 0
+button.MouseButton1Click:Connect(function()
+    clickCount = clickCount + 1
+    local text = textBox.Text ~= "" and textBox.Text or "Clicked"
+    button.Text = text .. " (" .. clickCount .. ")"
+    
+    -- Animate button pulse
+    button:TweenSize(UDim2.new(0.9, 0, 0, 46), Enum.EasingDirection.Out, Enum.EasingStyle.Back, 0.15, true, function()
+        button:TweenSize(UDim2.new(0.85, 0, 0, 42), Enum.EasingDirection.Out, Enum.EasingStyle.Quad, 0.15)
+    end)
+end)
+
+button.MouseButton2Click:Connect(function()
+    button.Text = "Right-Clicked!"
+    button.BackgroundColor3 = Color3.fromRGB(220, 50, 50)
+end)
 
 ---
 
