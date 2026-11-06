@@ -551,3 +551,37 @@
   - Updated `Server Gameplay` to use the official Roblox `ServerScriptService.png` asset (server tower chassis).
   - Updated `Local Gameplay` to use the official Roblox `NetworkClient.png` asset (client monitor/player).
   - Overhauled the mode switcher dropdown menu with authentic Roblox Studio dark theme styling, official icons, and active checkmarks (`✓`).
+
+## Comprehensive Roblox Services Expansion & Security Guardrails — 2026-11-06
+- **Expansion of Standard & Scriptable Roblox Services**:
+  - Implemented 60+ functional, scriptable Roblox engine and Studio services with realistic method sets and event hooks:
+    - **`DataStoreService`**: In-memory key-value persistence with `GetDataStore`, `GetOrderedDataStore`, `GetGlobalDataStore`, `GetAsync`, `SetAsync`, `UpdateAsync`, `IncrementAsync`, `RemoveAsync`, and paginated `GetSortedAsync`.
+    - **`BadgeService`**: Awarding and querying player achievements (`AwardBadge`, `UserHasBadgeAsync`, `GetBadgeInfoAsync`).
+    - **`Chat` / `ChatService`**: Classic in-game chat messaging (`Chat`, `FilterStringForBroadcast`, `CanUserChatAsync`).
+    - **`PhysicsService`**: Collision group registration and matrix collision configuration (`RegisterCollisionGroup`, `CollisionGroupSetCollidable`, `CollisionGroupsAreCollidable`).
+    - **`TextService`**: Text filtering results and GUI font measurement (`FilterStringAsync`, `GetTextSize`).
+    - **`ProximityPromptService`**: Proximity prompt interaction hub supporting `:Connect()` and `:Wait()` (`PromptShown`, `PromptHidden`, `PromptTriggered`, `PromptButtonHoldBegan`, `PromptButtonHoldEnded`).
+    - **`GuiService`**: Screen resolution and GUI inset calculations (`GetScreenResolution`, `GetGuiInset`, `MenuOpened`, `MenuClosed`).
+    - **`ContentProvider`**: Asset preloading and CDN query mock (`PreloadAsync`, `BaseUrl`).
+    - **`InsertService`**: Dynamic asset and mesh loading (`LoadAsset`, `CreateMeshPartAsync`).
+    - **`MessagingService`**: Cross-server pub/sub message broadcasting (`PublishAsync`, `SubscribeAsync`).
+    - **`MemoryStoreService`**: Ephemeral data collections (`GetSortedMap`, `GetHashMap`, `GetQueue`).
+    - **`LogService`**: Real-time console log stream interception (`MessageOut`, `GetLogHistory`).
+    - **`ScriptContext`**: Global script execution error interception (`Error` signal, `SetTimeout`).
+    - **`Selection` & `ChangeHistoryService`**: Studio instance selection management and undo/redo history (`Get`, `Set`, `Add`, `Remove`, `SelectionChanged`, `SetWaypoint`, `Undo`, `Redo`).
+    - **`Stats` & `stats()`**: Engine runtime metrics (`HeartbeatTimeMs`, `PhysicsStepTimeMs`, `GetTotalMemoryUsageMb`).
+    - **`TestService`**: Assertion and test runner framework (`Check`, `Checkpoint`, `Error`, `Warn`, `Message`, `Require`).
+    - **`SocialService` & `UserService`**: Friend invites and user profile queries (`PromptGameInvite`, `GetUserInfosByUserIdsAsync`).
+    - **Input & Device Services**: `VRService`, `HapticService`, `GamepadService`, `TouchInputService`, `VirtualUser`, `VirtualInputManager`.
+    - **Animation & Sequence Providers**: `KeyframeSequenceProvider`, `AnimationClipProvider`.
+    - **Localization & Shared Tables**: `LocalizationService`, `SharedTableRegistry`.
+    - **Settings & Studio Helpers**: `UserSettings():GetService("UserGameSettings")`, `settings():GetService(...)`, `StudioService`, `ScriptEditorService`, `GeometryService`.
+    - **Audio & Modern Chat**: `SoundService` (`PlayLocalSound`, audio properties), `TextChatService` (`MessageReceived`, `SendAsync`).
+- **Strict Security Boundaries & Impossible Services Guard**:
+  - Maintained strict Roblox security model compliance by detecting and rejecting internal C++, restricted (`RobloxScriptSecurity`), and non-creatable backend singletons (`ABTestService`, `HttpRbxApiService`, `ClusterPacketCache`, `CrossDMScriptChangeListener`, `DataModelPatchService`, `FeatureRestrictionManager`, `FlyweightService`, `GuidRegistryService`, `CookiesService`, `LiveScriptingService`, `NetworkClient`, `NetworkServer`, etc.).
+  - Attempting to call `game:GetService(...)` on impossible/internal services raises an authentic Roblox error: `"<Name> is not accessible: restricted internal engine service or cannot be created by scripts"`.
+- **Monaco Editor Autocomplete & Intellisense**:
+  - Expanded `ROBLOX_SERVICES` in `src/App.tsx` with all 60+ supported services.
+  - Added 40+ new instance and service method completion snippets in `INSTANCE_METHODS` for seamless code autocompletion.
+- **Documentation**:
+  - Updated `roblox_service.md` with complete reference tables, method signatures, and dedicated documentation of impossible/restricted internal services.

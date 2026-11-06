@@ -76,11 +76,71 @@ All services run inside a sandboxed WebAssembly Lua runtime powered by **Wasmoon
 | **`StarterGui`** | `game:GetService("StarterGui")` | Hierarchy Service | Container for 2D ScreenGui prototypes; replicates to client `LocalPlayer.PlayerGui`. |
 | **`StarterPack`** | `game:GetService("StarterPack")` | Hierarchy Service | Starter inventory container. |
 | **`StarterPlayer`** | `game:GetService("StarterPlayer")` | Hierarchy Service | Player script prototypes (`StarterCharacterScripts`, `StarterPlayerScripts`). |
-| **`SoundService`** | `game:GetService("SoundService")` | Hierarchy Service | Audio configuration and sound node container. |
-| **`TextChatService`**| `game:GetService("TextChatService")`| Hierarchy Service | Text chat service and channel root. |
+| **`SoundService`** | `game:GetService("SoundService")` | Hierarchy Service | Audio configuration, ambient reverb, and `PlayLocalSound`. |
+| **`TextChatService`**| `game:GetService("TextChatService")`| Hierarchy Service | Text chat service, channels, and `MessageReceived` signal. |
 | **`MaterialService`**| `game:GetService("MaterialService")`| Hierarchy Service | Material variant overrides and shader manager. |
 | **`Teams`** | `game:GetService("Teams")` | Hierarchy Service | Team organization service. |
 | **`ReplicatedFirst`**| `game:GetService("ReplicatedFirst")`| Hierarchy Service | High-priority client loading container. |
+| **`DataStoreService`**| `game:GetService("DataStoreService")`| Engine Service | In-memory key-value data persistence (`GetDataStore`, `GetOrderedDataStore`, `GetAsync`, `SetAsync`, `UpdateAsync`, `IncrementAsync`, `RemoveAsync`). |
+| **`BadgeService`** | `game:GetService("BadgeService")` | Engine Service | Player achievement badging (`AwardBadge`, `UserHasBadgeAsync`, `GetBadgeInfoAsync`). |
+| **`Chat`** | `game:GetService("Chat")`, `game.Chat` | Engine Service | Classical in-game chat messaging (`Chat`, `FilterStringForBroadcast`, `CanUserChatAsync`). |
+| **`GroupService`** | `game:GetService("GroupService")` | Engine Service | Roblox group metadata queries (`GetGroupsAsync`, `GetGroupInfoAsync`, `GetAlliesAsync`, `GetEnemiesAsync`). |
+| **`PolicyService`**| `game:GetService("PolicyService")`| Engine Service | Regional and age compliance policies (`GetPolicyInfoForPlayerAsync`). |
+| **`ProximityPromptService`**| `game:GetService("ProximityPromptService")`| Engine Service | Global interaction prompt event hub (`PromptShown`, `PromptHidden`, `PromptTriggered`, `PromptButtonHoldBegan`, `PromptButtonHoldEnded`). |
+| **`PhysicsService`**| `game:GetService("PhysicsService")`| Engine Service | Custom collision group management (`RegisterCollisionGroup`, `CollisionGroupSetCollidable`, `CollisionGroupsAreCollidable`). |
+| **`TextService`** | `game:GetService("TextService")` | Engine Service | Text filtering and GUI text measurement (`FilterStringAsync`, `GetTextSize`). |
+| **`GuiService`** | `game:GetService("GuiService")` | Engine Service | Viewport dimensions, insets, and browser navigation (`GetScreenResolution`, `GetGuiInset`, `MenuOpened`, `MenuClosed`). |
+| **`ContentProvider`**| `game:GetService("ContentProvider")`| Engine Service | Asset preloading and CDN cache tracking (`PreloadAsync`, `BaseUrl`). |
+| **`InsertService`**| `game:GetService("InsertService")`| Engine Service | Asset loading and mesh generation (`LoadAsset`, `CreateMeshPartAsync`). |
+| **`MessagingService`**| `game:GetService("MessagingService")`| Engine Service | Pub/Sub messaging bus across server instances (`PublishAsync`, `SubscribeAsync`). |
+| **`MemoryStoreService`**| `game:GetService("MemoryStoreService")`| Engine Service | Fast ephemeral distributed data structures (`GetSortedMap`, `GetHashMap`, `GetQueue`). |
+| **`LogService`** | `game:GetService("LogService")` | Engine Service | Engine console output capture and history (`MessageOut`, `GetLogHistory`). |
+| **`ScriptContext`**| `game:GetService("ScriptContext")`| Engine Service | Script execution environment and global error hook (`Error` signal, `SetTimeout`). |
+| **`Selection`** | `game:GetService("Selection")` | Studio Service | Studio selected instance management (`Get`, `Set`, `Add`, `Remove`, `SelectionChanged`). |
+| **`ChangeHistoryService`**| `game:GetService("ChangeHistoryService")`| Studio Service | Undo/redo stack and waypoint management (`SetWaypoint`, `Undo`, `Redo`). |
+| **`Stats`** | `game:GetService("Stats")`, `stats()` | Engine Service | Real-time performance metrics (`HeartbeatTimeMs`, `PhysicsStepTimeMs`, `GetTotalMemoryUsageMb`). |
+| **`TestService`** | `game:GetService("TestService")` | Engine Service | Unit testing and assertion framework (`Check`, `Checkpoint`, `Error`, `Warn`, `Message`, `Require`). |
+| **`SocialService`**| `game:GetService("SocialService")`| Engine Service | Friend and social invites (`PromptGameInvite`, `CanSendGameInviteAsync`). |
+| **`UserService`** | `game:GetService("UserService")` | Engine Service | User profile batch lookup (`GetUserInfosByUserIdsAsync`). |
+| **`AssetService`** | `game:GetService("AssetService")` | Engine Service | Dynamic place creation and bundle queries (`CreatePlaceAsync`, `GetBundleDetailsAsync`). |
+| **`AnalyticsService`**| `game:GetService("AnalyticsService")`| Engine Service | Custom analytics and funnel telemetry (`LogCustomEvent`, `LogEconomyEvent`, `LogProgressionEvent`). |
+| **`VoiceChatService`**| `game:GetService("VoiceChatService")`| Engine Service | Spatial voice chat state (`IsVoiceEnabledForUserIdAsync`). |
+| **`VRService`** | `game:GetService("VRService")` | Engine Service | Virtual reality device queries (`VREnabled`, `GetUserCFrame`, `UserCFrameChanged`). |
+| **`HapticService`**| `game:GetService("HapticService")`| Engine Service | Controller vibration and force feedback (`SetMotor`, `IsVibrationSupported`). |
+| **`GamepadService`**| `game:GetService("GamepadService")`| Engine Service | Gamepad cursor and input navigation (`EnableGamepadCursor`, `DisableGamepadCursor`). |
+| **`TouchInputService`**| `game:GetService("TouchInputService")`| Engine Service | Touch gestures and screen taps (`TouchTap`, `TouchPinch`, `TouchPan`, `TouchSwipe`). |
+| **`VirtualUser`** | `game:GetService("VirtualUser")` | Engine Service | Synthetic input emulation (`CaptureController`, `ClickButton1`, `ClickButton2`, `SetKeyDown`). |
+| **`VirtualInputManager`**| `game:GetService("VirtualInputManager")`| Engine Service | Low-level OS input injection (`SendKeyEvent`, `SendMouseButtonEvent`, `SendMouseMoveEvent`). |
+| **`LocalizationService`**| `game:GetService("LocalizationService")`| Engine Service | Regional localization and translation (`RobloxLocaleId`, `GetCountryRegionForPlayerAsync`, `GetTranslatorForPlayerAsync`). |
+| **`KeyframeSequenceProvider`**| `game:GetService("KeyframeSequenceProvider")`| Engine Service | Keyframe animation sequence provider (`GetKeyframeSequenceById`, `RegisterKeyframeSequence`). |
+| **`AnimationClipProvider`**| `game:GetService("AnimationClipProvider")`| Engine Service | Animation clip registration and provider (`GetAnimationClipAsync`, `RegisterAnimationClip`). |
+| **`JointsService`**| `game:GetService("JointsService")`| Engine Service | Legacy joint management container (`SetJoinAfterMoveInstance`, `ShowDynamicJoints`). |
+| **`SharedTableRegistry`**| `game:GetService("SharedTableRegistry")`| Engine Service | Thread-safe shared table registry for parallel Luau (`SetSharedTable`, `GetSharedTable`). |
+| **`UserGameSettings`**| `UserSettings():GetService("UserGameSettings")`| Settings Service | Player preferences and hardware graphics settings (`MasterVolume`, `MouseSensitivity`, `SavedQualityLevel`). |
+| **`StudioService`**| `game:GetService("StudioService")`| Studio Service | Studio environment inspection (`ActiveScript`, `DrawGizmos`, `GridSize`, `GetUserId`). |
+| **`ScriptEditorService`**| `game:GetService("ScriptEditorService")`| Studio Service | Programmatic script document editing (`UpdateSourceAsync`, `GetEditorSource`, `TextDocumentDidChange`). |
+| **`GeometryService`**| `game:GetService("GeometryService")`| Engine Service | Constructive solid geometry boolean operations (`IntersectAsync`, `SubtractAsync`, `UnionAsync`). |
+| **`AdService`** | `game:GetService("AdService")` | Engine Service | In-game immersive advertising (`ShowVideoAd`, `GetVideoAdInfoAsync`). |
+| **`AvatarChatService`**| `game:GetService("AvatarChatService")`| Engine Service | Voice and avatar chat feature toggles (`ClientFeaturesInitialized`, `IsEnabled`). |
+| **`AvatarEditorService`**| `game:GetService("AvatarEditorService")`| Engine Service | Avatar customization and outfit prompts (`PromptSaveAvatar`, `PromptCreateOutfit`, `GetInventory`). |
+| **`CaptureService`**| `game:GetService("CaptureService")`| Engine Service | In-game screenshot capture and export (`CaptureScreenshot`, `SaveCaptureToExternalStorage`, `CaptureSaved`). |
+| **`CoreGui`** | `game:GetService("CoreGui")` | Hierarchy Service | Root container for Roblox core user interface elements. |
+| **`CorePackages`** | `game:GetService("CorePackages")` | Hierarchy Service | Package container for built-in Lua packages. |
+| **`ExperienceNotificationService`**| `game:GetService("ExperienceNotificationService")`| Engine Service | Player opt-in notifications (`PromptOptInUserAsync`, `CanPromptOptInAsync`). |
+| **`FaceAnimatorService`**| `game:GetService("FaceAnimatorService")`| Engine Service | Dynamic facial animation tracking (`VideoAnimationEnabled`, `AudioAnimationEnabled`). |
+| **`FriendService`**| `game:GetService("FriendService")`| Engine Service | User friend queries (`GetFriendsAsync`). |
+| **`GamePassService`**| `game:GetService("GamePassService")`| Engine Service | Legacy game pass verification (`PlayerHasPass`). |
+| **`LanguageService`**| `game:GetService("LanguageService")`| Engine Service | Preferred user language configuration (`GetPreferredLanguage`). |
+| **`LinkingService`**| `game:GetService("LinkingService")`| Engine Service | External URL opening and validation (`OpenUrl`, `CanOpenUrl`). |
+| **`NotificationService`**| `game:GetService("NotificationService")`| Engine Service | Push notification scheduling (`ScheduleNotification`, `CancelNotification`). |
+| **`OpenCloudService`**| `game:GetService("OpenCloudService")`| Engine Service | Open Cloud API connector (`HttpRequestAsync`). |
+| **`PackageService`**| `game:GetService("PackageService")`| Engine Service | Reusable asset package management (`PublishAsync`). |
+| **`PointsService`** | `game:GetService("PointsService")` | Engine Service | Legacy Roblox developer points (`AwardPoints`, `GetPointsBalance`). |
+| **`VideoService`** | `game:GetService("VideoService")` | Engine Service | In-engine video playback controller (`CreateVideoPlayer`). |
+| **`DraggerService`**| `game:GetService("DraggerService")`| Studio Service | Studio viewport drag coordinate space configuration (`AlignSelectedLogic`, `DraggerCoordinateSpace`). |
+| **`AssetImportService`**| `game:GetService("AssetImportService")`| Studio Service | FBX and glTF 3D mesh file importer (`ImportMeshAsync`). |
+| **`HeightmapImporterService`**| `game:GetService("HeightmapImporterService")`| Studio Service | Terrain heightmap generation (`ImportHeightmap`). |
+| **`CalloutService`**| `game:GetService("CalloutService")`| Studio Service | Interactive tutorial and UI callout attach system (`AttachCallout`, `DetachCalloutsByDefinitionId`). |
 
 ---
 
@@ -857,3 +917,273 @@ The runtime replaces blocking execution with a non-preemptive coroutine task sch
 | `typeof(value)` | `(v: any) -> string` | Returns Roblox-specific datatype name (e.g. `"Vector3"`, `"CFrame"`, `"Instance"`). |
 | `require(moduleScript)` | `(m: Instance) -> any` | Executes and memoizes a `ModuleScript`, returning its exported table. |
 | `Instance.new(className, parent?)` | `(c: string, p?: Instance) -> Instance` | Instantiates real 3D parts, GUI elements, lights, effects, and remote objects. |
+
+---
+
+## Expanded Engine & Studio Services Reference
+
+### DataStoreService
+Provides in-memory persistent key-value data storage per session.
+```lua
+local DataStoreService = game:GetService("DataStoreService")
+local coinStore = DataStoreService:GetDataStore("CoinStore")
+coinStore:SetAsync("Player_123", 500)
+local coins = coinStore:GetAsync("Player_123")
+coinStore:IncrementAsync("Player_123", 50)
+```
+- **`:GetDataStore(name, scope?)`** -> `GlobalDataStore`
+- **`:GetOrderedDataStore(name, scope?)`** -> `OrderedDataStore`
+- **`:GetGlobalDataStore()`** -> `GlobalDataStore`
+- **`:ListDataStoresAsync()`** -> `DataStoreListingPages`
+- **Store Methods**:
+  - `:GetAsync(key)`
+  - `:SetAsync(key, value)`
+  - `:UpdateAsync(key, transformFunction)`
+  - `:IncrementAsync(key, delta)`
+  - `:RemoveAsync(key)`
+  - `:GetSortedAsync(ascending, pageSize, minValue, maxValue)` (OrderedDataStore)
+
+### BadgeService
+Handles player badge achievements and verification.
+```lua
+local BadgeService = game:GetService("BadgeService")
+BadgeService:AwardBadge(player.UserId, 123456)
+local hasBadge = BadgeService:UserHasBadgeAsync(player.UserId, 123456)
+```
+- **`:AwardBadge(userId, badgeId)`** -> `boolean`
+- **`:UserHasBadgeAsync(userId, badgeId)`** -> `boolean`
+- **`:GetBadgeInfoAsync(badgeId)`** -> `table`
+- **`:IsLegal(badgeId)`** -> `boolean`
+
+### Chat
+Classic in-game chat message emission and string filtering.
+```lua
+local Chat = game:GetService("Chat")
+Chat:Chat(workspace.Part, "Hello world!", "Green")
+```
+- **`:Chat(partOrCharacter, message, color?)`**
+- **`:FilterStringForBroadcast(message, player)`** -> `string`
+- **`:CanUserChatAsync(userId)`** -> `boolean`
+- **`:CanUsersChatAsync(userId1, userId2)`** -> `boolean`
+
+### PhysicsService
+Custom collision filtering and collision group management.
+```lua
+local PhysicsService = game:GetService("PhysicsService")
+PhysicsService:RegisterCollisionGroup("Monsters")
+PhysicsService:CollisionGroupSetCollidable("Default", "Monsters", false)
+local collidable = PhysicsService:CollisionGroupsAreCollidable("Default", "Monsters")
+```
+- **`:RegisterCollisionGroup(name)`**
+- **`:UnregisterCollisionGroup(name)`**
+- **`:CollisionGroupSetCollidable(group1, group2, collidable)`**
+- **`:CollisionGroupsAreCollidable(group1, group2)`** -> `boolean`
+- **`:SetPartCollisionGroup(part, groupName)`**
+- **`:GetPartCollisionGroup(part)`** -> `string`
+- **`:GetRegisteredCollisionGroups()`** -> `table[]`
+
+### TextService
+Text filtering and font measurement.
+```lua
+local TextService = game:GetService("TextService")
+local filterResult = TextService:FilterStringAsync("Hello", player.UserId)
+local size = TextService:GetTextSize("Hello World", 14, Enum.Font.SourceSans, Vector2.new(200, 50))
+```
+- **`:FilterStringAsync(text, userId)`** -> `TextFilterResult`
+- **`:GetTextSize(text, fontSize, font, frameSize)`** -> `Vector2`
+
+### ProximityPromptService
+Global event bus for interactive proximity prompts with `:Connect()` and `:Wait()` support.
+```lua
+local ProximityPromptService = game:GetService("ProximityPromptService")
+ProximityPromptService.PromptTriggered:Connect(function(prompt, player)
+    print("Prompt triggered by", player)
+end)
+```
+- Signals: `PromptShown`, `PromptHidden`, `PromptTriggered`, `PromptButtonHoldBegan`, `PromptButtonHoldEnded`
+- Property: `MaxPromptsVisible`
+
+### MessagingService
+Cross-server and multi-instance publish/subscribe communications.
+```lua
+local MessagingService = game:GetService("MessagingService")
+MessagingService:SubscribeAsync("ServerBroadcast", function(message)
+    print("Received broadcast:", message.Data)
+end)
+MessagingService:PublishAsync("ServerBroadcast", { text = "System announcement" })
+```
+- **`:PublishAsync(topic, message)`**
+- **`:SubscribeAsync(topic, callback)`** -> `RBXScriptConnection`
+
+### MemoryStoreService
+High-throughput ephemeral data structures for leaderboards and matchmaking queues.
+```lua
+local MemoryStoreService = game:GetService("MemoryStoreService")
+local queue = MemoryStoreService:GetQueue("Matchmaking")
+queue:AddAsync(player.UserId)
+```
+- **`:GetSortedMap(name)`** -> `MemoryStoreSortedMap`
+- **`:GetHashMap(name)`** -> `MemoryStoreHashMap`
+- **`:GetQueue(name)`** -> `MemoryStoreQueue`
+
+### LogService & ScriptContext
+Engine output event listening and runtime error trapping.
+```lua
+local LogService = game:GetService("LogService")
+LogService.MessageOut:Connect(function(message, messageType)
+    print("Console logged:", message)
+end)
+
+local ScriptContext = game:GetService("ScriptContext")
+ScriptContext.Error:Connect(function(msg, stack, script)
+    warn("Runtime error intercepted:", msg)
+end)
+```
+- `LogService`: `MessageOut` signal, `:GetLogHistory()`
+- `ScriptContext`: `Error` signal, `:SetTimeout(seconds)`
+
+### Selection & ChangeHistoryService
+Roblox Studio editing services for selection changes and undo/redo waypoints.
+```lua
+local Selection = game:GetService("Selection")
+Selection:Set({ workspace.Part })
+
+local ChangeHistoryService = game:GetService("ChangeHistoryService")
+ChangeHistoryService:SetWaypoint("Moved Part")
+```
+- `Selection`: `:Get()`, `:Set(instances)`, `:Add(instances)`, `:Remove(instances)`, `SelectionChanged` signal
+- `ChangeHistoryService`: `:SetWaypoint(name)`, `:Undo()`, `:Redo()`, `:ResetWaypoints()`
+
+### Stats
+Engine and network performance counters.
+```lua
+local Stats = game:GetService("Stats")
+print("Heartbeat ms:", Stats.HeartbeatTimeMs)
+print("Memory MB:", Stats:GetTotalMemoryUsageMb())
+```
+- Properties: `HeartbeatTimeMs`, `PhysicsStepTimeMs`, `DataReceiveKbps`, `DataSendKbps`, `PrimitivesCount`, `InstanceCount`
+- Methods: `:GetTotalMemoryUsageMb()`, `:GetMemoryUsageMbForTag(tag)`
+
+### TestService
+Unit test verification and assertion library.
+```lua
+local TestService = game:GetService("TestService")
+TestService:Check(5 > 2, "Five is greater than two")
+TestService:Checkpoint("Stage 1 completed")
+```
+- Methods: `:Check(condition, desc)`, `:Checkpoint(text)`, `:Error(text)`, `:Warn(text)`, `:Message(text)`, `:Require(condition, desc)`
+
+### UserGameSettings & settings()
+User settings and hardware preference queries.
+```lua
+local userSettings = UserSettings():GetService("UserGameSettings")
+print("Master volume:", userSettings.MasterVolume)
+print("Mouse sensitivity:", userSettings.MouseSensitivity)
+```
+- Accessible via `UserSettings():GetService("UserGameSettings")`, `settings():GetService("UserGameSettings")`, or `game:GetService("UserGameSettings")`.
+
+---
+
+## Impossible & Restricted Internal Services
+
+The following engine services from the Roblox internal reflection metadata are **impossible** to access or invoke in developer scripts in Roblox. Attempting to access them via `game:GetService(...)` will throw an error (`restricted internal engine service or cannot be created by scripts`), strictly adhering to Roblox engine security rules:
+
+| Impossible Service | Category / Reason for Exclusion |
+| :--- | :--- |
+| **`ABTestService`** | Roblox internal A/B testing backend framework; not exposed to Luau scripts (`RobloxScriptSecurity`). |
+| **`AnimationFromVideoCreatorService`** | Cloud AI backend video conversion service; Studio internal plugin only. |
+| **`AppUpdateService`** | Roblox desktop client auto-update checker. |
+| **`AssetCounterService`** | Engine internal telemetry asset counter. |
+| **`AssetDeliveryProxy`** | Internal asset CDN reverse-proxy singleton. |
+| **`AssetManagerService`** | Internal Studio Qt dock widget backend; restricted. |
+| **`AvatarImportService`** | Internal Studio Avatar Importer widget backend. |
+| **`BrowserService`** | Internal Chromium Embedded Framework (CEF) web engine controller (`RobloxScriptSecurity`). |
+| **`BulkImportService`** | Internal Studio bulk asset importer widget. |
+| **`CacheableContentProvider`** | Internal C++ low-level memory cache singleton. |
+| **`ChatbotUIService`** | Roblox internal assistant chatbot UI controller. |
+| **`ClusterPacketCache`** | Network engine internal UDP packet ring-buffer. |
+| **`CollaboratorsService`** | Internal Team Create collaborator permissions sync backend. |
+| **`CommerceService`** | Internal real-money transaction and commerce platform. |
+| **`ConfigService`** | Internal engine deployment configuration flag manager. |
+| **`CookiesService`** | Internal HTTP cookie jar (`RobloxScriptSecurity`). |
+| **`CoreScriptSyncService`** | Studio core script debugger synchronizer. |
+| **`CrossDMScriptChangeListener`** | Internal cross-datamodel debugger change listener. |
+| **`CSGDictionaryService`** | Internal C++ CSG mesh geometry deduplication dictionary. |
+| **`DataModelPatchService`** | Internal binary patch engine. |
+| **`DebugSettings`** | Engine internal C++ memory diagnostics. |
+| **`EventIngestService`** | Internal telemetry event pipeline (`RobloxScriptSecurity`). |
+| **`ExperienceAuthService`** | Internal authentication gateway. |
+| **`ExperienceService`** | Internal cloud experience metadata backend. |
+| **`FacialAnimationRecordingService`** | Internal Studio webcam facial tracker. |
+| **`FacialAnimationStreamingService`** | Internal real-time face tracking stream encoder. |
+| **`FeatureRestrictionManager`** | Internal engine feature gatekeeper. |
+| **`FlagStandService`** | Deprecated, non-functional legacy 2007 CTF flag service. |
+| **`FlyweightService`** | Internal C++ flyweight instance memory manager. |
+| **`GenericChallengeService`** | Internal Roblox captcha and security challenge service. |
+| **`GuidRegistryService`** | Internal C++ GUID table. |
+| **`HttpRbxApiService`** | Roblox-internal API proxy for roblox.com endpoints; restricted to core scripts with `RobloxScriptSecurity`. |
+| **`KeyboardService`** | Low-level OS keyboard hook (use `UserInputService`). |
+| **`LegacyStudioBridge`** | Internal legacy IPC bridge. |
+| **`LiveScriptingService`** | Team Create collaborative live script sync engine. |
+| **`LocalStorageService`** | Internal browser/app persistent storage (`RobloxScriptSecurity`). |
+| **`LodDataService`** | Internal mesh Level of Detail generator. |
+| **`LoginService`** | Internal Roblox client user authentication and login flow. |
+| **`LuaWebService`** | Internal core Lua web service. |
+| **`MemStorageService`** | Core-script only memory storage event bus. |
+| **`MessageBusService`** | Internal core script pub/sub IPC bus. |
+| **`MouseService`** | Internal OS mouse hook (use `UserInputService`). |
+| **`NetworkClient` / `NetworkServer`**| Internal network replication transport layers; restricted. |
+| **`PackageUIService`** | Studio internal package manager Qt widget. |
+| **`PermissionsService`** | Internal permissions and security backend. |
+| **`PlacesService`** | Cloud place management backend. |
+| **`PlayerEmulatorService`** | Studio internal emulator widget. |
+| **`PluginDebugService`** | Internal plugin debugger hook. |
+| **`PluginManagementService`**| Studio internal plugin marketplace backend. |
+| **`PublishService`** | Studio cloud publishing backend. |
+| **`RbxAnalyticsService`** | Internal tracking backend (`RobloxScriptSecurity`). |
+| **`RobloxPluginGuiService`** | Internal Studio plugin GUI root. |
+| **`RobloxReplicatedStorage`** | Internal core-script only replicated container. |
+| **`RtMessagingService`** | Internal real-time messaging pipeline. |
+| **`RuntimeScriptService`** | Engine internal runtime script loader. |
+| **`SafetyService`** | Player safety and moderation monitor. |
+| **`ScriptChangeService`** | Studio script diff tracker. |
+| **`ScriptRegistrationService`**| Internal script registry. |
+| **`ScriptService`** | Internal script container. |
+| **`SelectionHighlightManager`**| Internal GPU selection outline shader pipeline. |
+| **`SessionService`** | Internal session telemetry tracker. |
+| **`SlimContentProvider`** | Internal C++ asset fetcher. |
+| **`SnippetService`** | Studio internal code snippets backend. |
+| **`SpawnerService`** | Internal engine spawner. |
+| **`StartPageService`** | Studio start page webview controller. |
+| **`StopWatchReporter`** | Internal performance stopwatch reporter. |
+| **`StudioAssetService`** | Studio asset upload/download backend. |
+| **`StudioData`** | Internal Studio persistent metadata. |
+| **`StudioDeviceEmulatorService`**| Studio device emulator resolution switcher. |
+| **`StudioPublishService`** | Cloud publish pipeline backend. |
+| **`StudioScriptDebugEventListener`**| Internal debug breakpoint listener. |
+| **`StudioSdkService`** | Internal Studio C++ SDK. |
+| **`StudioWidgetsService`** | Studio Qt dock widget manager. |
+| **`TaskScheduler`** | Internal engine micro-task scheduler (not scriptable; use `task` library). |
+| **`TeamCreateData`** | Internal Team Create session state. |
+| **`TeamCreatePublishService`**| Internal Team Create cloud publisher. |
+| **`TeamCreateService`** | Internal Team Create sync engine. |
+| **`TemporaryCageMeshProvider`**| Internal cage mesh deformer. |
+| **`TemporaryScriptService`** | Internal temporary script container. |
+| **`TextBoxService`** | Low-level OS IME text input backend. |
+| **`TextureGenerationService`**| Cloud AI texture generator backend. |
+| **`ThirdPartyUserService`** | Internal OAuth account linking backend. |
+| **`TimerService`** | Engine hardware timer. |
+| **`ToastNotificationService`**| Studio internal toast banner system. |
+| **`TracerService`** | Internal raytracer and profiler. |
+| **`TutorialService`** | Studio onboarding tutorial tracker. |
+| **`UGCValidationService`** | Cloud UGC accessory validator backend. |
+| **`UiMessageService`** | Internal UI messaging bus. |
+| **`UnvalidatedAssetService`**| Internal unmoderated asset placeholder. |
+| **`UserDataService`** | User cloud profile sync backend. |
+| **`UserStorageService`** | User cloud drive storage backend. |
+| **`VersionControlService`** | Internal VCS backend. |
+| **`VideoCaptureService`** | Internal video capture encoder. |
+| **`VisibilityService`** | Internal occlusion culling solver. |
+| **`VoiceChatInternal`** | Low-level WebRTC voice engine (`RobloxScriptSecurity`). |
+| **`WebSocketService`** | Internal WebSocket transport (`RobloxScriptSecurity`). |
+| **`WebViewService`** | Internal webview renderer. |

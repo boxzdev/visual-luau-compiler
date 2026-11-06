@@ -3046,6 +3046,111 @@ function makeSimpleSignal(): {
   };
 }
 
+export const IMPOSSIBLE_ROBLOX_SERVICES: string[] = [
+  'ABTestService',
+  'AnimationFromVideoCreatorService',
+  'AppUpdateService',
+  'AssetCounterService',
+  'AssetDeliveryProxy',
+  'AssetManagerService',
+  'AvatarImportService',
+  'BrowserService',
+  'BulkImportService',
+  'CacheableContentProvider',
+  'ChatbotUIService',
+  'ClusterPacketCache',
+  'CollaboratorsService',
+  'CommerceService',
+  'ConfigService',
+  'CookiesService',
+  'CoreScriptSyncService',
+  'CrossDMScriptChangeListener',
+  'CSGDictionaryService',
+  'DataModelPatchService',
+  'DebugSettings',
+  'EventIngestService',
+  'ExperienceAuthService',
+  'ExperienceService',
+  'FacialAnimationRecordingService',
+  'FacialAnimationStreamingService',
+  'FeatureRestrictionManager',
+  'FlagStandService',
+  'FlyweightService',
+  'GenericChallengeService',
+  'GuidRegistryService',
+  'HttpRbxApiService',
+  'KeyboardService',
+  'LegacyStudioBridge',
+  'LiveScriptingService',
+  'LocalStorageService',
+  'LodDataService',
+  'LoginService',
+  'LuaWebService',
+  'MemStorageService',
+  'MessageBusService',
+  'MouseService',
+  'NetworkClient',
+  'NetworkServer',
+  'PackageUIService',
+  'PermissionsService',
+  'PlacesService',
+  'PlayerEmulatorService',
+  'PluginDebugService',
+  'PluginManagementService',
+  'PublishService',
+  'RbxAnalyticsService',
+  'RobloxPluginGuiService',
+  'RobloxReplicatedStorage',
+  'RtMessagingService',
+  'RuntimeScriptService',
+  'SafetyService',
+  'ScriptChangeService',
+  'ScriptRegistrationService',
+  'ScriptService',
+  'SelectionHighlightManager',
+  'SessionService',
+  'SlimContentProvider',
+  'SnippetService',
+  'SpawnerService',
+  'StartPageService',
+  'StopWatchReporter',
+  'StudioAssetService',
+  'StudioData',
+  'StudioDeviceEmulatorService',
+  'StudioPublishService',
+  'StudioScriptDebugEventListener',
+  'StudioSdkService',
+  'StudioWidgetsService',
+  'TaskScheduler',
+  'TeamCreateData',
+  'TeamCreatePublishService',
+  'TeamCreateService',
+  'TemporaryCageMeshProvider',
+  'TemporaryScriptService',
+  'TextBoxService',
+  'TextureGenerationService',
+  'ThirdPartyUserService',
+  'TimerService',
+  'ToastNotificationService',
+  'TracerService',
+  'TutorialService',
+  'UGCValidationService',
+  'UiMessageService',
+  'UnvalidatedAssetService',
+  'UserDataService',
+  'UserStorageService',
+  'VersionControlService',
+  'VideoCaptureService',
+  'VisibilityService',
+  'VoiceChatInternal',
+  'WebSocketService',
+  'WebViewService',
+];
+
+const IMPOSSIBLE_ROBLOX_SERVICES_LOWER = new Set(
+  IMPOSSIBLE_ROBLOX_SERVICES.map((s) => s.toLowerCase())
+);
+
 // Builds the fixed set of "engine" services that don't correspond to a tree
 // node — RunService, UserInputService, TweenService, Debris, etc. Built once
 // per Play session (memoized by createGameProxy) so repeated GetService()
@@ -3510,6 +3615,1001 @@ function buildEngineServices(
     PlayerRemoving: makeHubSignal('PlayerRemoving'),
   };
 
+  // ---- DataStoreService ------------------------------------------------
+  const dataStores = new Map<string, Map<string, any>>();
+  const getOrCreateStore = (name: string, scope = 'global') => {
+    const storeKey = `${scope}::${name}`;
+    if (!dataStores.has(storeKey)) dataStores.set(storeKey, new Map());
+    const store = dataStores.get(storeKey)!;
+    return {
+      __type: 'GlobalDataStore',
+      Name: name,
+      ClassName: 'GlobalDataStore',
+      GetAsync: (key: string) => {
+        const v = store.get(String(key));
+        return v !== undefined ? v : null;
+      },
+      SetAsync: (key: string, value: any) => {
+        store.set(String(key), value);
+        return true;
+      },
+      UpdateAsync: (key: string, transformFn: any) => {
+        const curr = store.get(String(key)) ?? null;
+        const updated = typeof transformFn === 'function' ? transformFn(curr) : curr;
+        store.set(String(key), updated);
+        return updated;
+      },
+      RemoveAsync: (key: string) => {
+        const prev = store.get(String(key)) ?? null;
+        store.delete(String(key));
+        return prev;
+      },
+      IncrementAsync: (key: string, delta = 1) => {
+        const prev = Number(store.get(String(key))) || 0;
+        const next = prev + Number(delta);
+        store.set(String(key), next);
+        return next;
+      },
+    };
+  };
+
+  services.datastoreservice = {
+    __type: 'DataStoreService',
+    Name: 'DataStoreService',
+    ClassName: 'DataStoreService',
+    GetDataStore: (name: string, scope?: string) => getOrCreateStore(name, scope),
+    GetGlobalDataStore: () => getOrCreateStore('global', 'global'),
+    GetOrderedDataStore: (name: string, scope?: string) => {
+      const base = getOrCreateStore(name, scope);
+      const storeKey = `${scope || 'global'}::${name}`;
+      return {
+        ...base,
+        __type: 'OrderedDataStore',
+        ClassName: 'OrderedDataStore',
+        GetSortedAsync: (ascending = false, pageSize = 10, minValue?: number, maxValue?: number) => {
+          const items: Array<{ key: string; value: number }> = [];
+          for (const [k, v] of (dataStores.get(storeKey)?.entries() || [])) {
+            const num = Number(v);
+            if (!isNaN(num)) {
+              if (minValue !== undefined && num < minValue) continue;
+              if (maxValue !== undefined && num > maxValue) continue;
+              items.push({ key: k, value: num });
+            }
+          }
+          items.sort((a, b) => (ascending ? a.value - b.value : b.value - a.value));
+          let pageIdx = 0;
+          return {
+            __type: 'DataStorePages',
+            IsFinished: items.length <= pageSize,
+            GetCurrentPage: () => items.slice(pageIdx * pageSize, (pageIdx + 1) * pageSize),
+            AdvanceToNextPageAsync: () => {
+              pageIdx++;
+            },
+          };
+        },
+      };
+    },
+    ListDataStoresAsync: () => ({
+      __type: 'DataStoreListingPages',
+      IsFinished: true,
+      GetCurrentPage: () => [...dataStores.keys()].map((k) => ({ DataStoreName: k.split('::')[1] })),
+    }),
+  };
+
+  // ---- BadgeService ----------------------------------------------------
+  const awardedBadges = new Set<string>();
+  services.badgeservice = {
+    __type: 'BadgeService',
+    Name: 'BadgeService',
+    ClassName: 'BadgeService',
+    AwardBadge: (userId: number, badgeId: number) => {
+      const bKey = `${userId}::${badgeId}`;
+      if (awardedBadges.has(bKey)) return false;
+      awardedBadges.add(bKey);
+      onLog('system', `BadgeService: Awarded badge ${badgeId} to user ${userId}`);
+      return true;
+    },
+    UserHasBadgeAsync: (userId: number, badgeId: number) => {
+      return awardedBadges.has(`${userId}::${badgeId}`);
+    },
+    GetBadgeInfoAsync: (badgeId: number) => ({
+      __type: 'BadgeInfo',
+      Name: `Badge ${badgeId}`,
+      Description: `Description for badge ${badgeId}`,
+      IconImageId: 0,
+      IsEnabled: true,
+    }),
+    IsLegal: () => true,
+  };
+
+  // ---- Chat & ChatService ----------------------------------------------
+  const chatServiceObj = {
+    __type: 'Chat',
+    Name: 'Chat',
+    ClassName: 'Chat',
+    Chat: (partOrCharacter: any, message: string, color = 'White') => {
+      const name = partOrCharacter?.Name || 'Chat';
+      onLog('print', `[${name} (${color})]: ${message}`);
+    },
+    FilterStringForBroadcast: (msg: string) => String(msg ?? ''),
+    CanUserChatAsync: () => true,
+    CanUsersChatAsync: () => true,
+    FilterStringAsync: (msg: string) => String(msg ?? ''),
+  };
+  services.chat = chatServiceObj;
+  services.chatservice = chatServiceObj;
+
+  // ---- GroupService ----------------------------------------------------
+  services.groupservice = {
+    __type: 'GroupService',
+    Name: 'GroupService',
+    ClassName: 'GroupService',
+    GetGroupsAsync: (_userId: number) => [
+      { Id: 1, Name: 'Roblox Developers', Role: 'Member', Rank: 1, IsPrimary: true },
+    ],
+    GetGroupInfoAsync: (groupId: number) => ({
+      __type: 'GroupInfo',
+      Id: groupId,
+      Name: `Group ${groupId}`,
+      Description: `Group description for ${groupId}`,
+      Owner: { Id: 1, Name: 'Owner' },
+      EmblemUrl: '',
+      Roles: [
+        { Id: 1, Name: 'Guest', Rank: 0 },
+        { Id: 2, Name: 'Member', Rank: 1 },
+        { Id: 255, Name: 'Owner', Rank: 255 },
+      ],
+    }),
+    GetAlliesAsync: () => [],
+    GetEnemiesAsync: () => [],
+  };
+
+  // ---- PolicyService ---------------------------------------------------
+  services.policyservice = {
+    __type: 'PolicyService',
+    Name: 'PolicyService',
+    ClassName: 'PolicyService',
+    GetPolicyInfoForPlayerAsync: () => ({
+      __type: 'PolicyInfo',
+      ArePaidRandomItemsRestricted: false,
+      AllowedExternalLinkReferences: [],
+      IsSubjectToChinaPolicies: false,
+      IsEligibleToPurchaseSubscription: true,
+    }),
+  };
+
+  // ---- ProximityPromptService ------------------------------------------
+  services.proximitypromptservice = {
+    __type: 'ProximityPromptService',
+    Name: 'ProximityPromptService',
+    ClassName: 'ProximityPromptService',
+    __signalNames: ['PromptShown', 'PromptHidden', 'PromptTriggered', 'PromptButtonHoldBegan', 'PromptButtonHoldEnded'],
+    __getRawSignal: (name: string) => makeHubSignal(`PPS:${name}`),
+    MaxPromptsVisible: 16,
+  };
+
+  // ---- PhysicsService --------------------------------------------------
+  const collisionGroups = new Set<string>(['Default']);
+  const nonCollidingPairs = new Set<string>();
+  services.physicsservice = {
+    __type: 'PhysicsService',
+    Name: 'PhysicsService',
+    ClassName: 'PhysicsService',
+    RegisterCollisionGroup: (name: string) => {
+      collisionGroups.add(name);
+    },
+    UnregisterCollisionGroup: (name: string) => {
+      collisionGroups.delete(name);
+    },
+    CollisionGroupSetCollidable: (g1: string, g2: string, collidable: boolean) => {
+      const p1 = `${g1}::${g2}`, p2 = `${g2}::${g1}`;
+      if (collidable) {
+        nonCollidingPairs.delete(p1);
+        nonCollidingPairs.delete(p2);
+      } else {
+        nonCollidingPairs.add(p1);
+        nonCollidingPairs.add(p2);
+      }
+    },
+    CollisionGroupsAreCollidable: (g1: string, g2: string) => {
+      return !nonCollidingPairs.has(`${g1}::${g2}`) && !nonCollidingPairs.has(`${g2}::${g1}`);
+    },
+    SetPartCollisionGroup: (part: any, groupName: string) => {
+      if (part) part.CollisionGroupId = groupName;
+    },
+    GetPartCollisionGroup: (part: any) => part?.CollisionGroupId || 'Default',
+    GetCollisionGroupName: (_id: number) => 'Default',
+    GetCollisionGroupId: (_name: string) => 0,
+    GetRegisteredCollisionGroups: () => [...collisionGroups].map((name, id) => ({ name, id })),
+  };
+
+  // ---- TextService -----------------------------------------------------
+  services.textservice = {
+    __type: 'TextService',
+    Name: 'TextService',
+    ClassName: 'TextService',
+    FilterStringAsync: (text: string, _fromUserId: number) => ({
+      __type: 'TextFilterResult',
+      GetNonChatStringForBroadcastAsync: () => String(text ?? ''),
+      GetChatForUserAsync: () => String(text ?? ''),
+      GetNonChatStringForUserAsync: () => String(text ?? ''),
+    }),
+    GetTextSize: (text: string, fontSize: number, _font: any, _frameSize: any) => {
+      const len = String(text ?? '').length;
+      const size = Number(fontSize) || 14;
+      return bridge?.makeVector2
+        ? bridge.makeVector2(Math.round(len * (size * 0.6)), Math.round(size * 1.2))
+        : { __type: 'Vector2', X: Math.round(len * (size * 0.6)), Y: Math.round(size * 1.2) };
+    },
+  };
+
+  // ---- GuiService ------------------------------------------------------
+  services.guiservice = {
+    __type: 'GuiService',
+    Name: 'GuiService',
+    ClassName: 'GuiService',
+    __signalNames: ['MenuOpened', 'MenuClosed'],
+    __getRawSignal: (name: string) => makeHubSignal(`GuiService:${name}`),
+    GetScreenResolution: () =>
+      bridge?.makeVector2
+        ? bridge.makeVector2(
+            typeof window !== 'undefined' ? window.innerWidth : 1920,
+            typeof window !== 'undefined' ? window.innerHeight : 1080
+          )
+        : {
+            __type: 'Vector2',
+            X: typeof window !== 'undefined' ? window.innerWidth : 1920,
+            Y: typeof window !== 'undefined' ? window.innerHeight : 1080,
+          },
+    GetGuiInset: () => [
+      bridge?.makeVector2 ? bridge.makeVector2(0, 36) : { __type: 'Vector2', X: 0, Y: 36 },
+      bridge?.makeVector2 ? bridge.makeVector2(0, 0) : { __type: 'Vector2', X: 0, Y: 0 },
+    ],
+    IsTenFootInterface: () => false,
+    OpenBrowserWindow: (url: string) => {
+      if (typeof window !== 'undefined') window.open(url, '_blank');
+    },
+    InspectMenuEnabled: true,
+    SelectedObject: null,
+  };
+
+  // ---- ContentProvider -------------------------------------------------
+  services.contentprovider = {
+    __type: 'ContentProvider',
+    Name: 'ContentProvider',
+    ClassName: 'ContentProvider',
+    BaseUrl: 'https://www.roblox.com/',
+    RequestQueueSize: 0,
+    PreloadAsync: (instances: any[], callback?: any) => {
+      if (Array.isArray(instances)) {
+        for (const inst of instances) {
+          if (typeof callback === 'function') {
+            callback(inst?.Name || 'Asset', 'Success');
+          }
+        }
+      }
+    },
+  };
+
+  // ---- InsertService ---------------------------------------------------
+  services.insertservice = {
+    __type: 'InsertService',
+    Name: 'InsertService',
+    ClassName: 'InsertService',
+    LoadAsset: (assetId: number) => {
+      onLog('system', `InsertService:LoadAsset(${assetId}) simulated load`);
+      return {
+        __type: 'Model',
+        Name: `Model_${assetId}`,
+        ClassName: 'Model',
+        GetChildren: () => [],
+        FindFirstChild: () => null,
+        Destroy: () => {},
+      };
+    },
+    CreateMeshPartAsync: (_meshId: string) => ({
+      __type: 'MeshPart',
+      Name: 'MeshPart',
+      ClassName: 'MeshPart',
+    }),
+    GetBaseCategoriesList: () => [],
+    GetUserCategoriesList: () => [],
+    ApproveAssetId: () => true,
+  };
+
+  // ---- MessagingService ------------------------------------------------
+  services.messagingservice = {
+    __type: 'MessagingService',
+    Name: 'MessagingService',
+    ClassName: 'MessagingService',
+    PublishAsync: (topic: string, message: any) => {
+      globalSignalHub.fire(`MessagingService:${topic}`, {
+        Data: message,
+        Sent: Date.now() / 1000,
+      });
+    },
+    SubscribeAsync: (topic: string, callback: any) => {
+      if (typeof callback !== 'function') return null;
+      const listener = (msg: any) => callback(msg);
+      globalSignalHub.connect(`MessagingService:${topic}`, listener);
+      return {
+        __type: 'RBXScriptConnection',
+        Connected: true,
+        Disconnect: () => globalSignalHub.disconnect(`MessagingService:${topic}`, listener),
+      };
+    },
+  };
+
+  // ---- MemoryStoreService ----------------------------------------------
+  const memoryStores = new Map<string, Map<string, any>>();
+  const getOrCreateMemMap = (name: string) => {
+    if (!memoryStores.has(name)) memoryStores.set(name, new Map());
+    const map = memoryStores.get(name)!;
+    return {
+      __type: 'MemoryStoreSortedMap',
+      GetAsync: (k: string) => map.get(String(k)) ?? null,
+      SetAsync: (k: string, v: any) => {
+        map.set(String(k), v);
+        return true;
+      },
+      UpdateAsync: (k: string, transformFn: any) => {
+        const curr = map.get(String(k)) ?? null;
+        const updated = typeof transformFn === 'function' ? transformFn(curr) : curr;
+        map.set(String(k), updated);
+        return updated;
+      },
+      RemoveAsync: (k: string) => {
+        const prev = map.get(String(k)) ?? null;
+        map.delete(String(k));
+        return prev;
+      },
+      GetRangeAsync: (_direction = 0, count = 10, exclusiveStartKey?: string) => {
+        const items: Array<{ key: string; value: any }> = [];
+        let started = !exclusiveStartKey;
+        for (const [k, v] of map.entries()) {
+          if (!started) {
+            if (k === exclusiveStartKey) started = true;
+            continue;
+          }
+          items.push({ key: k, value: v });
+          if (items.length >= count) break;
+        }
+        return items;
+      },
+    };
+  };
+
+  services.memorystoreservice = {
+    __type: 'MemoryStoreService',
+    Name: 'MemoryStoreService',
+    ClassName: 'MemoryStoreService',
+    GetSortedMap: (name: string) => getOrCreateMemMap(name),
+    GetHashMap: (name: string) => getOrCreateMemMap(name),
+    GetQueue: (_name: string) => {
+      const q: any[] = [];
+      return {
+        __type: 'MemoryStoreQueue',
+        AddAsync: (v: any) => {
+          q.push(v);
+          return true;
+        },
+        ReadAsync: (count = 1) => q.splice(0, count),
+        RemoveAsync: () => true,
+      };
+    },
+  };
+
+  // ---- LogService ------------------------------------------------------
+  const logHistory: Array<{ message: string; messageType: string; timestamp: number }> = [];
+  services.logservice = {
+    __type: 'LogService',
+    Name: 'LogService',
+    ClassName: 'LogService',
+    __signalNames: ['MessageOut'],
+    __getRawSignal: (name: string) => makeHubSignal(`LogService:${name}`),
+    GetLogHistory: () => logHistory.slice(),
+  };
+
+  // ---- ScriptContext ---------------------------------------------------
+  services.scriptcontext = {
+    __type: 'ScriptContext',
+    Name: 'ScriptContext',
+    ClassName: 'ScriptContext',
+    __signalNames: ['Error'],
+    __getRawSignal: (name: string) => makeHubSignal(`ScriptContext:${name}`),
+    SetTimeout: () => {},
+  };
+
+  // ---- Selection -------------------------------------------------------
+  let currentSelection: any[] = [];
+  services.selection = {
+    __type: 'Selection',
+    Name: 'Selection',
+    ClassName: 'Selection',
+    __signalNames: ['SelectionChanged'],
+    __getRawSignal: () => makeHubSignal('Selection:SelectionChanged'),
+    Get: () => currentSelection.slice(),
+    Set: (instances: any[]) => {
+      currentSelection = Array.isArray(instances) ? instances.slice() : [];
+      globalSignalHub.fire('Selection:SelectionChanged');
+    },
+    Add: (instances: any[]) => {
+      const arr = Array.isArray(instances) ? instances : [instances];
+      currentSelection.push(...arr);
+      globalSignalHub.fire('Selection:SelectionChanged');
+    },
+    Remove: (instances: any[]) => {
+      const arr = Array.isArray(instances) ? instances : [instances];
+      currentSelection = currentSelection.filter((x) => !arr.includes(x));
+      globalSignalHub.fire('Selection:SelectionChanged');
+    },
+  };
+
+  // ---- ChangeHistoryService --------------------------------------------
+  services.changehistoryservice = {
+    __type: 'ChangeHistoryService',
+    Name: 'ChangeHistoryService',
+    ClassName: 'ChangeHistoryService',
+    SetWaypoint: (name: string) => {
+      onLog('system', `ChangeHistoryService: SetWaypoint "${name}"`);
+    },
+    Undo: () => true,
+    Redo: () => true,
+    ResetWaypoints: () => {},
+    GetCanUndo: () => false,
+    GetCanRedo: () => false,
+    TryBeginRecording: (name: string) => `rec_${Date.now()}_${name}`,
+    FinishRecording: () => {},
+    CancelRecording: () => {},
+  };
+
+  // ---- Stats -----------------------------------------------------------
+  services.stats = {
+    __type: 'Stats',
+    Name: 'Stats',
+    ClassName: 'Stats',
+    DataReceiveKbps: 0,
+    DataSendKbps: 0,
+    HeartbeatTimeMs: 16.6,
+    PhysicsStepTimeMs: 16.6,
+    PrimitivesCount: 1,
+    InstanceCount: 10,
+    GetTotalMemoryUsageMb: () => 128,
+    GetMemoryUsageMbForTag: () => 16,
+  };
+
+  // ---- TestService -----------------------------------------------------
+  services.testservice = {
+    __type: 'TestService',
+    Name: 'TestService',
+    ClassName: 'TestService',
+    Check: (condition: boolean, description: string) => {
+      if (condition) {
+        onLog('print', `[CHECK PASSED] ${description}`);
+      } else {
+        onLog('error', `[CHECK FAILED] ${description}`);
+      }
+      return !!condition;
+    },
+    Checkpoint: (text: string) => onLog('print', `[CHECKPOINT] ${text}`),
+    Error: (text: string) => onLog('error', `[TEST ERROR] ${text}`),
+    Warn: (text: string) => onLog('warn', `[TEST WARN] ${text}`),
+    Message: (text: string) => onLog('print', `[TEST MSG] ${text}`),
+    Require: (condition: boolean, description: string) => {
+      if (!condition) throw new Error(`[REQUIRE FAILED] ${description}`);
+      onLog('print', `[REQUIRE PASSED] ${description}`);
+    },
+    IsRobloxScript: false,
+  };
+
+  // ---- SocialService ---------------------------------------------------
+  services.socialservice = {
+    __type: 'SocialService',
+    Name: 'SocialService',
+    ClassName: 'SocialService',
+    __signalNames: ['GameInvitePromptClosed'],
+    __getRawSignal: (name: string) => makeHubSignal(`SocialService:${name}`),
+    PromptGameInvite: () => {
+      onLog('system', 'SocialService: PromptGameInvite simulated');
+    },
+    CanSendGameInviteAsync: () => true,
+  };
+
+  // ---- UserService -----------------------------------------------------
+  services.userservice = {
+    __type: 'UserService',
+    Name: 'UserService',
+    ClassName: 'UserService',
+    GetUserInfosByUserIdsAsync: (userIds: number[]) => {
+      const ids = Array.isArray(userIds) ? userIds : [userIds];
+      return ids.map((id) => ({
+        Id: Number(id),
+        Username: `User_${id}`,
+        DisplayName: `Player ${id}`,
+        HasVerifiedBadge: false,
+      }));
+    },
+  };
+
+  // ---- AssetService ----------------------------------------------------
+  services.assetservice = {
+    __type: 'AssetService',
+    Name: 'AssetService',
+    ClassName: 'AssetService',
+    CreatePlaceAsync: (placeName: string) => {
+      onLog('system', `AssetService: CreatePlaceAsync "${placeName}"`);
+      return 12345678;
+    },
+    SavePlaceAsync: () => {},
+    GetBundleDetailsAsync: (bundleId: number) => ({
+      __type: 'BundleDetails',
+      Id: bundleId,
+      Name: `Bundle ${bundleId}`,
+      Description: '',
+      BundleType: 'BodyParts',
+      Items: [],
+    }),
+  };
+
+  // ---- AnalyticsService ------------------------------------------------
+  services.analyticsservice = {
+    __type: 'AnalyticsService',
+    Name: 'AnalyticsService',
+    ClassName: 'AnalyticsService',
+    LogCustomEvent: (_player: any, eventName: string, customData?: any) => {
+      onLog('system', `AnalyticsService: LogCustomEvent("${eventName}", ${JSON.stringify(customData ?? {})})`);
+    },
+    LogEconomyEvent: (_player: any, flowType: string, currencyType: string, amount: number) => {
+      onLog('system', `AnalyticsService: LogEconomyEvent(${flowType}, ${currencyType}, ${amount})`);
+    },
+    LogProgressionEvent: (_player: any, status: string, category: string, name: string) => {
+      onLog('system', `AnalyticsService: LogProgressionEvent(${status}, ${category}, ${name})`);
+    },
+    LogOnboardingFunnelStepEvent: (_player: any, stepNumber: number, stepName: string) => {
+      onLog('system', `AnalyticsService: LogOnboardingFunnelStepEvent(${stepNumber}, "${stepName}")`);
+    },
+  };
+
+  // ---- VoiceChatService ------------------------------------------------
+  services.voicechatservice = {
+    __type: 'VoiceChatService',
+    Name: 'VoiceChatService',
+    ClassName: 'VoiceChatService',
+    IsVoiceEnabledForUserIdAsync: () => false,
+    joinVoice: () => {},
+    leaveVoice: () => {},
+  };
+
+  // ---- VRService -------------------------------------------------------
+  services.vrservice = {
+    __type: 'VRService',
+    Name: 'VRService',
+    ClassName: 'VRService',
+    __signalNames: ['UserCFrameChanged'],
+    __getRawSignal: (name: string) => makeHubSignal(`VRService:${name}`),
+    VREnabled: false,
+    GetVRInputValue: () => 0,
+    GetUserCFrame: () => ({ __type: 'CFrame', Position: { X: 0, Y: 0, Z: 0 } }),
+  };
+
+  // ---- HapticService ---------------------------------------------------
+  services.hapticservice = {
+    __type: 'HapticService',
+    Name: 'HapticService',
+    ClassName: 'HapticService',
+    IsVibrationSupported: () => false,
+    IsMotorSupported: () => false,
+    SetMotor: () => {},
+    GetMotor: () => 0,
+  };
+
+  // ---- GamepadService --------------------------------------------------
+  services.gamepadservice = {
+    __type: 'GamepadService',
+    Name: 'GamepadService',
+    ClassName: 'GamepadService',
+    GamepadCursorEnabled: false,
+    EnableGamepadCursor: () => {},
+    DisableGamepadCursor: () => {},
+  };
+
+  // ---- TouchInputService -----------------------------------------------
+  services.touchinputservice = {
+    __type: 'TouchInputService',
+    Name: 'TouchInputService',
+    ClassName: 'TouchInputService',
+    __signalNames: ['TouchTap', 'TouchPinch', 'TouchPan', 'TouchSwipe', 'TouchLongPress'],
+    __getRawSignal: (name: string) => makeHubSignal(`TouchInputService:${name}`),
+    TouchEnabled: false,
+  };
+
+  // ---- VirtualUser -----------------------------------------------------
+  services.virtualuser = {
+    __type: 'VirtualUser',
+    Name: 'VirtualUser',
+    ClassName: 'VirtualUser',
+    CaptureController: () => {},
+    ClickButton1: () => {},
+    ClickButton2: () => {},
+    MoveMouse: () => {},
+    SetKeyDown: () => {},
+    SetKeyUp: () => {},
+  };
+
+  // ---- VirtualInputManager ---------------------------------------------
+  services.virtualinputmanager = {
+    __type: 'VirtualInputManager',
+    Name: 'VirtualInputManager',
+    ClassName: 'VirtualInputManager',
+    SendKeyEvent: () => {},
+    SendMouseButtonEvent: () => {},
+    SendMouseMoveEvent: () => {},
+    SendMouseWheelEvent: () => {},
+  };
+
+  // ---- LocalizationService ---------------------------------------------
+  services.localizationservice = {
+    __type: 'LocalizationService',
+    Name: 'LocalizationService',
+    ClassName: 'LocalizationService',
+    RobloxLocaleId: 'en-us',
+    SystemLocaleId: 'en-us',
+    GetCountryRegionForPlayerAsync: () => 'US',
+    GetTranslatorForPlayerAsync: () => ({
+      __type: 'Translator',
+      Translate: (_ctx: any, text: string) => String(text ?? ''),
+    }),
+    GetTranslatorForLocaleAsync: () => ({
+      __type: 'Translator',
+      Translate: (_ctx: any, text: string) => String(text ?? ''),
+    }),
+  };
+
+  // ---- KeyframeSequenceProvider ----------------------------------------
+  services.keyframesequenceprovider = {
+    __type: 'KeyframeSequenceProvider',
+    Name: 'KeyframeSequenceProvider',
+    ClassName: 'KeyframeSequenceProvider',
+    GetKeyframeSequenceById: (assetId: string) => ({
+      __type: 'KeyframeSequence',
+      Name: `KeyframeSequence_${assetId}`,
+      ClassName: 'KeyframeSequence',
+    }),
+    RegisterKeyframeSequence: () => 'rbxassetid://1',
+    RegisterActiveKeyframeSequence: () => 'rbxassetid://1',
+  };
+
+  // ---- AnimationClipProvider -------------------------------------------
+  services.animationclipprovider = {
+    __type: 'AnimationClipProvider',
+    Name: 'AnimationClipProvider',
+    ClassName: 'AnimationClipProvider',
+    GetAnimationClipAsync: (assetId: string) => ({
+      __type: 'AnimationClip',
+      Name: `AnimationClip_${assetId}`,
+      ClassName: 'AnimationClip',
+    }),
+    RegisterAnimationClip: () => 'rbxassetid://1',
+  };
+
+  // ---- JointsService ---------------------------------------------------
+  services.jointsservice = {
+    __type: 'JointsService',
+    Name: 'JointsService',
+    ClassName: 'JointsService',
+    SetJoinAfterMoveInstance: () => {},
+    ShowDynamicJoints: () => {},
+    FindFirstChild: () => null,
+    GetChildren: () => [],
+  };
+
+  // ---- SharedTableRegistry ---------------------------------------------
+  const sharedTables = new Map<string, any>();
+  services.sharedtableregistry = {
+    __type: 'SharedTableRegistry',
+    Name: 'SharedTableRegistry',
+    ClassName: 'SharedTableRegistry',
+    SetSharedTable: (name: string, tbl: any) => {
+      sharedTables.set(name, tbl);
+    },
+    GetSharedTable: (name: string) => sharedTables.get(name) ?? null,
+  };
+
+  // ---- UserGameSettings ------------------------------------------------
+  services.usergamesettings = {
+    __type: 'UserGameSettings',
+    Name: 'UserGameSettings',
+    ClassName: 'UserGameSettings',
+    MasterVolume: 1,
+    MouseSensitivity: 1,
+    RotationType: 'CameraRelative',
+    SavedQualityLevel: 10,
+    ComputerCameraMovementMode: 'Default',
+    ComputerMovementMode: 'KeyboardMouse',
+  };
+
+  // ---- StudioService ---------------------------------------------------
+  services.studioservice = {
+    __type: 'StudioService',
+    Name: 'StudioService',
+    ClassName: 'StudioService',
+    ActiveScript: null,
+    StudioLocaleId: 'en_us',
+    DrawGizmos: true,
+    GridSize: 1,
+    GetUserId: () => 0,
+  };
+
+  // ---- ScriptEditorService ---------------------------------------------
+  services.scripteditorservice = {
+    __type: 'ScriptEditorService',
+    Name: 'ScriptEditorService',
+    ClassName: 'ScriptEditorService',
+    __signalNames: ['TextDocumentDidChange'],
+    __getRawSignal: (name: string) => makeHubSignal(`ScriptEditorService:${name}`),
+    UpdateSourceAsync: (scriptInstance: any, transformFn: any) => {
+      if (scriptInstance && typeof transformFn === 'function') {
+        const updated = transformFn(scriptInstance.Source || '');
+        scriptInstance.Source = updated;
+      }
+    },
+    GetEditorSource: (scriptInstance: any) => scriptInstance?.Source || '',
+    OpenScriptDocumentAsync: () => true,
+  };
+
+  // ---- GeometryService -------------------------------------------------
+  services.geometryservice = {
+    __type: 'GeometryService',
+    Name: 'GeometryService',
+    ClassName: 'GeometryService',
+    IntersectAsync: (part: any) => [part],
+    SubtractAsync: (part: any) => [part],
+    UnionAsync: (part: any) => [part],
+    CalculateConstraintsAsync: () => [],
+  };
+
+  // ---- AdService -------------------------------------------------------
+  services.adservice = {
+    __type: 'AdService',
+    Name: 'AdService',
+    ClassName: 'AdService',
+    ShowVideoAd: () => {},
+    GetVideoAdInfoAsync: () => ({ IsLoaded: false }),
+  };
+
+  // ---- AvatarChatService -----------------------------------------------
+  services.avatarchatservice = {
+    __type: 'AvatarChatService',
+    Name: 'AvatarChatService',
+    ClassName: 'AvatarChatService',
+    ClientFeaturesInitialized: true,
+    IsEnabled: true,
+  };
+
+  // ---- AvatarEditorService ---------------------------------------------
+  services.avatareditorservice = {
+    __type: 'AvatarEditorService',
+    Name: 'AvatarEditorService',
+    ClassName: 'AvatarEditorService',
+    PromptSaveAvatar: () => {},
+    PromptCreateOutfit: () => {},
+    GetInventory: () => ({ __type: 'InventoryPages', GetCurrentPage: () => [] }),
+    GetOutfits: () => ({ __type: 'OutfitPages', GetCurrentPage: () => [] }),
+  };
+
+  // ---- CaptureService --------------------------------------------------
+  services.captureservice = {
+    __type: 'CaptureService',
+    Name: 'CaptureService',
+    ClassName: 'CaptureService',
+    __signalNames: ['CaptureSaved'],
+    __getRawSignal: (name: string) => makeHubSignal(`CaptureService:${name}`),
+    CaptureScreenshot: (cb?: any) => {
+      if (typeof cb === 'function') cb('capture_placeholder');
+    },
+    SaveCaptureToExternalStorage: () => {},
+  };
+
+  // ---- CoreGui ---------------------------------------------------------
+  services.coregui = {
+    __type: 'CoreGui',
+    Name: 'CoreGui',
+    ClassName: 'CoreGui',
+    SetUserGuiIsOpen: () => {},
+    GetSelection: () => [],
+    FindFirstChild: () => null,
+    GetChildren: () => [],
+  };
+
+  // ---- CorePackages ----------------------------------------------------
+  services.corepackages = {
+    __type: 'CorePackages',
+    Name: 'CorePackages',
+    ClassName: 'CorePackages',
+    FindFirstChild: () => null,
+    GetChildren: () => [],
+  };
+
+  // ---- ExperienceNotificationService -----------------------------------
+  services.experiencenotificationservice = {
+    __type: 'ExperienceNotificationService',
+    Name: 'ExperienceNotificationService',
+    ClassName: 'ExperienceNotificationService',
+    PromptOptInUserAsync: () => false,
+    CanPromptOptInAsync: () => false,
+  };
+
+  // ---- FaceAnimatorService ---------------------------------------------
+  services.faceanimatorservice = {
+    __type: 'FaceAnimatorService',
+    Name: 'FaceAnimatorService',
+    ClassName: 'FaceAnimatorService',
+    VideoAnimationEnabled: false,
+    AudioAnimationEnabled: false,
+  };
+
+  // ---- FriendService ---------------------------------------------------
+  services.friendservice = {
+    __type: 'FriendService',
+    Name: 'FriendService',
+    ClassName: 'FriendService',
+    GetFriendsAsync: () => [],
+  };
+
+  // ---- GamePassService -------------------------------------------------
+  services.gamepassservice = {
+    __type: 'GamePassService',
+    Name: 'GamePassService',
+    ClassName: 'GamePassService',
+    PlayerHasPass: () => false,
+  };
+
+  // ---- LanguageService -------------------------------------------------
+  services.languageservice = {
+    __type: 'LanguageService',
+    Name: 'LanguageService',
+    ClassName: 'LanguageService',
+    GetPreferredLanguage: () => 'en',
+  };
+
+  // ---- LinkingService --------------------------------------------------
+  services.linkingservice = {
+    __type: 'LinkingService',
+    Name: 'LinkingService',
+    ClassName: 'LinkingService',
+    OpenUrl: (url: string) => {
+      if (typeof window !== 'undefined') window.open(url, '_blank');
+    },
+    CanOpenUrl: () => true,
+  };
+
+  // ---- NotificationService ---------------------------------------------
+  services.notificationservice = {
+    __type: 'NotificationService',
+    Name: 'NotificationService',
+    ClassName: 'NotificationService',
+    ScheduleNotification: () => {},
+    CancelNotification: () => {},
+  };
+
+  // ---- OpenCloudService ------------------------------------------------
+  services.opencloudservice = {
+    __type: 'OpenCloudService',
+    Name: 'OpenCloudService',
+    ClassName: 'OpenCloudService',
+    HttpRequestAsync: () => {
+      throw new Error('OpenCloudService.HttpRequestAsync is not available in sandbox');
+    },
+  };
+
+  // ---- PackageService --------------------------------------------------
+  services.packageservice = {
+    __type: 'PackageService',
+    Name: 'PackageService',
+    ClassName: 'PackageService',
+    PublishAsync: () => {},
+  };
+
+  // ---- PointsService ---------------------------------------------------
+  services.pointsservice = {
+    __type: 'PointsService',
+    Name: 'PointsService',
+    ClassName: 'PointsService',
+    AwardPoints: () => {},
+    GetPointsBalance: () => 0,
+  };
+
+  // ---- VideoService ----------------------------------------------------
+  services.videoservice = {
+    __type: 'VideoService',
+    Name: 'VideoService',
+    ClassName: 'VideoService',
+    CreateVideoPlayer: () => ({
+      __type: 'VideoPlayer',
+      Play: () => {},
+      Pause: () => {},
+    }),
+  };
+
+  // ---- DraggerService --------------------------------------------------
+  services.draggerservice = {
+    __type: 'DraggerService',
+    Name: 'DraggerService',
+    ClassName: 'DraggerService',
+    AlignSelectedLogic: 'Center',
+    DraggerCoordinateSpace: 'World',
+  };
+
+  // ---- AssetImportService ----------------------------------------------
+  services.assetimportservice = {
+    __type: 'AssetImportService',
+    Name: 'AssetImportService',
+    ClassName: 'AssetImportService',
+    ImportMeshAsync: () => null,
+  };
+
+  // ---- HeightmapImporterService ----------------------------------------
+  services.heightmapimporterservice = {
+    __type: 'HeightmapImporterService',
+    Name: 'HeightmapImporterService',
+    ClassName: 'HeightmapImporterService',
+    ImportHeightmap: () => {},
+  };
+
+  // ---- CalloutService --------------------------------------------------
+  services.calloutservice = {
+    __type: 'CalloutService',
+    Name: 'CalloutService',
+    ClassName: 'CalloutService',
+    AttachCallout: () => {},
+    DetachCalloutsByDefinitionId: () => {},
+  };
+
+  // ---- SoundService ----------------------------------------------------
+  const getSoundServiceNodeProxy = () => {
+    const node = getTree().find((n) => n.id === 'soundservice' || n.name.toLowerCase() === 'soundservice');
+    return node ? createInstanceProxy(node.id, getTree, updateTree, onLog, bridge) : null;
+  };
+  services.soundservice = {
+    __type: 'SoundService',
+    Name: 'SoundService',
+    ClassName: 'SoundService',
+    AmbientReverb: 'NoReverb',
+    DistanceFactor: 1,
+    DopplerScale: 1,
+    RolloffScale: 1,
+    PlayLocalSound: (sound: any) => {
+      onLog('system', `SoundService:PlayLocalSound(${sound?.Name || 'Sound'})`);
+    },
+    FindFirstChild: (name: string, recursive?: boolean) => getSoundServiceNodeProxy()?.FindFirstChild(name, recursive) ?? null,
+    WaitForChild: (name: string, timeout?: number) => getSoundServiceNodeProxy()?.WaitForChild(name, timeout) ?? null,
+    GetChildren: () => getSoundServiceNodeProxy()?.GetChildren() || [],
+    GetDescendants: () => getSoundServiceNodeProxy()?.GetDescendants() || [],
+  };
+
+  // ---- TextChatService -------------------------------------------------
+  const getTextChatNodeProxy = () => {
+    const node = getTree().find((n) => n.id === 'textchatservice' || n.name.toLowerCase() === 'textchatservice');
+    return node ? createInstanceProxy(node.id, getTree, updateTree, onLog, bridge) : null;
+  };
+  services.textchatservice = {
+    __type: 'TextChatService',
+    Name: 'TextChatService',
+    ClassName: 'TextChatService',
+    __signalNames: ['MessageReceived'],
+    __getRawSignal: (name: string) => makeHubSignal(`TextChatService:${name}`),
+    ChatVersion: 'TextChatService',
+    CreateDefaultTextChannels: true,
+    SendAsync: (msg: string) => {
+      onLog('print', `[TextChatService]: ${msg}`);
+      globalSignalHub.fire('TextChatService:MessageReceived', { Text: msg, Timestamp: Date.now() / 1000 });
+    },
+    FindFirstChild: (name: string, recursive?: boolean) => getTextChatNodeProxy()?.FindFirstChild(name, recursive) ?? null,
+    WaitForChild: (name: string, timeout?: number) => getTextChatNodeProxy()?.WaitForChild(name, timeout) ?? null,
+    GetChildren: () => getTextChatNodeProxy()?.GetChildren() || [],
+    GetDescendants: () => getTextChatNodeProxy()?.GetDescendants() || [],
+  };
+
   return services;
 }
 
@@ -3532,6 +4632,9 @@ function createGameProxy(
     GetService: (serviceName: string) => {
       const lower = serviceName.toLowerCase();
       if (lower === 'workspace') return workspaceProxy;
+      if (IMPOSSIBLE_ROBLOX_SERVICES_LOWER.has(lower)) {
+        throw new Error(`${serviceName} is not accessible: restricted internal engine service or cannot be created by scripts`);
+      }
       if (engineServices[lower]) return engineServices[lower];
       const serviceNode = getTree().find((n) => n.name.toLowerCase() === lower || n.id.toLowerCase() === lower);
       if (serviceNode) {
@@ -3564,6 +4667,7 @@ function createGameProxy(
       if (prop in target) return (target as any)[prop];
       const lower = String(prop).toLowerCase();
       if (lower === 'workspace') return workspaceProxy;
+      if (engineServices[lower]) return engineServices[lower];
       const node = getTree().find((n) => n.name === String(prop) || n.id.toLowerCase() === lower);
       if (node) return createInstanceProxy(node.id, getTree, updateTree, onLog, bridge);
       return undefined;
@@ -3612,11 +4716,21 @@ export class LuaRuntime {
           .join('    ');
       };
 
-      this.engine.global.set('print', (...args: any[]) => onLog('print', formatArgs(...args)));
-      this.engine.global.set('warn', (...args: any[]) => onLog('warn', formatArgs(...args)));
+      this.engine.global.set('print', (...args: any[]) => {
+        const text = formatArgs(...args);
+        onLog('print', text);
+        globalSignalHub.fire('LogService:MessageOut', text, 'MessageOutput');
+      });
+      this.engine.global.set('warn', (...args: any[]) => {
+        const text = formatArgs(...args);
+        onLog('warn', text);
+        globalSignalHub.fire('LogService:MessageOut', text, 'MessageWarning');
+      });
       this.engine.global.set('error', (msg: string) => {
         const formatted = String(msg || 'Script error');
         onLog('error', formatted);
+        globalSignalHub.fire('LogService:MessageOut', formatted, 'MessageError');
+        globalSignalHub.fire('ScriptContext:Error', formatted, '', null);
         throw new Error(formatted);
       });
       this.engine.global.set('typeof', (val: any) => {
@@ -4658,6 +5772,14 @@ export class LuaRuntime {
           end
         })
         _G.game = game
+        local settingsObj = {
+          GetService = function(_self, name)
+            return game:GetService(name)
+          end
+        }
+        _G.UserSettings = function() return settingsObj end
+        _G.settings = function() return settingsObj end
+        _G.stats = function() return game:GetService("Stats") end
       `);
       this.engine.global.set('__WORKSPACE_RAW', workspaceProxy);
       await this.engine.doString(`workspace = __WRAP_INSTANCE(__WORKSPACE_RAW); _G.workspace = workspace`);
