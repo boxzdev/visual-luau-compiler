@@ -543,6 +543,9 @@
 - **Authentic Play / Stop Buttons**:
   - Updated **Play** to Roblox Studio's emerald green button with sharp play triangle glyph.
   - Updated **Stop** to Roblox Studio's crimson red button with white stop square glyph.
+- **Top Toolbar Streamlining**:
+  - Removed redundant `Current: Server` / `Current: Client` button from the top toolbar to keep the toolbar clean and uncluttered.
+  - Simulation view switching remains seamlessly accessible via the `Server Gameplay ⌵` / `Local Gameplay` tab header dropdown menu.
 - **Viewport & Gameplay Tab Bar Modernization**:
   - Updated `Viewport` tab icon to the official Roblox Studio `Workspace.png` asset.
   - Updated `Server Gameplay` to use the official Roblox `ServerScriptService.png` asset (server tower chassis).
