@@ -492,3 +492,59 @@
 - **Verification**:
   - `npm.cmd run lint`: 0 errors (`tsc --noEmit`).
   - `npm.cmd run build`: Compiled 2606 modules with code 0 (`vite build`).
+
+## Roblox Studio Services Reference Documentation (`roblox_service.md`) — 2026-11-06
+- **Comprehensive API & Service Reference Guide**:
+  - Authored `roblox_service.md`, a complete documentation manual cataloging all 20+ functional Roblox Studio services, methods, properties, and signals implemented in the project (`luaRunner.ts`, `App.tsx`, `physicsEngine.ts`).
+  - **Engine Services**: Complete method and signal documentation for `TweenService`, `RunService`, `UserInputService`, `CollectionService`, `Debris`, `HttpService`, `PathfindingService`, `ContextActionService`, `Players`, `TeleportService`, and `MarketplaceService`.
+  - **DataModel & Hierarchy Containers**: Documented `Workspace` (Raycasting, Camera, Terrain, Part filtering), `Lighting` (ClockTime, Fog, Post-Processing Effects), `ReplicatedStorage`, `ServerScriptService`, `ServerStorage`, `StarterGui`, `PlayerGui`, `StarterPlayer`, `SoundService`, and `Teams`.
+  - **Networking & Signals**: Documented dual-runtime cross-VM bridge via `RemoteEvent` (`FireServer`, `FireClient`, `FireAllClients`, `OnServerEvent`, `OnClientEvent`) and `RemoteFunction` (`InvokeServer`, `InvokeClient`, `OnServerInvoke`, `OnClientInvoke`).
+  - **Universal Instance Model & Metatables**: Documented Roblox Instance methods (`Clone`, `Destroy`, `FindFirstChild`, `WaitForChild`, `GetChildren`, `GetDescendants`, `IsA`, `GetPropertyChangedSignal`), custom datatypes (`Vector3`, `Vector2`, `CFrame`, `Color3`, `BrickColor`, `UDim`, `UDim2`, `TweenInfo`, `Enum`), and task scheduler APIs (`task.spawn`, `task.wait`, `task.delay`, `task.cancel`).
+
+## 3D GUI (SurfaceGui & BillboardGui) Visual Bug Fixes & Dummy Element Removal — 2026-11-06
+- **SurfaceGui Backface Culling Inversion Fix**:
+  - Resolved bug where `SurfaceGui` on the `Front` face vanished when looking directly at it and only appeared when looking through the back of the part.
+  - Root cause: `normalVecRef.set(...localNormal).applyQuaternion(groupRef.getWorldQuaternion())` double-rotated the normal because `groupRef` already had face rotation applied (`rot = [0, Math.PI, 0]`), flipping `[0, 0, -1]` to `[0, 0, 1]` (pointing inward).
+  - Solution: Drei `<Html transform>` planes face along local `+Z`. Using `groupRef.current.getWorldDirection(normalVecRef.current)` directly returns the true world-space outward normal for all 6 faces and all part rotations.
+- **CSS 3D Stacking Context Flattening Fix**:
+  - Removed root `filter: brightness(...)` on `<Html>` which broke browser `preserve-3d` matrix contexts, causing blur, z-fighting, and rendering glitches.
+  - Replaced with a non-breaking shading overlay div (`rgba(0, 0, 0, ...)`) inside the canvas, preserving native 3D hardware acceleration.
+- **BillboardGui Wild Scaling & Font Legibility Fix**:
+  - Removed `distanceFactor={10}` on `<Html center>`. In Roblox Studio, `BillboardGui` Offset sizing is in pixels on screen and does not shrink with distance. Removing `distanceFactor={10}` prevents billboards from shrinking to 3.5px unreadable smudges at standard camera distances (30–40 studs).
+- **BillboardGui Behind-Camera Projection Culling**:
+  - Added camera-plane culling (`camera.getWorldDirection().dot(worldPos - camera.position) <= 0.05`) in `useFrame` to prevent Drei's screen projector from inverting coordinates and rendering phantom billboards when parts move behind the camera.
+- **Dummy Element Elimination in GUI Trees**:
+  - Added strict `VALID_GUI_TYPES` validation in `GuiElementNode`. Non-GUI children (Scripts, Folders, Decals, etc.) accidentally nested inside GUI hierarchies will no longer fall through to generic white dummy boxes with borders.
+  - Explicitly filtered `guiChildren` in both `PartSurfaceGui` and `PartBillboardGui`.
+- **Properties Panel `gui3D` Inspector Clean-Up**:
+  - Removed dummy hack where `CanvasSize` was shown for `BillboardGui` and simultaneously mutated `canvasSize` and `guiSize`.
+  - Restricted `CanvasSize` (Vector2 width × height) exclusively to `SurfaceGui`.
+  - Added authentic `Size (UDim2)` expandable property inspector (X/Y Scale, X/Y Offset) for `BillboardGui`.
+  - Enabled `LightInfluence` property for both `SurfaceGui` and `BillboardGui`.
+  - Restricted selection outlines (`outline: 2px solid ...`) to edit mode (`!isInteractive && isSelected`) so outlines never show during Gameplay mode.
+- **Smart Text Scaling on Insertion**:
+  - When inserting `TextLabel` or `TextButton` inside a `SurfaceGui` or `BillboardGui`, `textScaled` now defaults to `true`, making text immediately readable and proportional to the 3D surface.
+- **Verification & Code Integrity**:
+  - Verified `src/App.tsx` and `src/PropertiesPanel.tsx` component hierarchy and JSX tags.
+  - Ensured all mathematical transformations and vector directions match Three.js and Roblox coordinate systems.
+
+## Roblox Studio Toolbar & Viewport Tab Overhaul — 2026-11-06
+- **Authentic Roblox Studio Toolset Icons (Vector SVGs)**:
+  - Replaced generic Lucide icons with authentic pixel-perfect Roblox Studio tool icons:
+    - **Select**: Classic white angled cursor arrow with dashed cyan selection box `[ ]`.
+    - **Move**: Iconic 3D coordinate axes tripod (Red +X right, Green +Y up, Blue +Z diagonal down-left) with central sphere hub.
+    - **Scale**: 3D bounding box / cube with colored expansion handles (Red, Green, Blue cube handles).
+    - **Rotate**: 3D gimbal rotation rings (Red, Green, Blue interlocking circular arcs).
+    - **UI Editor (2D GUI)**: Studio UI editor window panel with title bar, inner layout blocks, and corner resize handle.
+  - Added Roblox Studio keyboard shortcuts: `Ctrl+1` (Select), `Ctrl+2` (Move), `Ctrl+3` (Scale), `Ctrl+4` (Rotate).
+- **Roblox Studio Test Bar Simulation Switcher**:
+  - Added the official `Current: Server` / `Current: Client` toggle button directly onto the top toolbar beside the Stop button during testing.
+  - Features live mode indicator with official Roblox Studio Server and Client icons.
+- **Authentic Play / Stop Buttons**:
+  - Updated **Play** to Roblox Studio's emerald green button with sharp play triangle glyph.
+  - Updated **Stop** to Roblox Studio's crimson red button with white stop square glyph.
+- **Viewport & Gameplay Tab Bar Modernization**:
+  - Updated `Viewport` tab icon to the official Roblox Studio `Workspace.png` asset.
+  - Updated `Server Gameplay` to use the official Roblox `ServerScriptService.png` asset (server tower chassis).
+  - Updated `Local Gameplay` to use the official Roblox `NetworkClient.png` asset (client monitor/player).
+  - Overhauled the mode switcher dropdown menu with authentic Roblox Studio dark theme styling, official icons, and active checkmarks (`✓`).

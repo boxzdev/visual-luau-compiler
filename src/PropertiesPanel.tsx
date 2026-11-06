@@ -172,14 +172,14 @@ export function PropertiesPanel({
   const isScrollingFrame = nodeTypeLower === 'scrollingframe';
 
   const guiPos = selectedNode.guiPosition || { xScale: 0, xOffset: 0, yScale: 0, yOffset: 0 };
-  const guiSz = selectedNode.guiSize || { xScale: 0, xOffset: 100, yScale: 0, yOffset: 100 };
+  const guiSz = selectedNode.guiSize || (isBillboardGui ? { xScale: 0, xOffset: 200, yScale: 0, yOffset: 50 } : { xScale: 0, xOffset: 100, yScale: 0, yOffset: 100 });
   const anchorPt = selectedNode.anchorPoint || [0, 0];
   const bgCol = selectedNode.backgroundColor || '#ffffff';
   const borderCol = selectedNode.borderColor || '#1b2a34';
   const textCol = selectedNode.textColor || '#ffffff';
   const imgCol = selectedNode.imageColor || '#ffffff';
   const studsOff = selectedNode.studsOffset || [0, 2, 0];
-  const cnvSz = selectedNode.canvasSize || (isBillboardGui && selectedNode.guiSize ? [selectedNode.guiSize.xOffset || 200, selectedNode.guiSize.yOffset || 50] : (isSurfaceGui ? [800, 600] : [200, 50]));
+  const cnvSz = selectedNode.canvasSize || [800, 600];
 
   const parentNode = findParentNode(tree, selectedNode.id);
   const parentName = parentNode ? parentNode.name : 'Workspace';
@@ -2570,7 +2570,7 @@ export function PropertiesPanel({
         )}
 
         {/* ================= 3D GUI (SURFACEGUI / BILLBOARDGUI) SECTION ================= */}
-        {is3dGui && (filterMatch('Enabled') || filterMatch('Face') || filterMatch('CanvasSize') || filterMatch('AlwaysOnTop') || filterMatch('LightInfluence') || filterMatch('StudsOffset') || filterMatch('MaxDistance') || filterMatch('Adornee')) && (
+        {is3dGui && (filterMatch('Enabled') || filterMatch('Face') || filterMatch('CanvasSize') || filterMatch('Size') || filterMatch('AlwaysOnTop') || filterMatch('LightInfluence') || filterMatch('StudsOffset') || filterMatch('MaxDistance') || filterMatch('Adornee')) && (
           <div>
             <div
               onClick={() => toggleSection('gui3D')}
@@ -2617,8 +2617,8 @@ export function PropertiesPanel({
                   </div>
                 )}
 
-                {/* CanvasSize */}
-                {filterMatch('CanvasSize') && (
+                {/* CanvasSize (SurfaceGui) */}
+                {isSurfaceGui && filterMatch('CanvasSize') && (
                   <div className="flex items-center h-[26px] hover:bg-[#252526] px-3">
                     <span className="w-[45%] text-[#cccccc] truncate">CanvasSize</span>
                     <div className="w-[55%] flex items-center gap-1.5">
@@ -2627,11 +2627,8 @@ export function PropertiesPanel({
                         min="10"
                         value={cnvSz[0]}
                         onChange={(e) => {
-                          const w = parseInt(e.target.value, 10) || (isSurfaceGui ? 800 : 200);
+                          const w = parseInt(e.target.value, 10) || 800;
                           onUpdateProperty(selectedNode.id, 'canvasSize', [w, cnvSz[1]]);
-                          if (isBillboardGui) {
-                            onUpdateProperty(selectedNode.id, 'guiSize', { xScale: 0, xOffset: w, yScale: 0, yOffset: cnvSz[1] });
-                          }
                         }}
                         className="w-14 bg-[#181818] border border-transparent hover:border-[#3e3e42] focus:border-[#0078d7] px-1 py-0.5 rounded text-[11px] font-mono text-[#cccccc] outline-none"
                       />
@@ -2641,15 +2638,80 @@ export function PropertiesPanel({
                         min="10"
                         value={cnvSz[1]}
                         onChange={(e) => {
-                          const h = parseInt(e.target.value, 10) || (isSurfaceGui ? 600 : 50);
+                          const h = parseInt(e.target.value, 10) || 600;
                           onUpdateProperty(selectedNode.id, 'canvasSize', [cnvSz[0], h]);
-                          if (isBillboardGui) {
-                            onUpdateProperty(selectedNode.id, 'guiSize', { xScale: 0, xOffset: cnvSz[0], yScale: 0, yOffset: h });
-                          }
                         }}
                         className="w-14 bg-[#181818] border border-transparent hover:border-[#3e3e42] focus:border-[#0078d7] px-1 py-0.5 rounded text-[11px] font-mono text-[#cccccc] outline-none"
                       />
                     </div>
+                  </div>
+                )}
+
+                {/* Size (UDim2 - BillboardGui) */}
+                {isBillboardGui && filterMatch('Size') && (
+                  <div>
+                    <div 
+                      className="flex items-center h-[26px] hover:bg-[#252526] px-3 cursor-pointer"
+                      onClick={() => toggleVector('guiSize')}
+                    >
+                      <div className="w-[45%] flex items-center text-[#cccccc]">
+                        <span className="mr-1 text-[#888888]">
+                          {expandedVectors.guiSize ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
+                        </span>
+                        <span className="truncate">Size</span>
+                      </div>
+                      <div className="w-[55%] text-[#cccccc] font-mono text-[11px] truncate">
+                        {`{${guiSz.xScale}, ${guiSz.xOffset}}, {${guiSz.yScale}, ${guiSz.yOffset}}`}
+                      </div>
+                    </div>
+                    {expandedVectors.guiSize && (
+                      <div className="pl-6 pr-3 py-1 space-y-1 bg-[#181818] border-t border-[#252526]">
+                        <div className="flex items-center h-[22px] text-[11px] gap-2">
+                          <span className="w-12 text-[#888888] font-bold">X Scale</span>
+                          <input
+                            type="number"
+                            step="0.05"
+                            value={guiSz.xScale}
+                            onChange={(e) => onUpdateProperty(selectedNode.id, 'guiSize', { ...guiSz, xScale: parseFloat(e.target.value) || 0 })}
+                            className="w-16 bg-[#252526] border border-transparent hover:border-[#3e3e42] focus:border-[#0078d7] px-1 py-0.5 rounded text-[11px] font-mono text-[#cccccc] outline-none"
+                          />
+                          <span className="w-12 text-[#888888] font-bold">Offset</span>
+                          <input
+                            type="number"
+                            step="1"
+                            value={guiSz.xOffset}
+                            onChange={(e) => {
+                              const xOff = parseInt(e.target.value, 10) || 0;
+                              onUpdateProperty(selectedNode.id, 'guiSize', { ...guiSz, xOffset: xOff });
+                              onUpdateProperty(selectedNode.id, 'canvasSize', [xOff || 200, guiSz.yOffset || 50]);
+                            }}
+                            className="w-16 bg-[#252526] border border-transparent hover:border-[#3e3e42] focus:border-[#0078d7] px-1 py-0.5 rounded text-[11px] font-mono text-[#cccccc] outline-none"
+                          />
+                        </div>
+                        <div className="flex items-center h-[22px] text-[11px] gap-2">
+                          <span className="w-12 text-[#888888] font-bold">Y Scale</span>
+                          <input
+                            type="number"
+                            step="0.05"
+                            value={guiSz.yScale}
+                            onChange={(e) => onUpdateProperty(selectedNode.id, 'guiSize', { ...guiSz, yScale: parseFloat(e.target.value) || 0 })}
+                            className="w-16 bg-[#252526] border border-transparent hover:border-[#3e3e42] focus:border-[#0078d7] px-1 py-0.5 rounded text-[11px] font-mono text-[#cccccc] outline-none"
+                          />
+                          <span className="w-12 text-[#888888] font-bold">Offset</span>
+                          <input
+                            type="number"
+                            step="1"
+                            value={guiSz.yOffset}
+                            onChange={(e) => {
+                              const yOff = parseInt(e.target.value, 10) || 0;
+                              onUpdateProperty(selectedNode.id, 'guiSize', { ...guiSz, yOffset: yOff });
+                              onUpdateProperty(selectedNode.id, 'canvasSize', [guiSz.xOffset || 200, yOff || 50]);
+                            }}
+                            className="w-16 bg-[#252526] border border-transparent hover:border-[#3e3e42] focus:border-[#0078d7] px-1 py-0.5 rounded text-[11px] font-mono text-[#cccccc] outline-none"
+                          />
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
 
@@ -2668,8 +2730,8 @@ export function PropertiesPanel({
                   </div>
                 )}
 
-                {/* LightInfluence (SurfaceGui) */}
-                {isSurfaceGui && filterMatch('LightInfluence') && (
+                {/* LightInfluence */}
+                {filterMatch('LightInfluence') && (
                   <div className="flex items-center h-[26px] hover:bg-[#252526] px-3">
                     <span className="w-[45%] text-[#cccccc] truncate">LightInfluence</span>
                     <div className="w-[55%] flex items-center gap-2">
@@ -2678,11 +2740,11 @@ export function PropertiesPanel({
                         min="0"
                         max="1"
                         step="0.1"
-                        value={selectedNode.lightInfluence ?? 1}
+                        value={selectedNode.lightInfluence ?? (isBillboardGui ? 0 : 1)}
                         onChange={(e) => onUpdateProperty(selectedNode.id, 'lightInfluence', parseFloat(e.target.value))}
                         className="w-24 accent-[#0078d7] cursor-pointer"
                       />
-                      <span className="text-[11px] font-mono text-[#cccccc]">{selectedNode.lightInfluence ?? 1}</span>
+                      <span className="text-[11px] font-mono text-[#cccccc]">{selectedNode.lightInfluence ?? (isBillboardGui ? 0 : 1)}</span>
                     </div>
                   </div>
                 )}

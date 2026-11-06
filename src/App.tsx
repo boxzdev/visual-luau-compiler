@@ -230,6 +230,130 @@ function replicateServerToClient(serverTree: TreeNodeData[], clientTree: TreeNod
   return mergeReplicatedChildren(serverTree, clientTree, serverIdSet);
 }
 
+// ── Authentic Roblox Studio Tool & System Icons ─────────────────────────────
+function RobloxSelectIcon({ size = 16, className }: { size?: number; className?: string }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 16 16" fill="none" className={className}>
+      <rect
+        x="8.5"
+        y="8.5"
+        width="6"
+        height="6"
+        rx="0.5"
+        fill="rgba(0, 162, 255, 0.25)"
+        stroke="#00a2ff"
+        strokeWidth="1"
+        strokeDasharray="2 1"
+      />
+      <path
+        d="M2.5 1.5 L2.5 12 L5.5 9.5 L8.5 14.5 L10.5 13.5 L7.5 8.5 L11 8.5 Z"
+        fill="#ffffff"
+        stroke="#1a1a1a"
+        strokeWidth="1"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+function RobloxMoveIcon({ size = 16, className }: { size?: number; className?: string }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 16 16" fill="none" className={className}>
+      <circle cx="8" cy="9" r="1.6" fill="#f8fafc" stroke="#334155" strokeWidth="0.8" />
+      <line x1="8" y1="7.4" x2="8" y2="2.5" stroke="#22c55e" strokeWidth="1.8" strokeLinecap="round" />
+      <polygon points="5.5,3.5 8,1 10.5,3.5" fill="#22c55e" />
+      <line x1="9.6" y1="9" x2="13.5" y2="9" stroke="#ef4444" strokeWidth="1.8" strokeLinecap="round" />
+      <polygon points="12.5,6.5 15,9 12.5,11.5" fill="#ef4444" />
+      <line x1="6.8" y1="10.2" x2="3.2" y2="13.8" stroke="#0ea5e9" strokeWidth="1.8" strokeLinecap="round" />
+      <polygon points="2,12.5 1.5,15.5 4.5,15" fill="#0ea5e9" />
+    </svg>
+  );
+}
+
+function RobloxScaleIcon({ size = 16, className }: { size?: number; className?: string }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 16 16" fill="none" className={className}>
+      <polygon points="8,6 11.5,7.8 8,9.6 4.5,7.8" fill="#cbd5e1" stroke="#475569" strokeWidth="0.6" />
+      <polygon points="4.5,7.8 8,9.6 8,13 4.5,11.2" fill="#94a3b8" stroke="#475569" strokeWidth="0.6" />
+      <polygon points="8,9.6 11.5,7.8 11.5,11.2 8,13" fill="#64748b" stroke="#475569" strokeWidth="0.6" />
+      <line x1="8" y1="6" x2="8" y2="2" stroke="#22c55e" strokeWidth="1.4" />
+      <rect x="6.5" y="1" width="3" height="3" rx="0.5" fill="#22c55e" stroke="#15803d" strokeWidth="0.5" />
+      <line x1="11.5" y1="9.5" x2="14" y2="9.5" stroke="#ef4444" strokeWidth="1.4" />
+      <rect x="13" y="8" width="3" height="3" rx="0.5" fill="#ef4444" stroke="#b91c1c" strokeWidth="0.5" />
+      <line x1="4.5" y1="9.5" x2="2" y2="12" stroke="#0ea5e9" strokeWidth="1.4" />
+      <rect x="0.8" y="11.2" width="3" height="3" rx="0.5" fill="#0ea5e9" stroke="#0369a1" strokeWidth="0.5" />
+    </svg>
+  );
+}
+
+function RobloxRotateIcon({ size = 16, className }: { size?: number; className?: string }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 16 16" fill="none" className={className}>
+      <circle cx="8" cy="8" r="2.2" fill="#e2e8f0" stroke="#475569" strokeWidth="0.6" />
+      <ellipse cx="8" cy="8" rx="3.2" ry="6.5" stroke="#ef4444" strokeWidth="1.4" strokeDasharray="16 3" />
+      <polygon points="10,2 12.2,3.8 9.6,4.5" fill="#ef4444" />
+      <ellipse cx="8" cy="8" rx="6.5" ry="3.2" stroke="#22c55e" strokeWidth="1.4" strokeDasharray="16 3" />
+      <polygon points="13.8,6 15.5,8.2 13.2,9" fill="#22c55e" />
+      <circle cx="8" cy="8" r="5.6" stroke="#0ea5e9" strokeWidth="1.3" strokeDasharray="14 4" />
+      <polygon points="3.5,4 4.8,1.8 6.5,3.2" fill="#0ea5e9" />
+    </svg>
+  );
+}
+
+function RobloxUiEditorIcon({ size = 16, className }: { size?: number; className?: string }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 16 16" fill="none" className={className}>
+      <rect x="2" y="2" width="12" height="12" rx="1.5" fill="#1e293b" stroke="#38bdf8" strokeWidth="1.2" />
+      <rect x="2" y="2" width="12" height="3" rx="1.5" fill="#0284c7" />
+      <rect x="3.5" y="6.5" width="4" height="6" rx="0.5" fill="#334155" />
+      <rect x="8.5" y="6.5" width="4" height="2.5" rx="0.5" fill="#38bdf8" />
+      <rect x="8.5" y="10" width="4" height="2.5" rx="0.5" fill="#64748b" />
+      <rect x="12" y="12" width="2.5" height="2.5" rx="0.5" fill="#0284c7" stroke="#ffffff" strokeWidth="0.5" />
+    </svg>
+  );
+}
+
+function RobloxPlayIcon({ size = 13, className }: { size?: number; className?: string }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 16 16" fill="none" className={className}>
+      <polygon points="3.5,2 14.5,8 3.5,14" fill="currentColor" stroke="currentColor" strokeWidth="0.8" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+function RobloxStopIcon({ size = 13, className }: { size?: number; className?: string }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 16 16" fill="none" className={className}>
+      <rect x="3" y="3" width="10" height="10" rx="1.8" fill="currentColor" />
+    </svg>
+  );
+}
+
+function RobloxServerIcon({ size = 14, className }: { size?: number; className?: string }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 16 16" fill="none" className={className}>
+      <rect x="2.5" y="1.5" width="11" height="13" rx="1.5" fill="#0f172a" stroke="#38bdf8" strokeWidth="1.2" />
+      <line x1="5" y1="4.5" x2="8.5" y2="4.5" stroke="#94a3b8" strokeWidth="1" strokeLinecap="round" />
+      <circle cx="11" cy="4.5" r="0.9" fill="#38bdf8" />
+      <line x1="5" y1="8" x2="8.5" y2="8" stroke="#94a3b8" strokeWidth="1" strokeLinecap="round" />
+      <circle cx="11" cy="8" r="0.9" fill="#38bdf8" />
+      <line x1="5" y1="11.5" x2="8.5" y2="11.5" stroke="#94a3b8" strokeWidth="1" strokeLinecap="round" />
+      <circle cx="11" cy="11.5" r="0.9" fill="#22c55e" />
+    </svg>
+  );
+}
+
+function RobloxClientIcon({ size = 14, className }: { size?: number; className?: string }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 16 16" fill="none" className={className}>
+      <rect x="1.5" y="1.5" width="13" height="9.5" rx="1.5" fill="#064e3b" stroke="#34d399" strokeWidth="1.2" />
+      <path d="M5.5 14 h5 M8 11 v3" stroke="#94a3b8" strokeWidth="1.2" strokeLinecap="round" />
+      <circle cx="8" cy="5.2" r="1.5" fill="#34d399" />
+      <path d="M5.5 8.8 c0-1.3 1.1-1.8 2.5-1.8 s2.5 0.5 2.5 1.8" fill="none" stroke="#34d399" strokeWidth="1" strokeLinecap="round" />
+    </svg>
+  );
+}
+
 function StudioControls() {
   const controlsRef = useRef<any>(null);
   const { camera } = useThree();
@@ -799,7 +923,8 @@ function GuiElementNode({
 
   const imageUrl = useRobloxImage(node.image);
 
-  if (!visible) return null;
+  const VALID_GUI_TYPES = ['frame', 'textlabel', 'textbutton', 'imagelabel', 'imagebutton', 'textbox', 'scrollingframe'];
+  if (!visible || !VALID_GUI_TYPES.includes(typeLower)) return null;
 
   const pos = liveTransform?.pos || node.guiPosition || { xScale: 0, xOffset: 0, yScale: 0, yOffset: 0 };
   const sz = liveTransform?.size || node.guiSize || { xScale: 0, xOffset: 100, yScale: 0, yOffset: 100 };
@@ -1278,38 +1403,32 @@ function PartSurfaceGui({
   // In Roblox: Front is -Z (along LookVector), Back is +Z, Top is +Y, Bottom is -Y, Right is +X, Left is -X.
   let pos: [number, number, number] = [0, 0, -hz - eps];
   let rot: [number, number, number] = [0, Math.PI, 0];
-  let localNormal: [number, number, number] = [0, 0, -1];
 
   if (face === 'back') {
     faceWidth = sx;
     faceHeight = sy;
     pos = [0, 0, hz + eps];
     rot = [0, 0, 0];
-    localNormal = [0, 0, 1];
   } else if (face === 'top') {
     faceWidth = sx;
     faceHeight = sz;
     pos = [0, hy + eps, 0];
     rot = [-Math.PI / 2, 0, 0];
-    localNormal = [0, 1, 0];
   } else if (face === 'bottom') {
     faceWidth = sx;
     faceHeight = sz;
     pos = [0, -hy - eps, 0];
     rot = [Math.PI / 2, 0, 0];
-    localNormal = [0, -1, 0];
   } else if (face === 'left') {
     faceWidth = sz;
     faceHeight = sy;
     pos = [-hx - eps, 0, 0];
     rot = [0, -Math.PI / 2, 0];
-    localNormal = [-1, 0, 0];
   } else if (face === 'right') {
     faceWidth = sz;
     faceHeight = sy;
     pos = [hx + eps, 0, 0];
     rot = [0, Math.PI / 2, 0];
-    localNormal = [1, 0, 0];
   }
 
   // Scale the group so that canvasW x canvasH exactly spans faceWidth x faceHeight studs!
@@ -1320,25 +1439,26 @@ function PartSurfaceGui({
   const bgColor = node.backgroundColor || '#ffffff';
   const lightInf = node.lightInfluence ?? 1;
   const isSelected = selectedGuiId === node.id;
+  const isEditingThis = !isInteractive && isSelected;
 
-  const children = node.children || [];
+  const VALID_GUI_TYPES = new Set(['frame', 'textlabel', 'textbutton', 'imagelabel', 'imagebutton', 'textbox', 'scrollingframe']);
+  const guiChildren = (node.children || []).filter((c) => VALID_GUI_TYPES.has((c.type || '').toLowerCase()));
 
   const groupRef = useRef<THREE.Group>(null);
   const [isFacingCamera, setIsFacingCamera] = useState(true);
 
   // Scratch objects for backface culling (no per-frame garbage)
   const normalVecRef = useRef(new THREE.Vector3());
-  const quatRef = useRef(new THREE.Quaternion());
   const worldPosRef = useRef(new THREE.Vector3());
   const camDirRef = useRef(new THREE.Vector3());
 
   useFrame(({ camera }) => {
     if (!node.alwaysOnTop && groupRef.current) {
-      groupRef.current.getWorldQuaternion(quatRef.current);
-      normalVecRef.current.set(...localNormal).applyQuaternion(quatRef.current);
+      // Drei <Html transform> plane faces group's local +Z. getWorldDirection gives the true world outward normal.
+      groupRef.current.getWorldDirection(normalVecRef.current);
       groupRef.current.getWorldPosition(worldPosRef.current);
       camDirRef.current.subVectors(camera.position, worldPosRef.current);
-      const facing = normalVecRef.current.dot(camDirRef.current) > 0.01;
+      const facing = normalVecRef.current.dot(camDirRef.current) > 0.05;
       if (facing !== isFacingCamera) {
         setIsFacingCamera(facing);
       }
@@ -1347,7 +1467,7 @@ function PartSurfaceGui({
     }
   });
 
-  const shouldRenderHtml = (node.alwaysOnTop || isFacingCamera) && (children.length > 0 || bgTransparency < 1 || isSelected);
+  const shouldRenderHtml = (node.alwaysOnTop || isFacingCamera) && (guiChildren.length > 0 || bgTransparency < 1 || isEditingThis);
 
   return (
     <group ref={groupRef} position={pos} rotation={rot} scale={[scaleX, scaleY, 1]}>
@@ -1364,13 +1484,14 @@ function PartSurfaceGui({
             position: 'relative',
             overflow: 'hidden',
             backgroundColor: bgTransparency >= 1 ? 'transparent' : hexToRgba(bgColor, bgTransparency),
-            filter: lightInf > 0 ? `brightness(${1 - lightInf * 0.15})` : undefined,
-            outline: isSelected ? '2px solid #0078d7' : undefined,
+            outline: isEditingThis ? '2px solid #0078d7' : undefined,
             outlineOffset: '-2px',
+            backfaceVisibility: 'hidden',
+            WebkitBackfaceVisibility: 'hidden',
           }}
         >
           <div className="w-full h-full relative select-none">
-            {children.map((child) => (
+            {guiChildren.map((child) => (
               <GuiElementNode
                 key={child.id}
                 node={child}
@@ -1378,6 +1499,18 @@ function PartSurfaceGui({
                 onUpdateText={onUpdateText}
               />
             ))}
+            {/* Non-breaking LightInfluence shading overlay (preserves CSS 3D transform context) */}
+            {lightInf > 0 && (
+              <div
+                style={{
+                  position: 'absolute',
+                  inset: 0,
+                  backgroundColor: `rgba(0, 0, 0, ${Math.min(0.25, lightInf * 0.15)})`,
+                  pointerEvents: 'none',
+                  zIndex: 9999,
+                }}
+              />
+            )}
           </div>
         </Html>
       )}
@@ -1401,36 +1534,51 @@ function PartBillboardGui({
   const studsOffset = node.studsOffset || [0, 2, 0];
   const canvasW = (node.guiSize?.xOffset && node.guiSize.xOffset > 0)
     ? node.guiSize.xOffset
-    : (node.canvasSize ? Math.max(10, node.canvasSize[0]) : 200);
+    : (node.canvasSize?.[0] ? Math.max(10, node.canvasSize[0]) : 200);
   const canvasH = (node.guiSize?.yOffset && node.guiSize.yOffset > 0)
     ? node.guiSize.yOffset
-    : (node.canvasSize ? Math.max(10, node.canvasSize[1]) : 50);
+    : (node.canvasSize?.[1] ? Math.max(10, node.canvasSize[1]) : 50);
   const maxDistance = node.maxDistance ?? 100;
+  const lightInf = node.lightInfluence ?? 0;
 
-  const { camera } = useThree();
   const [isTooFar, setIsTooFar] = useState(false);
+  const [isBehindCamera, setIsBehindCamera] = useState(false);
   const groupRef = useRef<THREE.Group>(null);
   const worldPosRef = useRef(new THREE.Vector3());
+  const camDirRef = useRef(new THREE.Vector3());
+  const camForwardRef = useRef(new THREE.Vector3());
 
-  useFrame(() => {
-    if (groupRef.current && maxDistance > 0) {
+  useFrame(({ camera }) => {
+    if (groupRef.current) {
       groupRef.current.getWorldPosition(worldPosRef.current);
-      const dist = camera.position.distanceTo(worldPosRef.current);
-      const tooFar = dist > maxDistance;
-      if (tooFar !== isTooFar) {
-        setIsTooFar(tooFar);
+      // Cull when behind camera plane to prevent inverted screen flip artifacts
+      camDirRef.current.subVectors(worldPosRef.current, camera.position);
+      camera.getWorldDirection(camForwardRef.current);
+      const isBehind = camForwardRef.current.dot(camDirRef.current) <= 0.05;
+      if (isBehind !== isBehindCamera) {
+        setIsBehindCamera(isBehind);
       }
-    } else if (isTooFar) {
-      setIsTooFar(false);
+
+      if (maxDistance > 0) {
+        const dist = camera.position.distanceTo(worldPosRef.current);
+        const tooFar = dist > maxDistance;
+        if (tooFar !== isTooFar) {
+          setIsTooFar(tooFar);
+        }
+      } else if (isTooFar) {
+        setIsTooFar(false);
+      }
     }
   });
 
   const bgTransparency = node.backgroundTransparency ?? 1;
   const bgColor = node.backgroundColor || '#ffffff';
-  const children = node.children || [];
+  const VALID_GUI_TYPES = new Set(['frame', 'textlabel', 'textbutton', 'imagelabel', 'imagebutton', 'textbox', 'scrollingframe']);
+  const guiChildren = (node.children || []).filter((c) => VALID_GUI_TYPES.has((c.type || '').toLowerCase()));
   const isSelected = selectedGuiId === node.id;
+  const isEditingThis = !isInteractive && isSelected;
 
-  const shouldRenderHtml = !isTooFar && (children.length > 0 || bgTransparency < 1 || isSelected);
+  const shouldRenderHtml = !isBehindCamera && !isTooFar && (guiChildren.length > 0 || bgTransparency < 1 || isEditingThis);
 
   return (
     <group 
@@ -1440,7 +1588,6 @@ function PartBillboardGui({
       {shouldRenderHtml && (
         <Html
           center
-          distanceFactor={10}
           pointerEvents={isInteractive ? 'auto' : 'none'}
           zIndexRange={node.alwaysOnTop !== false ? [30000000, 20000000] : undefined}
           style={{
@@ -1449,12 +1596,12 @@ function PartBillboardGui({
             pointerEvents: isInteractive ? 'auto' : 'none',
             position: 'relative',
             backgroundColor: bgTransparency >= 1 ? 'transparent' : hexToRgba(bgColor, bgTransparency),
-            outline: isSelected ? '2px solid #a78bfa' : undefined,
+            outline: isEditingThis ? '2px solid #a78bfa' : undefined,
             outlineOffset: '-2px',
           }}
         >
           <div className="w-full h-full relative select-none">
-            {children.map((child) => (
+            {guiChildren.map((child) => (
               <GuiElementNode
                 key={child.id}
                 node={child}
@@ -1462,6 +1609,18 @@ function PartBillboardGui({
                 onUpdateText={onUpdateText}
               />
             ))}
+            {/* Non-breaking LightInfluence shading overlay */}
+            {lightInf > 0 && (
+              <div
+                style={{
+                  position: 'absolute',
+                  inset: 0,
+                  backgroundColor: `rgba(0, 0, 0, ${Math.min(0.25, lightInf * 0.15)})`,
+                  pointerEvents: 'none',
+                  zIndex: 9999,
+                }}
+              />
+            )}
           </div>
         </Html>
       )}
@@ -3234,6 +3393,27 @@ export default function App() {
         return;
       }
       
+      // Roblox Studio Tool Shortcuts: Ctrl+1 (Select), Ctrl+2 (Move), Ctrl+3 (Scale), Ctrl+4 (Rotate)
+      if ((e.ctrlKey || e.metaKey) && !e.shiftKey && !e.altKey) {
+        if (e.key === '1') {
+          e.preventDefault();
+          setActiveTool('select');
+          return;
+        } else if (e.key === '2') {
+          e.preventDefault();
+          setActiveTool('translate');
+          return;
+        } else if (e.key === '3') {
+          e.preventDefault();
+          setActiveTool('scale');
+          return;
+        } else if (e.key === '4') {
+          e.preventDefault();
+          setActiveTool('rotate');
+          return;
+        }
+      }
+
       if ((e.key === 'Backspace' || e.key === 'Delete') && selectedId) {
         const findNode = (nodes: TreeNodeData[], id: string): TreeNodeData | undefined => {
           for (const node of nodes) {
@@ -3461,6 +3641,8 @@ export default function App() {
     const newId = 'node_' + Math.random().toString(36).substring(2, 9);
     let name = 'Part';
     let defaultCode = '';
+    const targetNode = findNodeById(displayTree, targetId);
+    const isInside3DGui = targetNode && ['surfacegui', 'billboardgui'].includes((targetNode.type || '').toLowerCase());
 
     if (objectType === 'model') {
       name = 'Model';
@@ -3588,7 +3770,7 @@ export default function App() {
       textColor: ['textlabel', 'textbutton', 'textbox'].includes(objectType) ? '#ffffff' : undefined,
       textTransparency: ['textlabel', 'textbutton', 'textbox'].includes(objectType) ? 0 : undefined,
       textSize: ['textlabel', 'textbutton', 'textbox'].includes(objectType) ? 14 : undefined,
-      textScaled: false,
+      textScaled: isInside3DGui ? true : false,
       textWrapped: true,
       font: ['textlabel', 'textbutton', 'textbox'].includes(objectType) ? 'SourceSans' : undefined,
       textXAlignment: 'Center',
@@ -3609,11 +3791,11 @@ export default function App() {
       displayOrder: objectType === 'screengui' ? 0 : undefined,
       // 3D GUIs
       face: objectType === 'surfacegui' ? 'Front' : (isDecalOrTexture ? 'Front' : ((objectType === 'spotlight' || objectType === 'surfacelight') ? 'Front' : undefined)),
-      canvasSize: objectType === 'surfacegui' ? [800, 600] : objectType === 'billboardgui' ? [200, 50] : undefined,
+      canvasSize: objectType === 'surfacegui' ? [800, 600] : undefined,
       studsOffset: objectType === 'billboardgui' ? [0, 2, 0] : undefined,
       alwaysOnTop: objectType === 'billboardgui' ? true : false,
       maxDistance: objectType === 'billboardgui' ? 100 : undefined,
-      lightInfluence: objectType === 'surfacegui' ? 1 : undefined,
+      lightInfluence: objectType === 'surfacegui' ? 1 : objectType === 'billboardgui' ? 0 : undefined,
       // Decal / Texture
       texture: isDecalOrTexture ? '' : undefined,
       transparency: isDecalOrTexture ? 0 : undefined,
@@ -4214,63 +4396,124 @@ export default function App() {
         {/* TOP TOOLBAR */}
         <div className="h-[40px] flex-shrink-0 flex items-center justify-between px-3 bg-[#2c2c2c] border-b border-[#050505]">
           <div className="flex items-center gap-2">
+            {/* Play / Stop Button — Authentic Roblox Studio styling */}
             <button 
               onClick={() => handlePlay()}
-              className={`flex items-center gap-1.5 text-white border-none px-3.5 py-1.5 rounded-[3px] text-[13px] font-medium cursor-pointer transition-colors ${
+              className={`flex items-center gap-1.5 text-white border px-3.5 py-1.5 rounded-[4px] text-[12.5px] font-semibold cursor-pointer transition-all shadow-sm ${
                 isRunning 
-                  ? 'bg-[#d9534f] hover:bg-[#c9302c]' 
-                  : 'bg-[#0078d7] hover:bg-[#0063b1]'
+                  ? 'bg-[#d9383a] hover:bg-[#c9302c] active:bg-[#b82a26] border-[#c03032]' 
+                  : 'bg-[#00a859] hover:bg-[#00b06f] active:bg-[#008f4c] border-[#00904d]'
               }`}
+              title={isRunning ? "Stop Simulation (Shift+F5)" : "Play Simulation (F5)"}
             >
               {isRunning ? (
                 <>
-                  <Square size={13} fill="currentColor" /> Stop
+                  <RobloxStopIcon size={12} className="text-white" />
+                  <span>Stop</span>
                 </>
               ) : (
                 <>
-                  <Play size={13} fill="currentColor" /> Play
+                  <RobloxPlayIcon size={12} className="text-white" />
+                  <span>Play</span>
                 </>
               )}
             </button>
+
+            {/* Simulation View Switcher — Authentic Roblox Studio Test Bar (Current: Server / Client) */}
+            {isRunning && (
+              <button
+                onClick={() => {
+                  setGameplayMode((prev) => (prev === 'server' ? 'client' : 'server'));
+                  setActiveTabId('gameplay');
+                }}
+                className={`flex items-center gap-2 px-3 py-1.5 rounded-[4px] text-[12px] font-medium transition-all border shadow-sm select-none cursor-pointer ${
+                  gameplayMode === 'server'
+                    ? 'bg-[#182333] hover:bg-[#1e2f47] text-[#38bdf8] border-[#0284c7]/60'
+                    : 'bg-[#064e3b]/50 hover:bg-[#064e3b]/70 text-[#34d399] border-[#059669]/60'
+                }`}
+                title="Toggle between Server and Client simulation (Roblox Studio style)"
+              >
+                {gameplayMode === 'server' ? (
+                  <>
+                    {SERVICE_ICONS['serverscriptservice'] ? (
+                      <img src={SERVICE_ICONS['serverscriptservice']} alt="" className="w-4 h-4 object-contain pointer-events-none" draggable={false} />
+                    ) : (
+                      <RobloxServerIcon size={14} />
+                    )}
+                    <span>Current: <strong className="font-semibold text-white">Server</strong></span>
+                  </>
+                ) : (
+                  <>
+                    {CLASS_ICONS['networkclient'] || CLASS_ICONS['player'] ? (
+                      <img src={CLASS_ICONS['networkclient'] || CLASS_ICONS['player']} alt="" className="w-4 h-4 object-contain pointer-events-none" draggable={false} />
+                    ) : (
+                      <RobloxClientIcon size={14} />
+                    )}
+                    <span>Current: <strong className="font-semibold text-white">Client</strong></span>
+                  </>
+                )}
+              </button>
+            )}
             
-            <div className="w-[1px] h-[20px] bg-[#3e3e42] mx-2"></div>
+            <div className="w-[1px] h-[20px] bg-[#3e3e42] mx-1"></div>
             
-            <div className="flex items-center gap-1 bg-[#1e1e1e] p-0.5 rounded-[3px] border border-[#3e3e42]">
+            {/* Roblox Studio Transform Tools Group */}
+            <div className="flex items-center gap-0.5 bg-[#1e1e1e] p-0.5 rounded-[4px] border border-[#3e3e42] shadow-sm">
               <button 
                 onClick={() => setActiveTool('select')}
-                className={`p-1.5 rounded-sm transition-colors ${activeTool === 'select' ? 'bg-[#0078d7] text-white' : 'text-[#cccccc] hover:bg-[#333333]'}`}
-                title="Select"
+                className={`p-1.5 rounded-[3px] transition-all flex items-center justify-center border cursor-pointer ${
+                  activeTool === 'select' 
+                    ? 'bg-[#0078d7] text-white shadow-inner border-[#0090ff]/60' 
+                    : 'text-[#cccccc] hover:bg-[#333333] hover:text-white border-transparent'
+                }`}
+                title="Select (Ctrl+1)"
               >
-                <MousePointer2 size={14} />
+                <RobloxSelectIcon size={16} />
               </button>
               <button 
                 onClick={() => setActiveTool('translate')}
-                className={`p-1.5 rounded-sm transition-colors ${activeTool === 'translate' ? 'bg-[#0078d7] text-white' : 'text-[#cccccc] hover:bg-[#333333]'}`}
-                title="Move"
+                className={`p-1.5 rounded-[3px] transition-all flex items-center justify-center border cursor-pointer ${
+                  activeTool === 'translate' 
+                    ? 'bg-[#0078d7] text-white shadow-inner border-[#0090ff]/60' 
+                    : 'text-[#cccccc] hover:bg-[#333333] hover:text-white border-transparent'
+                }`}
+                title="Move (Ctrl+2)"
               >
-                <Move size={14} />
+                <RobloxMoveIcon size={16} />
               </button>
               <button 
                 onClick={() => setActiveTool('scale')}
-                className={`p-1.5 rounded-sm transition-colors ${activeTool === 'scale' ? 'bg-[#0078d7] text-white' : 'text-[#cccccc] hover:bg-[#333333]'}`}
-                title="Scale"
+                className={`p-1.5 rounded-[3px] transition-all flex items-center justify-center border cursor-pointer ${
+                  activeTool === 'scale' 
+                    ? 'bg-[#0078d7] text-white shadow-inner border-[#0090ff]/60' 
+                    : 'text-[#cccccc] hover:bg-[#333333] hover:text-white border-transparent'
+                }`}
+                title="Scale (Ctrl+3)"
               >
-                <Maximize size={14} />
+                <RobloxScaleIcon size={16} />
               </button>
               <button 
                 onClick={() => setActiveTool('rotate')}
-                className={`p-1.5 rounded-sm transition-colors ${activeTool === 'rotate' ? 'bg-[#0078d7] text-white' : 'text-[#cccccc] hover:bg-[#333333]'}`}
-                title="Rotate"
+                className={`p-1.5 rounded-[3px] transition-all flex items-center justify-center border cursor-pointer ${
+                  activeTool === 'rotate' 
+                    ? 'bg-[#0078d7] text-white shadow-inner border-[#0090ff]/60' 
+                    : 'text-[#cccccc] hover:bg-[#333333] hover:text-white border-transparent'
+                }`}
+                title="Rotate (Ctrl+4)"
               >
-                <RotateCw size={14} />
+                <RobloxRotateIcon size={16} />
               </button>
               <div className="w-[1px] h-[18px] bg-[#3e3e42] mx-0.5"></div>
               <button 
                 onClick={() => setActiveTool('guiTransform')}
-                className={`p-1.5 rounded-sm transition-colors ${activeTool === 'guiTransform' ? 'bg-[#0078d7] text-white' : 'text-[#cccccc] hover:bg-[#333333]'}`}
-                title="Move/Resize GUI (2D)"
+                className={`p-1.5 rounded-[3px] transition-all flex items-center justify-center border cursor-pointer ${
+                  activeTool === 'guiTransform' 
+                    ? 'bg-[#0078d7] text-white shadow-inner border-[#0090ff]/60' 
+                    : 'text-[#cccccc] hover:bg-[#333333] hover:text-white border-transparent'
+                }`}
+                title="UI Editor (Move/Resize 2D GUI)"
               >
-                <Frame size={14} />
+                <RobloxUiEditorIcon size={16} />
               </button>
             </div>
           </div>
@@ -4319,17 +4562,21 @@ export default function App() {
                 )}
                 
                 {tab.type === 'viewport' && tab.id === 'viewport' && (
-                  getRobloxIconUrl('Workspace')
-                    ? <img src={getRobloxIconUrl('Workspace')!} alt="" className="w-3.5 h-3.5 flex-shrink-0 object-contain select-none pointer-events-none" draggable={false} />
+                  SERVICE_ICONS['workspace']
+                    ? <img src={SERVICE_ICONS['workspace']} alt="" className="w-4 h-4 flex-shrink-0 object-contain select-none pointer-events-none" draggable={false} />
                     : <Globe size={14} className="text-[#4FC3F7]" />
                 )}
                 
                 {tab.id === 'gameplay' && (
                   <div className="flex items-center">
                     {gameplayMode === 'server' ? (
-                      <Globe size={14} className="text-[#4FC3F7]" />
+                      SERVICE_ICONS['serverscriptservice']
+                        ? <img src={SERVICE_ICONS['serverscriptservice']} alt="" className="w-4 h-4 flex-shrink-0 object-contain select-none pointer-events-none" draggable={false} />
+                        : <RobloxServerIcon size={14} />
                     ) : (
-                      <Monitor size={14} className="text-[#10b981]" />
+                      (CLASS_ICONS['networkclient'] || CLASS_ICONS['player'])
+                        ? <img src={CLASS_ICONS['networkclient'] || CLASS_ICONS['player']} alt="" className="w-4 h-4 flex-shrink-0 object-contain select-none pointer-events-none" draggable={false} />
+                        : <RobloxClientIcon size={14} />
                     )}
                   </div>
                 )}
@@ -4341,7 +4588,7 @@ export default function App() {
                 </span>
 
                 {tab.id === 'gameplay' && (
-                  <div className="relative ml-1 flex items-center">
+                  <div className="relative ml-1.5 flex items-center">
                     <button
                       className="w-4 h-4 rounded-sm flex items-center justify-center hover:bg-[#444] text-[#8a8a8a] hover:text-[#d4d4d4] transition-colors"
                       onClick={(e) => {
@@ -4361,30 +4608,52 @@ export default function App() {
                     </button>
                     {showModeDropdown && isActive && dropdownPos && (
                       <div 
-                        className="fixed w-[160px] bg-[#252526] border border-[#333333] rounded shadow-lg z-[9999] overflow-hidden"
+                        className="fixed w-[180px] bg-[#1e1e1e] border border-[#3e3e42] rounded-[4px] shadow-2xl z-[9999] overflow-hidden py-1 divide-y divide-[#2a2a2a]"
                         style={{ top: dropdownPos.top + 'px', left: dropdownPos.left + 'px' }}
                       >
                         <div 
-                          className="px-3 py-1.5 text-[12px] flex items-center gap-2 hover:bg-[#0078d7] text-[#cccccc] hover:text-white cursor-pointer"
+                          className={`px-3 py-2 text-[12px] flex items-center justify-between cursor-pointer transition-colors ${
+                            gameplayMode === 'server'
+                              ? 'bg-[#0078d7] text-white font-medium'
+                              : 'text-[#cccccc] hover:bg-[#2d2d2d] hover:text-white'
+                          }`}
                           onClick={(e) => {
                             e.stopPropagation();
                             setGameplayMode('server');
                             setShowModeDropdown(false);
                           }}
                         >
-                          <Globe size={13} className="text-[#4FC3F7]" />
-                          <span>Server Gameplay</span>
+                          <div className="flex items-center gap-2">
+                            {SERVICE_ICONS['serverscriptservice'] ? (
+                              <img src={SERVICE_ICONS['serverscriptservice']} alt="" className="w-4 h-4 object-contain pointer-events-none" draggable={false} />
+                            ) : (
+                              <RobloxServerIcon size={14} />
+                            )}
+                            <span>Server Gameplay</span>
+                          </div>
+                          {gameplayMode === 'server' && <span className="text-[11px] font-bold">✓</span>}
                         </div>
                         <div 
-                          className="px-3 py-1.5 text-[12px] flex items-center gap-2 hover:bg-[#0078d7] text-[#cccccc] hover:text-white cursor-pointer"
+                          className={`px-3 py-2 text-[12px] flex items-center justify-between cursor-pointer transition-colors ${
+                            gameplayMode === 'client'
+                              ? 'bg-[#0078d7] text-white font-medium'
+                              : 'text-[#cccccc] hover:bg-[#2d2d2d] hover:text-white'
+                          }`}
                           onClick={(e) => {
                             e.stopPropagation();
                             setGameplayMode('client');
                             setShowModeDropdown(false);
                           }}
                         >
-                          <Monitor size={13} className="text-[#10b981]" />
-                          <span>Local Gameplay</span>
+                          <div className="flex items-center gap-2">
+                            {(CLASS_ICONS['networkclient'] || CLASS_ICONS['player']) ? (
+                              <img src={CLASS_ICONS['networkclient'] || CLASS_ICONS['player']} alt="" className="w-4 h-4 object-contain pointer-events-none" draggable={false} />
+                            ) : (
+                              <RobloxClientIcon size={14} />
+                            )}
+                            <span>Local Gameplay</span>
+                          </div>
+                          {gameplayMode === 'client' && <span className="text-[11px] font-bold">✓</span>}
                         </div>
                       </div>
                     )}
