@@ -109,10 +109,16 @@ export type TreeNodeData = {
   guiPosition?: { xScale: number; xOffset: number; yScale: number; yOffset: number };
   guiSize?: { xScale: number; xOffset: number; yScale: number; yOffset: number };
   anchorPoint?: [number, number];
+  guiRotation?: number;
+  sizeConstraint?: 'RelativeXY' | 'RelativeXX' | 'RelativeYY' | string;
+  automaticSize?: 'None' | 'X' | 'Y' | 'XY' | string;
+  selectable?: boolean;
   backgroundColor?: string;
   backgroundTransparency?: number;
   borderColor?: string;
   borderSizePixel?: number;
+  borderMode?: 'Outline' | 'Middle' | 'Inset' | string;
+  autoLocalize?: boolean;
   visible?: boolean;
   active?: boolean;
   clipsDescendants?: boolean;
@@ -121,10 +127,16 @@ export type TreeNodeData = {
   text?: string;
   textColor?: string;
   textTransparency?: number;
+  textStrokeColor?: string;
+  textStrokeTransparency?: number;
   textSize?: number;
   textScaled?: boolean;
   textWrapped?: boolean;
   font?: string;
+  richText?: boolean;
+  textTruncate?: 'None' | 'AtEnd' | 'SplitWord' | string;
+  lineHeight?: number;
+  maxVisibleGraphemes?: number;
   textXAlignment?: 'Left' | 'Center' | 'Right' | string;
   textYAlignment?: 'Top' | 'Center' | 'Bottom' | string;
   // Image Properties (ImageLabel, ImageButton)
@@ -132,16 +144,43 @@ export type TreeNodeData = {
   imageColor?: string;
   imageTransparency?: number;
   scaleType?: 'Stretch' | 'Slice' | 'Tile' | 'Fit' | 'Crop' | string;
+  sliceScale?: number;
+  sliceCenter?: [number, number, number, number];
+  tileSize?: { xScale: number; xOffset: number; yScale: number; yOffset: number };
+  imageRectOffset?: [number, number];
+  imageRectSize?: [number, number];
+  resampleMode?: 'Default' | 'Pixelated' | string;
   // Button Properties (TextButton, ImageButton)
   autoButtonColor?: boolean;
   selected?: boolean;
+  modal?: boolean;
   // TextBox Properties
   placeholderText?: string;
+  placeholderColor?: string;
   clearTextOnFocus?: boolean;
+  multiLine?: boolean;
+  textEditable?: boolean;
+  showNativeInput?: boolean;
+  cursorPosition?: number;
+  // ScrollingFrame Properties
+  canvasPosition?: [number, number];
+  scrollingCanvasSize?: { xScale: number; xOffset: number; yScale: number; yOffset: number };
+  scrollingDirection?: 'X' | 'Y' | 'XY' | string;
+  scrollBarThickness?: number;
+  scrollBarImageColor?: string;
+  scrollBarImageTransparency?: number;
+  verticalScrollBarInset?: 'None' | 'ScrollBar' | 'Always' | string;
+  verticalScrollBarPosition?: 'Right' | 'Left' | string;
+  horizontalScrollBarInset?: 'None' | 'ScrollBar' | 'Always' | string;
+  elasticBehavior?: 'WhenScrollable' | 'Always' | 'Never' | string;
+  scrollingEnabled?: boolean;
+  automaticCanvasSize?: 'None' | 'X' | 'Y' | 'XY' | string;
   // ScreenGui Properties
   ignoreGuiInset?: boolean;
   resetOnSpawn?: boolean;
   displayOrder?: number;
+  zIndexBehavior?: 'Global' | 'Sibling' | string;
+  clipToDeviceSafeArea?: boolean;
   // SurfaceGui & BillboardGui Properties
   canvasSize?: [number, number];
   studsOffset?: [number, number, number];
@@ -149,12 +188,21 @@ export type TreeNodeData = {
   maxDistance?: number;
   adorneeId?: string;
   lightInfluence?: number;
+  pixelsPerStud?: number;
+  sizingMode?: 'FixedSize' | 'PixelsPerStud' | string;
+  sizeOffset?: [number, number];
+  studsOffsetWorldSpace?: [number, number, number];
+  extentsOffset?: [number, number, number];
+  extentsOffsetWorldSpace?: [number, number, number];
+  distanceLowerLimit?: number;
+  distanceUpperLimit?: number;
   // UI Modifier Properties (UICorner, UIStroke, UIPadding, UIListLayout, UIGridLayout, UIAspectRatioConstraint, etc.)
   cornerRadius?: { scale: number; offset: number };
   strokeThickness?: number;
   strokeColor?: string;
   strokeTransparency?: number;
   applyStrokeMode?: 'Contextual' | 'Border' | string;
+  lineJoinMode?: 'Round' | 'Bevel' | 'Miter' | string;
   paddingTop?: { scale: number; offset: number };
   paddingBottom?: { scale: number; offset: number };
   paddingLeft?: { scale: number; offset: number };
@@ -165,10 +213,28 @@ export type TreeNodeData = {
   layoutPadding?: { scale: number; offset: number };
   sortOrder?: 'LayoutOrder' | 'Name' | string;
   cellSize?: { xScale: number; xOffset: number; yScale: number; yOffset: number };
+  cellPadding?: { xScale: number; xOffset: number; yScale: number; yOffset: number };
   startCorner?: 'TopLeft' | 'TopRight' | 'BottomLeft' | 'BottomRight' | string;
+  fillDirectionMaxCells?: number;
+  itemHorizontalAlignment?: 'Left' | 'Center' | 'Right' | string;
+  wraps?: boolean;
   aspectRatio?: number;
   aspectType?: 'FitWithinMaxSize' | 'ScaleWithParentSize' | string;
   dominantAxis?: 'Width' | 'Height' | string;
+  minSize?: [number, number];
+  maxSize?: [number, number];
+  minTextSize?: number;
+  maxTextSize?: number;
+  uiScale?: number;
+  gradientColor?: string;
+  gradientTransparency?: number;
+  gradientRotation?: number;
+  gradientOffset?: [number, number];
+  animated?: boolean;
+  circular?: boolean;
+  easingDirection?: string;
+  easingStyle?: string;
+  tweenTime?: number;
 };
 
 export const LIGHTING_DEFAULTS = {
@@ -1205,14 +1271,11 @@ export function createInstanceProxy(
       if (node.type === 'uigridlayout') return 'UIGridLayout';
       if (node.type === 'uiaspectratioconstraint') return 'UIAspectRatioConstraint';
       if (node.type === 'uisizeconstraint') return 'UISizeConstraint';
+      if (node.type === 'uitextsizeconstraint') return 'UITextSizeConstraint';
       if (node.type === 'uigradient') return 'UIGradient';
-      if (node.type === 'textbutton') return 'TextButton';
-      if (node.type === 'imagelabel') return 'ImageLabel';
-      if (node.type === 'imagebutton') return 'ImageButton';
-      if (node.type === 'textbox') return 'TextBox';
-      if (node.type === 'scrollingframe') return 'ScrollingFrame';
-      if (node.type === 'surfacegui') return 'SurfaceGui';
-      if (node.type === 'billboardgui') return 'BillboardGui';
+      if (node.type === 'uiscale') return 'UIScale';
+      if (node.type === 'uipagelayout') return 'UIPageLayout';
+      if (node.type === 'uiflexitem') return 'UIFlexItem';
       return node.name || 'Instance';
     },
 
@@ -1334,10 +1397,22 @@ export function createInstanceProxy(
     },
 
     get Rotation() {
+      if (isGuiNode()) {
+        return getNode()?.guiRotation ?? 0;
+      }
       const r = getNode()?.rotation || [0, 0, 0];
       return makeInstanceVector3(bridge, r[0], r[1], r[2]);
     },
     set Rotation(v: any) {
+      if (isGuiNode()) {
+        const rot = typeof v === 'number' ? v : Number(v) || 0;
+        updateTree((tree) => {
+          const update = (nodes: TreeNodeData[]): TreeNodeData[] =>
+            nodes.map((n) => (n.id === nodeId ? { ...n, guiRotation: rot } : { ...n, children: update(n.children) }));
+          return update(tree);
+        });
+        return;
+      }
       if (v) {
         const x = Number(v.X ?? v.x ?? 0);
         const y = Number(v.Y ?? v.y ?? 0);
@@ -1424,7 +1499,13 @@ export function createInstanceProxy(
     },
 
     get Color() {
-      const c = isLightNode() ? (getNode()?.lightColor || '#ffffff') : (getNode()?.color || '#a3a2a5');
+      const type = getNode()?.type?.toLowerCase();
+      const isStrokeOrGrad = type === 'uistroke' || type === 'uigradient';
+      const c = isLightNode() 
+        ? (getNode()?.lightColor || '#ffffff') 
+        : isStrokeOrGrad
+        ? (getNode()?.strokeColor || getNode()?.gradientColor || '#ffffff')
+        : (getNode()?.color || '#a3a2a5');
       if (bridge?.makeColor3) {
         const hex = c.replace('#', '');
         const r = parseInt(hex.substring(0, 2), 16) / 255;
@@ -1449,7 +1530,13 @@ export function createInstanceProxy(
           const update = (nodes: TreeNodeData[]): TreeNodeData[] =>
             nodes.map((n) =>
               n.id === nodeId
-                ? (isLightNode() ? { ...n, lightColor: hex } : { ...n, color: hex })
+                ? (isLightNode() 
+                    ? { ...n, lightColor: hex } 
+                    : n.type?.toLowerCase() === 'uistroke' 
+                    ? { ...n, strokeColor: hex } 
+                    : n.type?.toLowerCase() === 'uigradient' 
+                    ? { ...n, gradientColor: hex } 
+                    : { ...n, color: hex })
                 : { ...n, children: update(n.children) }
             );
           return update(tree);
@@ -1487,13 +1574,24 @@ export function createInstanceProxy(
     },
 
     get Transparency() {
+      const type = getNode()?.type?.toLowerCase();
+      if (type === 'uistroke') return getNode()?.strokeTransparency ?? 0;
+      if (type === 'uigradient') return getNode()?.gradientTransparency ?? 0;
       return getNode()?.transparency ?? 0;
     },
     set Transparency(v: number) {
       const val = Math.max(0, Math.min(1, Number(v) || 0));
       updateTree((tree) => {
         const update = (nodes: TreeNodeData[]): TreeNodeData[] =>
-          nodes.map((n) => (n.id === nodeId ? { ...n, transparency: val } : { ...n, children: update(n.children) }));
+          nodes.map((n) => {
+            if (n.id === nodeId) {
+              const type = n.type?.toLowerCase();
+              if (type === 'uistroke') return { ...n, strokeTransparency: val };
+              if (type === 'uigradient') return { ...n, gradientTransparency: val };
+              return { ...n, transparency: val };
+            }
+            return { ...n, children: update(n.children) };
+          });
         return update(tree);
       });
     },
@@ -2175,8 +2273,26 @@ export function createInstanceProxy(
         return update(tree);
       });
     },
-    get Offset() { return getNode()?.offset ?? 0.25; },
-    set Offset(v: number) {
+    get Offset() {
+      const node = getNode();
+      if (node?.type?.toLowerCase() === 'uigradient') {
+        const p = node.gradientOffset || [0, 0];
+        return makeInstanceVector2(bridge, p[0], p[1]);
+      }
+      return node?.offset ?? 0.25;
+    },
+    set Offset(v: any) {
+      const node = getNode();
+      if (node?.type?.toLowerCase() === 'uigradient') {
+        const x = Number(v?.X ?? v?.x ?? (Array.isArray(v) ? v[0] : 0)) || 0;
+        const y = Number(v?.Y ?? v?.y ?? (Array.isArray(v) ? v[1] : 0)) || 0;
+        updateTree((tree) => {
+          const update = (nodes: TreeNodeData[]): TreeNodeData[] =>
+            nodes.map((n) => (n.id === nodeId ? { ...n, gradientOffset: [x, y] } : { ...n, children: update(n.children) }));
+          return update(tree);
+        });
+        return;
+      }
       const val = Math.max(0, Math.min(1, Number(v) || 0));
       updateTree((tree) => {
         const update = (nodes: TreeNodeData[]): TreeNodeData[] =>
@@ -2334,6 +2450,64 @@ export function createInstanceProxy(
       });
     },
 
+    get BorderMode() {
+      return getNode()?.borderMode ?? 'Outline';
+    },
+    set BorderMode(v: any) {
+      const str = typeof v === 'object' && v?.Name ? String(v.Name) : String(v || 'Outline');
+      updateTree((tree) => {
+        const update = (nodes: TreeNodeData[]): TreeNodeData[] =>
+          nodes.map((n) => (n.id === nodeId ? { ...n, borderMode: str } : { ...n, children: update(n.children) }));
+        return update(tree);
+      });
+    },
+
+    get AutoLocalize() {
+      return getNode()?.autoLocalize !== false;
+    },
+    set AutoLocalize(v: boolean) {
+      updateTree((tree) => {
+        const update = (nodes: TreeNodeData[]): TreeNodeData[] =>
+          nodes.map((n) => (n.id === nodeId ? { ...n, autoLocalize: !!v } : { ...n, children: update(n.children) }));
+        return update(tree);
+      });
+    },
+
+    get Selectable() {
+      return getNode()?.selectable !== false;
+    },
+    set Selectable(v: boolean) {
+      updateTree((tree) => {
+        const update = (nodes: TreeNodeData[]): TreeNodeData[] =>
+          nodes.map((n) => (n.id === nodeId ? { ...n, selectable: !!v } : { ...n, children: update(n.children) }));
+        return update(tree);
+      });
+    },
+
+    get AutomaticSize() {
+      return getNode()?.automaticSize ?? 'None';
+    },
+    set AutomaticSize(v: any) {
+      const str = typeof v === 'object' && v?.Name ? String(v.Name) : String(v || 'None');
+      updateTree((tree) => {
+        const update = (nodes: TreeNodeData[]): TreeNodeData[] =>
+          nodes.map((n) => (n.id === nodeId ? { ...n, automaticSize: str } : { ...n, children: update(n.children) }));
+        return update(tree);
+      });
+    },
+
+    get SizeConstraint() {
+      return getNode()?.sizeConstraint ?? 'RelativeXY';
+    },
+    set SizeConstraint(v: any) {
+      const str = typeof v === 'object' && v?.Name ? String(v.Name) : String(v || 'RelativeXY');
+      updateTree((tree) => {
+        const update = (nodes: TreeNodeData[]): TreeNodeData[] =>
+          nodes.map((n) => (n.id === nodeId ? { ...n, sizeConstraint: str } : { ...n, children: update(n.children) }));
+        return update(tree);
+      });
+    },
+
     get Visible() {
       return getNode()?.visible !== false;
     },
@@ -2415,6 +2589,30 @@ export function createInstanceProxy(
       });
     },
 
+    get TextStrokeColor3() {
+      return hexToColor3Value(getNode()?.textStrokeColor || '#000000', bridge);
+    },
+    set TextStrokeColor3(v: any) {
+      const hex = colorValueToHex(v, '#000000');
+      updateTree((tree) => {
+        const update = (nodes: TreeNodeData[]): TreeNodeData[] =>
+          nodes.map((n) => (n.id === nodeId ? { ...n, textStrokeColor: hex } : { ...n, children: update(n.children) }));
+        return update(tree);
+      });
+    },
+
+    get TextStrokeTransparency() {
+      return getNode()?.textStrokeTransparency ?? 1;
+    },
+    set TextStrokeTransparency(v: number) {
+      const val = Math.max(0, Math.min(1, Number(v) || 0));
+      updateTree((tree) => {
+        const update = (nodes: TreeNodeData[]): TreeNodeData[] =>
+          nodes.map((n) => (n.id === nodeId ? { ...n, textStrokeTransparency: val } : { ...n, children: update(n.children) }));
+        return update(tree);
+      });
+    },
+
     get TextSize() {
       return getNode()?.textSize ?? 14;
     },
@@ -2457,6 +2655,53 @@ export function createInstanceProxy(
       updateTree((tree) => {
         const update = (nodes: TreeNodeData[]): TreeNodeData[] =>
           nodes.map((n) => (n.id === nodeId ? { ...n, font: str } : { ...n, children: update(n.children) }));
+        return update(tree);
+      });
+    },
+
+    get RichText() {
+      return !!getNode()?.richText;
+    },
+    set RichText(v: boolean) {
+      updateTree((tree) => {
+        const update = (nodes: TreeNodeData[]): TreeNodeData[] =>
+          nodes.map((n) => (n.id === nodeId ? { ...n, richText: !!v } : { ...n, children: update(n.children) }));
+        return update(tree);
+      });
+    },
+
+    get TextTruncate() {
+      return getNode()?.textTruncate ?? 'None';
+    },
+    set TextTruncate(v: any) {
+      const str = typeof v === 'object' && v?.Name ? String(v.Name) : String(v || 'None');
+      updateTree((tree) => {
+        const update = (nodes: TreeNodeData[]): TreeNodeData[] =>
+          nodes.map((n) => (n.id === nodeId ? { ...n, textTruncate: str } : { ...n, children: update(n.children) }));
+        return update(tree);
+      });
+    },
+
+    get LineHeight() {
+      return getNode()?.lineHeight ?? 1;
+    },
+    set LineHeight(v: number) {
+      const val = Math.max(0, Number(v) || 1);
+      updateTree((tree) => {
+        const update = (nodes: TreeNodeData[]): TreeNodeData[] =>
+          nodes.map((n) => (n.id === nodeId ? { ...n, lineHeight: val } : { ...n, children: update(n.children) }));
+        return update(tree);
+      });
+    },
+
+    get MaxVisibleGraphemes() {
+      return getNode()?.maxVisibleGraphemes ?? -1;
+    },
+    set MaxVisibleGraphemes(v: number) {
+      const val = Math.round(Number(v) ?? -1);
+      updateTree((tree) => {
+        const update = (nodes: TreeNodeData[]): TreeNodeData[] =>
+          nodes.map((n) => (n.id === nodeId ? { ...n, maxVisibleGraphemes: val } : { ...n, children: update(n.children) }));
         return update(tree);
       });
     },
@@ -2533,6 +2778,58 @@ export function createInstanceProxy(
       });
     },
 
+    get SliceScale() {
+      return getNode()?.sliceScale ?? 1;
+    },
+    set SliceScale(v: number) {
+      const val = Math.max(0, Number(v) || 1);
+      updateTree((tree) => {
+        const update = (nodes: TreeNodeData[]): TreeNodeData[] =>
+          nodes.map((n) => (n.id === nodeId ? { ...n, sliceScale: val } : { ...n, children: update(n.children) }));
+        return update(tree);
+      });
+    },
+
+    get ResampleMode() {
+      return getNode()?.resampleMode ?? 'Default';
+    },
+    set ResampleMode(v: any) {
+      const str = typeof v === 'object' && v?.Name ? String(v.Name) : String(v || 'Default');
+      updateTree((tree) => {
+        const update = (nodes: TreeNodeData[]): TreeNodeData[] =>
+          nodes.map((n) => (n.id === nodeId ? { ...n, resampleMode: str } : { ...n, children: update(n.children) }));
+        return update(tree);
+      });
+    },
+
+    get ImageRectOffset() {
+      const p = getNode()?.imageRectOffset || [0, 0];
+      return makeInstanceVector2(bridge, p[0], p[1]);
+    },
+    set ImageRectOffset(v: any) {
+      const x = Number(v?.X ?? v?.x ?? (Array.isArray(v) ? v[0] : 0)) || 0;
+      const y = Number(v?.Y ?? v?.y ?? (Array.isArray(v) ? v[1] : 0)) || 0;
+      updateTree((tree) => {
+        const update = (nodes: TreeNodeData[]): TreeNodeData[] =>
+          nodes.map((n) => (n.id === nodeId ? { ...n, imageRectOffset: [x, y] } : { ...n, children: update(n.children) }));
+        return update(tree);
+      });
+    },
+
+    get ImageRectSize() {
+      const p = getNode()?.imageRectSize || [0, 0];
+      return makeInstanceVector2(bridge, p[0], p[1]);
+    },
+    set ImageRectSize(v: any) {
+      const x = Number(v?.X ?? v?.x ?? (Array.isArray(v) ? v[0] : 0)) || 0;
+      const y = Number(v?.Y ?? v?.y ?? (Array.isArray(v) ? v[1] : 0)) || 0;
+      updateTree((tree) => {
+        const update = (nodes: TreeNodeData[]): TreeNodeData[] =>
+          nodes.map((n) => (n.id === nodeId ? { ...n, imageRectSize: [x, y] } : { ...n, children: update(n.children) }));
+        return update(tree);
+      });
+    },
+
     get AutoButtonColor() {
       return getNode()?.autoButtonColor !== false;
     },
@@ -2555,6 +2852,17 @@ export function createInstanceProxy(
       });
     },
 
+    get Modal() {
+      return !!getNode()?.modal;
+    },
+    set Modal(v: boolean) {
+      updateTree((tree) => {
+        const update = (nodes: TreeNodeData[]): TreeNodeData[] =>
+          nodes.map((n) => (n.id === nodeId ? { ...n, modal: !!v } : { ...n, children: update(n.children) }));
+        return update(tree);
+      });
+    },
+
     get PlaceholderText() {
       return getNode()?.placeholderText ?? '';
     },
@@ -2563,6 +2871,18 @@ export function createInstanceProxy(
       updateTree((tree) => {
         const update = (nodes: TreeNodeData[]): TreeNodeData[] =>
           nodes.map((n) => (n.id === nodeId ? { ...n, placeholderText: str } : { ...n, children: update(n.children) }));
+        return update(tree);
+      });
+    },
+
+    get PlaceholderColor3() {
+      return hexToColor3Value(getNode()?.placeholderColor || '#999999', bridge);
+    },
+    set PlaceholderColor3(v: any) {
+      const hex = colorValueToHex(v, '#999999');
+      updateTree((tree) => {
+        const update = (nodes: TreeNodeData[]): TreeNodeData[] =>
+          nodes.map((n) => (n.id === nodeId ? { ...n, placeholderColor: hex } : { ...n, children: update(n.children) }));
         return update(tree);
       });
     },
@@ -2578,11 +2898,95 @@ export function createInstanceProxy(
       });
     },
 
+    get MultiLine() {
+      return !!getNode()?.multiLine;
+    },
+    set MultiLine(v: boolean) {
+      updateTree((tree) => {
+        const update = (nodes: TreeNodeData[]): TreeNodeData[] =>
+          nodes.map((n) => (n.id === nodeId ? { ...n, multiLine: !!v } : { ...n, children: update(n.children) }));
+        return update(tree);
+      });
+    },
+
+    get TextEditable() {
+      return getNode()?.textEditable !== false;
+    },
+    set TextEditable(v: boolean) {
+      updateTree((tree) => {
+        const update = (nodes: TreeNodeData[]): TreeNodeData[] =>
+          nodes.map((n) => (n.id === nodeId ? { ...n, textEditable: !!v } : { ...n, children: update(n.children) }));
+        return update(tree);
+      });
+    },
+
+    get ShowNativeInput() {
+      return getNode()?.showNativeInput !== false;
+    },
+    set ShowNativeInput(v: boolean) {
+      updateTree((tree) => {
+        const update = (nodes: TreeNodeData[]): TreeNodeData[] =>
+          nodes.map((n) => (n.id === nodeId ? { ...n, showNativeInput: !!v } : { ...n, children: update(n.children) }));
+        return update(tree);
+      });
+    },
+
+    get CursorPosition() {
+      return getNode()?.cursorPosition ?? 1;
+    },
+    set CursorPosition(v: number) {
+      const val = Math.max(1, Math.round(Number(v) || 1));
+      updateTree((tree) => {
+        const update = (nodes: TreeNodeData[]): TreeNodeData[] =>
+          nodes.map((n) => (n.id === nodeId ? { ...n, cursorPosition: val } : { ...n, children: update(n.children) }));
+        return update(tree);
+      });
+    },
+
+    get CanvasPosition() {
+      const p = getNode()?.canvasPosition || [0, 0];
+      return makeInstanceVector2(bridge, p[0], p[1]);
+    },
+    set CanvasPosition(v: any) {
+      const x = Number(v?.X ?? v?.x ?? (Array.isArray(v) ? v[0] : 0)) || 0;
+      const y = Number(v?.Y ?? v?.y ?? (Array.isArray(v) ? v[1] : 0)) || 0;
+      updateTree((tree) => {
+        const update = (nodes: TreeNodeData[]): TreeNodeData[] =>
+          nodes.map((n) => (n.id === nodeId ? { ...n, canvasPosition: [x, y] } : { ...n, children: update(n.children) }));
+        return update(tree);
+      });
+    },
+
     get CanvasSize() {
-      const cs = getNode()?.canvasSize || [800, 600];
+      const node = getNode();
+      if (node?.type?.toLowerCase() === 'scrollingframe') {
+        return makeInstanceUDim2(bridge, node.scrollingCanvasSize || { xScale: 0, xOffset: 0, yScale: 2, yOffset: 0 });
+      }
+      const cs = node?.canvasSize || [800, 600];
       return makeInstanceVector2(bridge, cs[0], cs[1]);
     },
     set CanvasSize(v: any) {
+      const node = getNode();
+      if (node?.type?.toLowerCase() === 'scrollingframe') {
+        let xs = 0, xo = 0, ys = 2, yo = 0;
+        if (v && v.__type === 'UDim2') {
+          xs = Number(v.X?.Scale ?? 0);
+          xo = Number(v.X?.Offset ?? 0);
+          ys = Number(v.Y?.Scale ?? 0);
+          yo = Number(v.Y?.Offset ?? 0);
+        } else if (v && typeof v === 'object') {
+          xs = Number(v.xScale ?? v.X?.Scale ?? 0);
+          xo = Number(v.xOffset ?? v.X?.Offset ?? 0);
+          ys = Number(v.yScale ?? v.Y?.Scale ?? 0);
+          yo = Number(v.yOffset ?? v.Y?.Offset ?? 0);
+        }
+        updateTree((tree) => {
+          const update = (nodes: TreeNodeData[]): TreeNodeData[] =>
+            nodes.map((n) => (n.id === nodeId ? { ...n, scrollingCanvasSize: { xScale: xs, xOffset: xo, yScale: ys, yOffset: yo } } : { ...n, children: update(n.children) }));
+          return update(tree);
+        });
+        return;
+      }
       const x = Number(v?.X ?? v?.x ?? (Array.isArray(v) ? v[0] : 800)) || 800;
       const y = Number(v?.Y ?? v?.y ?? (Array.isArray(v) ? v[1] : 600)) || 600;
       updateTree((tree) => {
@@ -2601,6 +3005,125 @@ export function createInstanceProxy(
       });
     },
 
+    get ScrollBarThickness() {
+      return getNode()?.scrollBarThickness ?? 12;
+    },
+    set ScrollBarThickness(v: number) {
+      const val = Math.max(0, Math.round(Number(v) || 0));
+      updateTree((tree) => {
+        const update = (nodes: TreeNodeData[]): TreeNodeData[] =>
+          nodes.map((n) => (n.id === nodeId ? { ...n, scrollBarThickness: val } : { ...n, children: update(n.children) }));
+        return update(tree);
+      });
+    },
+
+    get ScrollBarImageColor3() {
+      return hexToColor3Value(getNode()?.scrollBarImageColor || '#ffffff', bridge);
+    },
+    set ScrollBarImageColor3(v: any) {
+      const hex = colorValueToHex(v, '#ffffff');
+      updateTree((tree) => {
+        const update = (nodes: TreeNodeData[]): TreeNodeData[] =>
+          nodes.map((n) => (n.id === nodeId ? { ...n, scrollBarImageColor: hex } : { ...n, children: update(n.children) }));
+        return update(tree);
+      });
+    },
+
+    get ScrollBarImageTransparency() {
+      return getNode()?.scrollBarImageTransparency ?? 0;
+    },
+    set ScrollBarImageTransparency(v: number) {
+      const val = Math.max(0, Math.min(1, Number(v) || 0));
+      updateTree((tree) => {
+        const update = (nodes: TreeNodeData[]): TreeNodeData[] =>
+          nodes.map((n) => (n.id === nodeId ? { ...n, scrollBarImageTransparency: val } : { ...n, children: update(n.children) }));
+        return update(tree);
+      });
+    },
+
+    get ScrollingDirection() {
+      return getNode()?.scrollingDirection ?? 'XY';
+    },
+    set ScrollingDirection(v: any) {
+      const str = typeof v === 'object' && v?.Name ? String(v.Name) : String(v || 'XY');
+      updateTree((tree) => {
+        const update = (nodes: TreeNodeData[]): TreeNodeData[] =>
+          nodes.map((n) => (n.id === nodeId ? { ...n, scrollingDirection: str } : { ...n, children: update(n.children) }));
+        return update(tree);
+      });
+    },
+
+    get ScrollingEnabled() {
+      return getNode()?.scrollingEnabled !== false;
+    },
+    set ScrollingEnabled(v: boolean) {
+      updateTree((tree) => {
+        const update = (nodes: TreeNodeData[]): TreeNodeData[] =>
+          nodes.map((n) => (n.id === nodeId ? { ...n, scrollingEnabled: !!v } : { ...n, children: update(n.children) }));
+        return update(tree);
+      });
+    },
+
+    get AutomaticCanvasSize() {
+      return getNode()?.automaticCanvasSize ?? 'None';
+    },
+    set AutomaticCanvasSize(v: any) {
+      const str = typeof v === 'object' && v?.Name ? String(v.Name) : String(v || 'None');
+      updateTree((tree) => {
+        const update = (nodes: TreeNodeData[]): TreeNodeData[] =>
+          nodes.map((n) => (n.id === nodeId ? { ...n, automaticCanvasSize: str } : { ...n, children: update(n.children) }));
+        return update(tree);
+      });
+    },
+
+    get VerticalScrollBarPosition() {
+      return getNode()?.verticalScrollBarPosition ?? 'Right';
+    },
+    set VerticalScrollBarPosition(v: any) {
+      const str = typeof v === 'object' && v?.Name ? String(v.Name) : String(v || 'Right');
+      updateTree((tree) => {
+        const update = (nodes: TreeNodeData[]): TreeNodeData[] =>
+          nodes.map((n) => (n.id === nodeId ? { ...n, verticalScrollBarPosition: str } : { ...n, children: update(n.children) }));
+        return update(tree);
+      });
+    },
+
+    get VerticalScrollBarInset() {
+      return getNode()?.verticalScrollBarInset ?? 'None';
+    },
+    set VerticalScrollBarInset(v: any) {
+      const str = typeof v === 'object' && v?.Name ? String(v.Name) : String(v || 'None');
+      updateTree((tree) => {
+        const update = (nodes: TreeNodeData[]): TreeNodeData[] =>
+          nodes.map((n) => (n.id === nodeId ? { ...n, verticalScrollBarInset: str } : { ...n, children: update(n.children) }));
+        return update(tree);
+      });
+    },
+
+    get HorizontalScrollBarInset() {
+      return getNode()?.horizontalScrollBarInset ?? 'None';
+    },
+    set HorizontalScrollBarInset(v: any) {
+      const str = typeof v === 'object' && v?.Name ? String(v.Name) : String(v || 'None');
+      updateTree((tree) => {
+        const update = (nodes: TreeNodeData[]): TreeNodeData[] =>
+          nodes.map((n) => (n.id === nodeId ? { ...n, horizontalScrollBarInset: str } : { ...n, children: update(n.children) }));
+        return update(tree);
+      });
+    },
+
+    get ElasticBehavior() {
+      return getNode()?.elasticBehavior ?? 'WhenScrollable';
+    },
+    set ElasticBehavior(v: any) {
+      const str = typeof v === 'object' && v?.Name ? String(v.Name) : String(v || 'WhenScrollable');
+      updateTree((tree) => {
+        const update = (nodes: TreeNodeData[]): TreeNodeData[] =>
+          nodes.map((n) => (n.id === nodeId ? { ...n, elasticBehavior: str } : { ...n, children: update(n.children) }));
+        return update(tree);
+      });
+    },
+
     get StudsOffset() {
       const so = getNode()?.studsOffset || [0, 2, 0];
       return makeInstanceVector3(bridge, so[0], so[1], so[2]);
@@ -2612,6 +3135,113 @@ export function createInstanceProxy(
       updateTree((tree) => {
         const update = (nodes: TreeNodeData[]): TreeNodeData[] =>
           nodes.map((n) => (n.id === nodeId ? { ...n, studsOffset: [x, y, z] } : { ...n, children: update(n.children) }));
+        return update(tree);
+      });
+    },
+
+    get StudsOffsetWorldSpace() {
+      const so = getNode()?.studsOffsetWorldSpace || [0, 0, 0];
+      return makeInstanceVector3(bridge, so[0], so[1], so[2]);
+    },
+    set StudsOffsetWorldSpace(v: any) {
+      const x = Number(v?.X ?? v?.x ?? (Array.isArray(v) ? v[0] : 0)) || 0;
+      const y = Number(v?.Y ?? v?.y ?? (Array.isArray(v) ? v[1] : 0)) || 0;
+      const z = Number(v?.Z ?? v?.z ?? (Array.isArray(v) ? v[2] : 0)) || 0;
+      updateTree((tree) => {
+        const update = (nodes: TreeNodeData[]): TreeNodeData[] =>
+          nodes.map((n) => (n.id === nodeId ? { ...n, studsOffsetWorldSpace: [x, y, z] } : { ...n, children: update(n.children) }));
+        return update(tree);
+      });
+    },
+
+    get ExtentsOffset() {
+      const eo = getNode()?.extentsOffset || [0, 0, 0];
+      return makeInstanceVector3(bridge, eo[0], eo[1], eo[2]);
+    },
+    set ExtentsOffset(v: any) {
+      const x = Number(v?.X ?? v?.x ?? (Array.isArray(v) ? v[0] : 0)) || 0;
+      const y = Number(v?.Y ?? v?.y ?? (Array.isArray(v) ? v[1] : 0)) || 0;
+      const z = Number(v?.Z ?? v?.z ?? (Array.isArray(v) ? v[2] : 0)) || 0;
+      updateTree((tree) => {
+        const update = (nodes: TreeNodeData[]): TreeNodeData[] =>
+          nodes.map((n) => (n.id === nodeId ? { ...n, extentsOffset: [x, y, z] } : { ...n, children: update(n.children) }));
+        return update(tree);
+      });
+    },
+
+    get ExtentsOffsetWorldSpace() {
+      const eo = getNode()?.extentsOffsetWorldSpace || [0, 0, 0];
+      return makeInstanceVector3(bridge, eo[0], eo[1], eo[2]);
+    },
+    set ExtentsOffsetWorldSpace(v: any) {
+      const x = Number(v?.X ?? v?.x ?? (Array.isArray(v) ? v[0] : 0)) || 0;
+      const y = Number(v?.Y ?? v?.y ?? (Array.isArray(v) ? v[1] : 0)) || 0;
+      const z = Number(v?.Z ?? v?.z ?? (Array.isArray(v) ? v[2] : 0)) || 0;
+      updateTree((tree) => {
+        const update = (nodes: TreeNodeData[]): TreeNodeData[] =>
+          nodes.map((n) => (n.id === nodeId ? { ...n, extentsOffsetWorldSpace: [x, y, z] } : { ...n, children: update(n.children) }));
+        return update(tree);
+      });
+    },
+
+    get PixelsPerStud() {
+      return getNode()?.pixelsPerStud ?? 50;
+    },
+    set PixelsPerStud(v: number) {
+      const val = Math.max(1, Number(v) || 50);
+      updateTree((tree) => {
+        const update = (nodes: TreeNodeData[]): TreeNodeData[] =>
+          nodes.map((n) => (n.id === nodeId ? { ...n, pixelsPerStud: val } : { ...n, children: update(n.children) }));
+        return update(tree);
+      });
+    },
+
+    get SizingMode() {
+      return getNode()?.sizingMode ?? 'FixedSize';
+    },
+    set SizingMode(v: any) {
+      const str = typeof v === 'object' && v?.Name ? String(v.Name) : String(v || 'FixedSize');
+      updateTree((tree) => {
+        const update = (nodes: TreeNodeData[]): TreeNodeData[] =>
+          nodes.map((n) => (n.id === nodeId ? { ...n, sizingMode: str } : { ...n, children: update(n.children) }));
+        return update(tree);
+      });
+    },
+
+    get SizeOffset() {
+      const p = getNode()?.sizeOffset || [0, 0];
+      return makeInstanceVector2(bridge, p[0], p[1]);
+    },
+    set SizeOffset(v: any) {
+      const x = Number(v?.X ?? v?.x ?? (Array.isArray(v) ? v[0] : 0)) || 0;
+      const y = Number(v?.Y ?? v?.y ?? (Array.isArray(v) ? v[1] : 0)) || 0;
+      updateTree((tree) => {
+        const update = (nodes: TreeNodeData[]): TreeNodeData[] =>
+          nodes.map((n) => (n.id === nodeId ? { ...n, sizeOffset: [x, y] } : { ...n, children: update(n.children) }));
+        return update(tree);
+      });
+    },
+
+    get DistanceLowerLimit() {
+      return getNode()?.distanceLowerLimit ?? 0;
+    },
+    set DistanceLowerLimit(v: number) {
+      const val = Math.max(0, Number(v) || 0);
+      updateTree((tree) => {
+        const update = (nodes: TreeNodeData[]): TreeNodeData[] =>
+          nodes.map((n) => (n.id === nodeId ? { ...n, distanceLowerLimit: val } : { ...n, children: update(n.children) }));
+        return update(tree);
+      });
+    },
+
+    get DistanceUpperLimit() {
+      return getNode()?.distanceUpperLimit ?? -1;
+    },
+    set DistanceUpperLimit(v: number) {
+      const val = Number(v) ?? -1;
+      updateTree((tree) => {
+        const update = (nodes: TreeNodeData[]): TreeNodeData[] =>
+          nodes.map((n) => (n.id === nodeId ? { ...n, distanceUpperLimit: val } : { ...n, children: update(n.children) }));
         return update(tree);
       });
     },
@@ -2683,6 +3313,29 @@ export function createInstanceProxy(
       updateTree((tree) => {
         const update = (nodes: TreeNodeData[]): TreeNodeData[] =>
           nodes.map((n) => (n.id === nodeId ? { ...n, resetOnSpawn: !!v } : { ...n, children: update(n.children) }));
+        return update(tree);
+      });
+    },
+
+    get ZIndexBehavior() {
+      return getNode()?.zIndexBehavior ?? 'Sibling';
+    },
+    set ZIndexBehavior(v: any) {
+      const str = typeof v === 'object' && v?.Name ? String(v.Name) : String(v || 'Sibling');
+      updateTree((tree) => {
+        const update = (nodes: TreeNodeData[]): TreeNodeData[] =>
+          nodes.map((n) => (n.id === nodeId ? { ...n, zIndexBehavior: str } : { ...n, children: update(n.children) }));
+        return update(tree);
+      });
+    },
+
+    get ClipToDeviceSafeArea() {
+      return getNode()?.clipToDeviceSafeArea !== false;
+    },
+    set ClipToDeviceSafeArea(v: boolean) {
+      updateTree((tree) => {
+        const update = (nodes: TreeNodeData[]): TreeNodeData[] =>
+          nodes.map((n) => (n.id === nodeId ? { ...n, clipToDeviceSafeArea: !!v } : { ...n, children: update(n.children) }));
         return update(tree);
       });
     },
@@ -2830,6 +3483,157 @@ export function createInstanceProxy(
     set DominantAxis(v: any) {
       const str = typeof v === 'object' && v?.Name ? String(v.Name) : String(v || 'Width');
       updateNode((n) => ({ ...n, dominantAxis: str }));
+    },
+
+    get LineJoinMode() {
+      return getNode()?.lineJoinMode ?? 'Round';
+    },
+    set LineJoinMode(v: any) {
+      const str = typeof v === 'object' && v?.Name ? String(v.Name) : String(v || 'Round');
+      updateNode((n) => ({ ...n, lineJoinMode: str }));
+    },
+
+    get CellPadding() {
+      return makeInstanceUDim2(bridge, getNode()?.cellPadding || { xScale: 0, xOffset: 5, yScale: 0, yOffset: 5 });
+    },
+    set CellPadding(v: any) {
+      let xs = 0, xo = 5, ys = 0, yo = 5;
+      if (v && v.__type === 'UDim2') {
+        xs = Number(v.X?.Scale ?? 0); xo = Number(v.X?.Offset ?? 0);
+        ys = Number(v.Y?.Scale ?? 0); yo = Number(v.Y?.Offset ?? 0);
+      } else if (v && typeof v === 'object') {
+        xs = Number(v.xScale ?? v.X?.Scale ?? 0); xo = Number(v.xOffset ?? v.X?.Offset ?? 0);
+        ys = Number(v.yScale ?? v.Y?.Scale ?? 0); yo = Number(v.yOffset ?? v.Y?.Offset ?? 0);
+      }
+      updateNode((n) => ({ ...n, cellPadding: { xScale: xs, xOffset: xo, yScale: ys, yOffset: yo } }));
+    },
+
+    get CellSize() {
+      return makeInstanceUDim2(bridge, getNode()?.cellSize || { xScale: 0, xOffset: 100, yScale: 0, yOffset: 100 });
+    },
+    set CellSize(v: any) {
+      let xs = 0, xo = 100, ys = 0, yo = 100;
+      if (v && v.__type === 'UDim2') {
+        xs = Number(v.X?.Scale ?? 0); xo = Number(v.X?.Offset ?? 0);
+        ys = Number(v.Y?.Scale ?? 0); yo = Number(v.Y?.Offset ?? 0);
+      } else if (v && typeof v === 'object') {
+        xs = Number(v.xScale ?? v.X?.Scale ?? 0); xo = Number(v.xOffset ?? v.X?.Offset ?? 0);
+        ys = Number(v.yScale ?? v.Y?.Scale ?? 0); yo = Number(v.yOffset ?? v.Y?.Offset ?? 0);
+      }
+      updateNode((n) => ({ ...n, cellSize: { xScale: xs, xOffset: xo, yScale: ys, yOffset: yo } }));
+    },
+
+    get StartCorner() {
+      return getNode()?.startCorner ?? 'TopLeft';
+    },
+    set StartCorner(v: any) {
+      const str = typeof v === 'object' && v?.Name ? String(v.Name) : String(v || 'TopLeft');
+      updateNode((n) => ({ ...n, startCorner: str }));
+    },
+
+    get FillDirectionMaxCells() {
+      return getNode()?.fillDirectionMaxCells ?? 0;
+    },
+    set FillDirectionMaxCells(v: number) {
+      const val = Math.max(0, Math.round(Number(v) || 0));
+      updateNode((n) => ({ ...n, fillDirectionMaxCells: val }));
+    },
+
+    get ItemHorizontalAlignment() {
+      return getNode()?.itemHorizontalAlignment ?? 'Left';
+    },
+    set ItemHorizontalAlignment(v: any) {
+      const str = typeof v === 'object' && v?.Name ? String(v.Name) : String(v || 'Left');
+      updateNode((n) => ({ ...n, itemHorizontalAlignment: str }));
+    },
+
+    get Wraps() {
+      return !!getNode()?.wraps;
+    },
+    set Wraps(v: boolean) {
+      updateNode((n) => ({ ...n, wraps: !!v }));
+    },
+
+    get MinSize() {
+      const p = getNode()?.minSize || [0, 0];
+      return makeInstanceVector2(bridge, p[0], p[1]);
+    },
+    set MinSize(v: any) {
+      const x = Number(v?.X ?? v?.x ?? (Array.isArray(v) ? v[0] : 0)) || 0;
+      const y = Number(v?.Y ?? v?.y ?? (Array.isArray(v) ? v[1] : 0)) || 0;
+      updateNode((n) => ({ ...n, minSize: [x, y] }));
+    },
+
+    get MaxSize() {
+      const p = getNode()?.maxSize || [99999, 99999];
+      return makeInstanceVector2(bridge, p[0], p[1]);
+    },
+    set MaxSize(v: any) {
+      const x = Number(v?.X ?? v?.x ?? (Array.isArray(v) ? v[0] : 99999)) || 99999;
+      const y = Number(v?.Y ?? v?.y ?? (Array.isArray(v) ? v[1] : 99999)) || 99999;
+      updateNode((n) => ({ ...n, maxSize: [x, y] }));
+    },
+
+    get MinTextSize() {
+      return getNode()?.minTextSize ?? 1;
+    },
+    set MinTextSize(v: number) {
+      const val = Math.max(1, Math.round(Number(v) || 1));
+      updateNode((n) => ({ ...n, minTextSize: val }));
+    },
+
+    get MaxTextSize() {
+      return getNode()?.maxTextSize ?? 100;
+    },
+    set MaxTextSize(v: number) {
+      const val = Math.max(1, Math.round(Number(v) || 100));
+      updateNode((n) => ({ ...n, maxTextSize: val }));
+    },
+
+    get Scale() {
+      return getNode()?.uiScale ?? 1;
+    },
+    set Scale(v: number) {
+      const val = Math.max(0.001, Number(v) || 1);
+      updateNode((n) => ({ ...n, uiScale: val }));
+    },
+
+    get Animated() {
+      return getNode()?.animated !== false;
+    },
+    set Animated(v: boolean) {
+      updateNode((n) => ({ ...n, animated: !!v }));
+    },
+
+    get Circular() {
+      return !!getNode()?.circular;
+    },
+    set Circular(v: boolean) {
+      updateNode((n) => ({ ...n, circular: !!v }));
+    },
+
+    get EasingDirection() {
+      return getNode()?.easingDirection ?? 'Out';
+    },
+    set EasingDirection(v: any) {
+      const str = typeof v === 'object' && v?.Name ? String(v.Name) : String(v || 'Out');
+      updateNode((n) => ({ ...n, easingDirection: str }));
+    },
+
+    get EasingStyle() {
+      return getNode()?.easingStyle ?? 'Quad';
+    },
+    set EasingStyle(v: any) {
+      const str = typeof v === 'object' && v?.Name ? String(v.Name) : String(v || 'Quad');
+      updateNode((n) => ({ ...n, easingStyle: str }));
+    },
+
+    get TweenTime() {
+      return getNode()?.tweenTime ?? 0.5;
+    },
+    set TweenTime(v: number) {
+      const val = Math.max(0, Number(v) || 0.5);
+      updateNode((n) => ({ ...n, tweenTime: val }));
     },
 
     get AbsolutePosition() {
@@ -3255,6 +4059,15 @@ export function createInstanceProxy(
       }
       if (lower === 'layercollector') {
         return ['screengui', 'surfacegui', 'billboardgui'].includes(nodeType);
+      }
+      if (lower === 'uibase' || lower === 'uicomponent') {
+        return ['uicorner', 'uistroke', 'uipadding', 'uilistlayout', 'uigridlayout', 'uiaspectratioconstraint', 'uisizeconstraint', 'uitextsizeconstraint', 'uigradient', 'uiscale', 'uipagelayout', 'uiflexitem'].includes(nodeType);
+      }
+      if (lower === 'uilayout') {
+        return ['uilistlayout', 'uigridlayout', 'uipagelayout'].includes(nodeType);
+      }
+      if (lower === 'uiconstraint') {
+        return ['uiaspectratioconstraint', 'uisizeconstraint', 'uitextsizeconstraint'].includes(nodeType);
       }
       if (lower === 'frame' && (nodeType === 'frame' || nodeType === 'scrollingframe')) return true;
       return (
@@ -6379,12 +7192,12 @@ export class LuaRuntime {
           return setmetatable(proxy, {
             __index = function(_t, key)
               local value = raw[key]
-              if (key == "Color" or key == "Color3" or key == "BackgroundColor3" or key == "TextColor3" or key == "BorderColor3" or key == "ImageColor3") and value ~= nil then
+              if (key == "Color" or key == "Color3" or key == "BackgroundColor3" or key == "TextColor3" or key == "BorderColor3" or key == "ImageColor3" or key == "TextStrokeColor3" or key == "PlaceholderColor3" or key == "ScrollBarImageColor3") and value ~= nil then
                 if type(value) == "table" and value.R ~= nil and value.G ~= nil and value.B ~= nil then
                   return Color3.new(value.R, value.G, value.B)
                 end
               end
-              if (key == "Position" or key == "Size") and value ~= nil and type(value) == "table" and value.__type == "UDim2" then
+              if (key == "Position" or key == "Size" or key == "CanvasSize" or key == "CellSize" or key == "CellPadding" or key == "TileSize") and value ~= nil and type(value) == "table" and value.__type == "UDim2" then
                 local xs = (value.X and (value.X.Scale or value.X.scale)) or value.xScale or 0
                 local xo = (value.X and (value.X.Offset or value.X.offset)) or value.xOffset or 0
                 local ys = (value.Y and (value.Y.Scale or value.Y.scale)) or value.yScale or 0
@@ -6394,7 +7207,7 @@ export class LuaRuntime {
               if (key == "CornerRadius" or key == "PaddingTop" or key == "PaddingBottom" or key == "PaddingLeft" or key == "PaddingRight" or key == "Padding") and value ~= nil and type(value) == "table" and value.__type == "UDim" then
                 return UDim.new(value.Scale or value.scale or 0, value.Offset or value.offset or 0)
               end
-              if (key == "AnchorPoint" or key == "CanvasSize" or key == "AbsolutePosition" or key == "AbsoluteSize") and value ~= nil and type(value) == "table" and value.__type == "Vector2" then
+              if (key == "AnchorPoint" or key == "CanvasSize" or key == "AbsolutePosition" or key == "AbsoluteSize" or key == "CanvasPosition" or key == "ImageRectOffset" or key == "ImageRectSize" or key == "SizeOffset" or key == "MinSize" or key == "MaxSize" or key == "Offset") and value ~= nil and type(value) == "table" and value.__type == "Vector2" then
                 return Vector2.new(value.X or value.x or 0, value.Y or value.y or 0)
               end
               if type(value) == "function" then
@@ -6530,11 +7343,15 @@ export class LuaRuntime {
           UIGridLayout: 'uigridlayout',
           UIAspectRatioConstraint: 'uiaspectratioconstraint',
           UISizeConstraint: 'uisizeconstraint',
+          UITextSizeConstraint: 'uitextsizeconstraint',
           UIGradient: 'uigradient',
+          UIScale: 'uiscale',
+          UIPageLayout: 'uipagelayout',
+          UIFlexItem: 'uiflexitem',
         };
         const nodeType = typeMap[className] || 'object';
         const isGui = ['screengui', 'frame', 'textlabel', 'textbutton', 'imagelabel', 'imagebutton', 'textbox', 'scrollingframe', 'surfacegui', 'billboardgui'].includes(nodeType);
-        const isUiModifier = ['uicorner', 'uistroke', 'uipadding', 'uilistlayout', 'uigridlayout', 'uiaspectratioconstraint', 'uisizeconstraint', 'uigradient'].includes(nodeType);
+        const isUiModifier = ['uicorner', 'uistroke', 'uipadding', 'uilistlayout', 'uigridlayout', 'uiaspectratioconstraint', 'uisizeconstraint', 'uitextsizeconstraint', 'uigradient', 'uiscale', 'uipagelayout', 'uiflexitem'].includes(nodeType);
 
         let parentId: string | null = null;
         if (typeof parent === 'string' && parent) {
@@ -6563,56 +7380,135 @@ export class LuaRuntime {
           guiSize: isGui
             ? (['textlabel', 'textbutton', 'textbox', 'billboardgui'].includes(nodeType)
                 ? { xScale: 0, xOffset: 200, yScale: 0, yOffset: 50 }
+                : nodeType === 'scrollingframe'
+                ? { xScale: 0, xOffset: 200, yScale: 0, yOffset: 200 }
                 : { xScale: 0, xOffset: 100, yScale: 0, yOffset: 100 })
             : undefined,
           anchorPoint: isGui ? [0, 0] : undefined,
+          guiRotation: isGui ? 0 : undefined,
+          automaticSize: isGui ? 'None' : undefined,
+          sizeConstraint: isGui ? 'RelativeXY' : undefined,
+          selectable: isGui ? true : undefined,
           backgroundColor: nodeType === 'textbutton' ? '#0078d7' : isGui ? '#ffffff' : undefined,
           backgroundTransparency: (nodeType === 'screengui' || nodeType === 'surfacegui' || nodeType === 'billboardgui') ? 1 : isGui ? 0 : undefined,
           borderColor: isGui ? '#000000' : undefined,
           borderSizePixel: ['screengui', 'surfacegui', 'billboardgui'].includes(nodeType) ? 0 : isGui ? 1 : undefined,
+          borderMode: isGui ? 'Outline' : undefined,
+          autoLocalize: isGui ? true : undefined,
           visible: isGui ? true : undefined,
           active: ['textbutton', 'imagebutton', 'textbox'].includes(nodeType),
+          clipsDescendants: nodeType === 'scrollingframe' ? true : false,
+          layoutOrder: isGui ? 0 : undefined,
+          // Text
           text: nodeType === 'textlabel' ? 'Label' : nodeType === 'textbutton' ? 'Button' : nodeType === 'textbox' ? '' : undefined,
           textColor: nodeType === 'textbutton' ? '#ffffff' : isGui ? '#000000' : undefined,
+          textTransparency: ['textlabel', 'textbutton', 'textbox'].includes(nodeType) ? 0 : undefined,
+          textStrokeColor: ['textlabel', 'textbutton', 'textbox'].includes(nodeType) ? '#000000' : undefined,
+          textStrokeTransparency: ['textlabel', 'textbutton', 'textbox'].includes(nodeType) ? 1 : undefined,
           textSize: isGui ? 14 : undefined,
+          textScaled: false,
+          textWrapped: true,
           font: isGui ? 'SourceSans' : undefined,
+          richText: false,
+          textTruncate: 'None',
+          lineHeight: 1,
+          maxVisibleGraphemes: -1,
           textXAlignment: isGui ? 'Center' : undefined,
           textYAlignment: isGui ? 'Center' : undefined,
+          // Button
           autoButtonColor: ['textbutton', 'imagebutton'].includes(nodeType),
+          selected: false,
+          modal: false,
+          // TextBox
           placeholderText: nodeType === 'textbox' ? 'Type here...' : undefined,
+          placeholderColor: nodeType === 'textbox' ? '#999999' : undefined,
           clearTextOnFocus: nodeType === 'textbox' ? true : undefined,
+          multiLine: false,
+          textEditable: true,
+          showNativeInput: true,
+          cursorPosition: 1,
+          // Image
           image: ['imagelabel', 'imagebutton'].includes(nodeType) ? '' : undefined,
           imageColor: ['imagelabel', 'imagebutton'].includes(nodeType) ? '#ffffff' : undefined,
           imageTransparency: ['imagelabel', 'imagebutton'].includes(nodeType) ? 0 : undefined,
           scaleType: ['imagelabel', 'imagebutton'].includes(nodeType) ? 'Stretch' : undefined,
+          sliceScale: 1,
+          resampleMode: 'Default',
+          imageRectOffset: [0, 0],
+          imageRectSize: [0, 0],
+          // ScrollingFrame
+          canvasPosition: nodeType === 'scrollingframe' ? [0, 0] : undefined,
+          scrollingCanvasSize: nodeType === 'scrollingframe' ? { xScale: 0, xOffset: 0, yScale: 2, yOffset: 0 } : undefined,
+          scrollingDirection: nodeType === 'scrollingframe' ? 'XY' : undefined,
+          scrollBarThickness: nodeType === 'scrollingframe' ? 12 : undefined,
+          scrollBarImageColor: nodeType === 'scrollingframe' ? '#ffffff' : undefined,
+          scrollBarImageTransparency: nodeType === 'scrollingframe' ? 0 : undefined,
+          verticalScrollBarInset: nodeType === 'scrollingframe' ? 'None' : undefined,
+          verticalScrollBarPosition: nodeType === 'scrollingframe' ? 'Right' : undefined,
+          horizontalScrollBarInset: nodeType === 'scrollingframe' ? 'None' : undefined,
+          elasticBehavior: nodeType === 'scrollingframe' ? 'WhenScrollable' : undefined,
+          scrollingEnabled: nodeType === 'scrollingframe' ? true : undefined,
+          automaticCanvasSize: nodeType === 'scrollingframe' ? 'None' : undefined,
+          // ScreenGui
+          ignoreGuiInset: nodeType === 'screengui' ? false : undefined,
+          resetOnSpawn: nodeType === 'screengui' ? true : undefined,
+          displayOrder: nodeType === 'screengui' ? 0 : undefined,
+          zIndexBehavior: nodeType === 'screengui' ? 'Sibling' : undefined,
+          clipToDeviceSafeArea: nodeType === 'screengui' ? true : undefined,
+          // 3D GUI
           canvasSize: nodeType === 'surfacegui' ? [800, 600] : (nodeType === 'billboardgui' ? [200, 50] : undefined),
           studsOffset: nodeType === 'billboardgui' ? [0, 2, 0] : undefined,
           alwaysOnTop: nodeType === 'billboardgui' ? true : false,
           maxDistance: nodeType === 'billboardgui' ? 100 : undefined,
           lightInfluence: nodeType === 'surfacegui' ? 1 : undefined,
-          ignoreGuiInset: nodeType === 'screengui' ? false : undefined,
-          resetOnSpawn: nodeType === 'screengui' ? true : undefined,
-          displayOrder: nodeType === 'screengui' ? 0 : undefined,
+          pixelsPerStud: nodeType === 'surfacegui' ? 50 : undefined,
+          sizingMode: nodeType === 'surfacegui' ? 'FixedSize' : undefined,
+          sizeOffset: nodeType === 'billboardgui' ? [0, 0] : undefined,
+          studsOffsetWorldSpace: nodeType === 'billboardgui' ? [0, 0, 0] : undefined,
+          extentsOffset: nodeType === 'billboardgui' ? [0, 0, 0] : undefined,
+          extentsOffsetWorldSpace: nodeType === 'billboardgui' ? [0, 0, 0] : undefined,
+          distanceLowerLimit: nodeType === 'billboardgui' ? 0 : undefined,
+          distanceUpperLimit: nodeType === 'billboardgui' ? -1 : undefined,
+          brightness: ['surfacegui', 'billboardgui'].includes(nodeType) ? 1 : undefined,
           // UI Modifiers
           cornerRadius: nodeType === 'uicorner' ? { scale: 0, offset: 8 } : undefined,
           strokeThickness: nodeType === 'uistroke' ? 1 : undefined,
           strokeColor: nodeType === 'uistroke' ? '#000000' : undefined,
           strokeTransparency: nodeType === 'uistroke' ? 0 : undefined,
           applyStrokeMode: nodeType === 'uistroke' ? 'Border' : undefined,
+          lineJoinMode: nodeType === 'uistroke' ? 'Round' : undefined,
           paddingTop: nodeType === 'uipadding' ? { scale: 0, offset: 0 } : undefined,
           paddingBottom: nodeType === 'uipadding' ? { scale: 0, offset: 0 } : undefined,
           paddingLeft: nodeType === 'uipadding' ? { scale: 0, offset: 0 } : undefined,
           paddingRight: nodeType === 'uipadding' ? { scale: 0, offset: 0 } : undefined,
-          fillDirection: nodeType === 'uilistlayout' ? 'Vertical' : undefined,
+          fillDirection: (nodeType === 'uilistlayout' || nodeType === 'uipagelayout') ? 'Vertical' : (nodeType === 'uigridlayout' ? 'Horizontal' : undefined),
           horizontalAlignment: nodeType === 'uilistlayout' ? 'Left' : undefined,
           verticalAlignment: nodeType === 'uilistlayout' ? 'Top' : undefined,
-          layoutPadding: (nodeType === 'uilistlayout' || nodeType === 'uigridlayout') ? { scale: 0, offset: 0 } : undefined,
+          layoutPadding: (nodeType === 'uilistlayout' || nodeType === 'uigridlayout' || nodeType === 'uipagelayout') ? { scale: 0, offset: 0 } : undefined,
           sortOrder: (nodeType === 'uilistlayout' || nodeType === 'uigridlayout') ? 'LayoutOrder' : undefined,
           cellSize: nodeType === 'uigridlayout' ? { xScale: 0, xOffset: 100, yScale: 0, yOffset: 100 } : undefined,
+          cellPadding: nodeType === 'uigridlayout' ? { xScale: 0, xOffset: 5, yScale: 0, yOffset: 5 } : undefined,
           startCorner: nodeType === 'uigridlayout' ? 'TopLeft' : undefined,
+          fillDirectionMaxCells: nodeType === 'uigridlayout' ? 0 : undefined,
+          itemHorizontalAlignment: nodeType === 'uilistlayout' ? 'Left' : undefined,
+          wraps: (nodeType === 'uilistlayout' || nodeType === 'uigridlayout') ? false : undefined,
           aspectRatio: nodeType === 'uiaspectratioconstraint' ? 1 : undefined,
           aspectType: nodeType === 'uiaspectratioconstraint' ? 'FitWithinMaxSize' : undefined,
           dominantAxis: nodeType === 'uiaspectratioconstraint' ? 'Width' : undefined,
+          minSize: nodeType === 'uisizeconstraint' ? [0, 0] : undefined,
+          maxSize: nodeType === 'uisizeconstraint' ? [99999, 99999] : undefined,
+          minTextSize: nodeType === 'uitextsizeconstraint' ? 1 : undefined,
+          maxTextSize: nodeType === 'uitextsizeconstraint' ? 100 : undefined,
+          uiScale: nodeType === 'uiscale' ? 1 : undefined,
+          gradientColor: nodeType === 'uigradient' ? '#ffffff' : undefined,
+          gradientTransparency: nodeType === 'uigradient' ? 0 : undefined,
+          gradientRotation: nodeType === 'uigradient' ? 0 : undefined,
+          gradientOffset: nodeType === 'uigradient' ? [0, 0] : undefined,
+          animated: nodeType === 'uipagelayout' ? true : undefined,
+          circular: nodeType === 'uipagelayout' ? false : undefined,
+          easingDirection: nodeType === 'uipagelayout' ? 'Out' : undefined,
+          easingStyle: nodeType === 'uipagelayout' ? 'Quad' : undefined,
+          tweenTime: nodeType === 'uipagelayout' ? 0.5 : undefined,
           // Default properties for decal / texture
           texture: (nodeType === 'decal' || nodeType === 'texture') ? '' : undefined,
           face: (nodeType === 'spotlight' || nodeType === 'surfacelight' || nodeType === 'decal' || nodeType === 'texture' || nodeType === 'surfacegui') ? 'Front' : undefined,
@@ -6715,6 +7611,23 @@ export class LuaRuntime {
           Right = { Name = "Right", Value = 4 },
           Left = { Name = "Left", Value = 5 }
         }
+        Enum.TextXAlignment = { Left = { Name = "Left", Value = 0 }, Center = { Name = "Center", Value = 1 }, Right = { Name = "Right", Value = 2 } }
+        Enum.TextYAlignment = { Top = { Name = "Top", Value = 0 }, Center = { Name = "Center", Value = 1 }, Bottom = { Name = "Bottom", Value = 2 } }
+        Enum.AutomaticSize = { None = { Name = "None", Value = 0 }, X = { Name = "X", Value = 1 }, Y = { Name = "Y", Value = 2 }, XY = { Name = "XY", Value = 3 } }
+        Enum.SizeConstraint = { RelativeXY = { Name = "RelativeXY", Value = 0 }, RelativeXX = { Name = "RelativeXX", Value = 1 }, RelativeYY = { Name = "RelativeYY", Value = 2 } }
+        Enum.ScaleType = { Stretch = { Name = "Stretch", Value = 0 }, Slice = { Name = "Slice", Value = 1 }, Tile = { Name = "Tile", Value = 2 }, Fit = { Name = "Fit", Value = 3 }, Crop = { Name = "Crop", Value = 4 } }
+        Enum.BorderMode = { Outline = { Name = "Outline", Value = 0 }, Middle = { Name = "Middle", Value = 1 }, Inset = { Name = "Inset", Value = 2 } }
+        Enum.FillDirection = { Horizontal = { Name = "Horizontal", Value = 0 }, Vertical = { Name = "Vertical", Value = 1 } }
+        Enum.HorizontalAlignment = { Left = { Name = "Left", Value = 0 }, Center = { Name = "Center", Value = 1 }, Right = { Name = "Right", Value = 2 } }
+        Enum.VerticalAlignment = { Top = { Name = "Top", Value = 0 }, Center = { Name = "Center", Value = 1 }, Bottom = { Name = "Bottom", Value = 2 } }
+        Enum.SortOrder = { Name = { Name = "Name", Value = 0 }, LayoutOrder = { Name = "LayoutOrder", Value = 1 } }
+        Enum.StartCorner = { TopLeft = { Name = "TopLeft", Value = 0 }, TopRight = { Name = "TopRight", Value = 1 }, BottomLeft = { Name = "BottomLeft", Value = 2 }, BottomRight = { Name = "BottomRight", Value = 3 } }
+        Enum.ScrollingDirection = { X = { Name = "X", Value = 1 }, Y = { Name = "Y", Value = 2 }, XY = { Name = "XY", Value = 4 } }
+        Enum.ApplyStrokeMode = { Contextual = { Name = "Contextual", Value = 0 }, Border = { Name = "Border", Value = 1 } }
+        Enum.LineJoinMode = { Round = { Name = "Round", Value = 0 }, Bevel = { Name = "Bevel", Value = 1 }, Miter = { Name = "Miter", Value = 2 } }
+        Enum.EasingDirection = { In = { Name = "In", Value = 0 }, Out = { Name = "Out", Value = 1 }, InOut = { Name = "InOut", Value = 2 } }
+        Enum.EasingStyle = { Linear = { Name = "Linear", Value = 0 }, Sine = { Name = "Sine", Value = 1 }, Quad = { Name = "Quad", Value = 2 }, Cubic = { Name = "Cubic", Value = 3 }, Quart = { Name = "Quart", Value = 4 }, Quint = { Name = "Quint", Value = 5 }, Bounce = { Name = "Bounce", Value = 6 }, Elastic = { Name = "Elastic", Value = 7 } }
+        Enum.ZIndexBehavior = { Global = { Name = "Global", Value = 0 }, Sibling = { Name = "Sibling", Value = 1 } }
         _G.Enum = Enum
       `);
 

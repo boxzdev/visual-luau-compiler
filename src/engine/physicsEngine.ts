@@ -1,4 +1,4 @@
-import { TreeNodeData } from './luaRunner';
+import { TreeNodeData } from '../types';
 
 export interface RigidBodyState {
   id: string;

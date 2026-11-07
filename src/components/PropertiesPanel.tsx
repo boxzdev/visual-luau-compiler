@@ -4,7 +4,30 @@ import {
   ChevronRight, 
   X
 } from 'lucide-react';
-import { TreeNodeData, findParentNode, LIGHTING_DEFAULTS, clockTimeToTimeOfDay, timeOfDayToClockTime } from './luaRunner';
+import { TreeNodeData, findParentNode, LIGHTING_DEFAULTS, clockTimeToTimeOfDay, timeOfDayToClockTime } from '../engine/luaRunner';
+import guiPropertySectionsData from '../data/guiProperties.json';
+
+interface PropertyDescriptor {
+  label: string;
+  key: string;
+  type: 'udim2' | 'vector2' | 'vector3' | 'number' | 'select' | 'boolean' | 'color' | 'range' | 'text' | 'canvasSize' | 'partSelector' | 'udim';
+  default?: any;
+  options?: string[];
+  min?: number;
+  max?: number;
+  step?: number;
+  onlyFor?: string[];
+  placeholder?: string;
+}
+
+interface GuiPropertySection {
+  section: string;
+  title: string;
+  appliesTo: string[];
+  properties: PropertyDescriptor[];
+}
+
+const guiPropertySections = guiPropertySectionsData as GuiPropertySection[];
 
 export const BRICK_COLOR_PALETTE: { name: string; hex: string }[] = [
   { name: 'Medium stone grey', hex: '#a3a2a5' },
@@ -73,6 +96,18 @@ export function PropertiesPanel({
     guiTextBox: true,
     guiScreen: true,
     gui3D: true,
+    guiScrolling: true,
+    uiCorner: true,
+    uiStroke: true,
+    uiPadding: true,
+    uiListLayout: true,
+    uiGridLayout: true,
+    uiAspectRatio: true,
+    uiSizeConstraint: true,
+    uiTextSizeConstraint: true,
+    uiGradient: true,
+    uiScale: true,
+    uiPageLayout: true,
     data: true,
   });
 
@@ -85,6 +120,23 @@ export function PropertiesPanel({
     guiAnchorPoint: false,
     studsOffset: false,
     canvasSize: false,
+    scrollingCanvasSize: false,
+    canvasPosition: false,
+    minSize: false,
+    maxSize: false,
+    cellSize: false,
+    cellPadding: false,
+    sizeOffset: false,
+    cornerRadius: false,
+    layoutPadding: false,
+    paddingTop: false,
+    paddingBottom: false,
+    paddingLeft: false,
+    paddingRight: false,
+    imageRectOffset: false,
+    imageRectSize: false,
+    gradientOffset: false,
+    tileSize: false,
   });
 
   const filterInputRef = useRef<HTMLInputElement>(null);
@@ -171,6 +223,30 @@ export function PropertiesPanel({
   const isTextBoxElement = nodeTypeLower === 'textbox';
   const isScrollingFrame = nodeTypeLower === 'scrollingframe';
 
+  const isUiCorner = nodeTypeLower === 'uicorner';
+  const isUiStroke = nodeTypeLower === 'uistroke';
+  const isUiPadding = nodeTypeLower === 'uipadding';
+  const isUiListLayout = nodeTypeLower === 'uilistlayout';
+  const isUiGridLayout = nodeTypeLower === 'uigridlayout';
+  const isUiAspectRatio = nodeTypeLower === 'uiaspectratioconstraint';
+  const isUiSizeConstraint = nodeTypeLower === 'uisizeconstraint';
+  const isUiTextSizeConstraint = nodeTypeLower === 'uitextsizeconstraint';
+  const isUiGradient = nodeTypeLower === 'uigradient';
+  const isUiScale = nodeTypeLower === 'uiscale';
+  const isUiPageLayout = nodeTypeLower === 'uipagelayout';
+  const isUiModifier =
+    isUiCorner ||
+    isUiStroke ||
+    isUiPadding ||
+    isUiListLayout ||
+    isUiGridLayout ||
+    isUiAspectRatio ||
+    isUiSizeConstraint ||
+    isUiTextSizeConstraint ||
+    isUiGradient ||
+    isUiScale ||
+    isUiPageLayout;
+
   const guiPos = selectedNode.guiPosition || { xScale: 0, xOffset: 0, yScale: 0, yOffset: 0 };
   const guiSz = selectedNode.guiSize || (isBillboardGui ? { xScale: 0, xOffset: 200, yScale: 0, yOffset: 50 } : { xScale: 0, xOffset: 100, yScale: 0, yOffset: 100 });
   const anchorPt = selectedNode.anchorPoint || [0, 0];
@@ -202,6 +278,450 @@ export function PropertiesPanel({
     return label.toLowerCase().includes(filterQuery.toLowerCase().trim());
   };
 
+  const renderVector2 = (
+    label: string,
+    vectorKey: string,
+    val: [number, number] = [0, 0],
+    onChange: (val: [number, number]) => void,
+    step: number = 1
+  ) => {
+    if (!filterMatch(label)) return null;
+    const isExp = !!expandedVectors[vectorKey];
+    return (
+      <div key={vectorKey}>
+        <div 
+          className="flex items-center h-[26px] hover:bg-[#252526] px-3 cursor-pointer"
+          onClick={() => toggleVector(vectorKey)}
+        >
+          <div className="w-[45%] flex items-center text-[#cccccc]">
+            <span className="mr-1 text-[#888888]">
+              {isExp ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
+            </span>
+            <span className="truncate">{label}</span>
+          </div>
+          <div className="w-[55%] text-[#cccccc] font-mono text-[11px] truncate">
+            {val[0]}, {val[1]}
+          </div>
+        </div>
+        {isExp && (
+          <div className="pl-6 pr-3 py-1 space-y-1 bg-[#181818] border-t border-[#252526]">
+            {['X', 'Y'].map((axis, i) => (
+              <div key={axis} className="flex items-center h-[22px] text-[11px] gap-2">
+                <span className="w-6 text-[#888888] font-bold">{axis}</span>
+                <input
+                  type="number"
+                  step={step}
+                  value={val[i]}
+                  onChange={(e) => {
+                    const next: [number, number] = [val[0], val[1]];
+                    next[i] = parseFloat(e.target.value) || 0;
+                    onChange(next);
+                  }}
+                  className="w-20 bg-[#252526] border border-transparent hover:border-[#3e3e42] focus:border-[#0078d7] px-1.5 py-0.5 rounded text-[11px] font-mono text-[#cccccc] outline-none"
+                />
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  const renderUDim = (
+    label: string,
+    vectorKey: string,
+    val: { scale: number; offset: number } = { scale: 0, offset: 0 },
+    onChange: (val: { scale: number; offset: number }) => void
+  ) => {
+    if (!filterMatch(label)) return null;
+    const isExp = !!expandedVectors[vectorKey];
+    return (
+      <div key={vectorKey}>
+        <div 
+          className="flex items-center h-[26px] hover:bg-[#252526] px-3 cursor-pointer"
+          onClick={() => toggleVector(vectorKey)}
+        >
+          <div className="w-[45%] flex items-center text-[#cccccc]">
+            <span className="mr-1 text-[#888888]">
+              {isExp ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
+            </span>
+            <span className="truncate">{label}</span>
+          </div>
+          <div className="w-[55%] text-[#cccccc] font-mono text-[11px] truncate">
+            {`{${val.scale}, ${val.offset}}`}
+          </div>
+        </div>
+        {isExp && (
+          <div className="pl-6 pr-3 py-1 space-y-1 bg-[#181818] border-t border-[#252526]">
+            <div className="flex items-center h-[22px] text-[11px] gap-2">
+              <span className="w-12 text-[#888888] font-bold">Scale</span>
+              <input
+                type="number"
+                step="0.05"
+                value={val.scale}
+                onChange={(e) => onChange({ ...val, scale: parseFloat(e.target.value) || 0 })}
+                className="w-16 bg-[#252526] border border-transparent hover:border-[#3e3e42] focus:border-[#0078d7] px-1 py-0.5 rounded text-[11px] font-mono text-[#cccccc] outline-none"
+              />
+              <span className="w-12 text-[#888888] font-bold">Offset</span>
+              <input
+                type="number"
+                step="1"
+                value={val.offset}
+                onChange={(e) => onChange({ ...val, offset: parseInt(e.target.value, 10) || 0 })}
+                className="w-16 bg-[#252526] border border-transparent hover:border-[#3e3e42] focus:border-[#0078d7] px-1 py-0.5 rounded text-[11px] font-mono text-[#cccccc] outline-none"
+              />
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  const renderUDim2 = (
+    label: string,
+    vectorKey: string,
+    val: { xScale: number; xOffset: number; yScale: number; yOffset: number } = { xScale: 0, xOffset: 0, yScale: 0, yOffset: 0 },
+    onChange: (val: { xScale: number; xOffset: number; yScale: number; yOffset: number }) => void
+  ) => {
+    if (!filterMatch(label)) return null;
+    const isExp = !!expandedVectors[vectorKey];
+    return (
+      <div key={vectorKey}>
+        <div 
+          className="flex items-center h-[26px] hover:bg-[#252526] px-3 cursor-pointer"
+          onClick={() => toggleVector(vectorKey)}
+        >
+          <div className="w-[45%] flex items-center text-[#cccccc]">
+            <span className="mr-1 text-[#888888]">
+              {isExp ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
+            </span>
+            <span className="truncate">{label}</span>
+          </div>
+          <div className="w-[55%] text-[#cccccc] font-mono text-[11px] truncate">
+            {`{${val.xScale}, ${val.xOffset}}, {${val.yScale}, ${val.yOffset}}`}
+          </div>
+        </div>
+        {isExp && (
+          <div className="pl-6 pr-3 py-1 space-y-1 bg-[#181818] border-t border-[#252526]">
+            <div className="flex items-center h-[22px] text-[11px] gap-2">
+              <span className="w-12 text-[#888888] font-bold">X Scale</span>
+              <input
+                type="number"
+                step="0.05"
+                value={val.xScale}
+                onChange={(e) => onChange({ ...val, xScale: parseFloat(e.target.value) || 0 })}
+                className="w-16 bg-[#252526] border border-transparent hover:border-[#3e3e42] focus:border-[#0078d7] px-1 py-0.5 rounded text-[11px] font-mono text-[#cccccc] outline-none"
+              />
+              <span className="w-12 text-[#888888] font-bold">Offset</span>
+              <input
+                type="number"
+                step="1"
+                value={val.xOffset}
+                onChange={(e) => onChange({ ...val, xOffset: parseInt(e.target.value, 10) || 0 })}
+                className="w-16 bg-[#252526] border border-transparent hover:border-[#3e3e42] focus:border-[#0078d7] px-1 py-0.5 rounded text-[11px] font-mono text-[#cccccc] outline-none"
+              />
+            </div>
+            <div className="flex items-center h-[22px] text-[11px] gap-2">
+              <span className="w-12 text-[#888888] font-bold">Y Scale</span>
+              <input
+                type="number"
+                step="0.05"
+                value={val.yScale}
+                onChange={(e) => onChange({ ...val, yScale: parseFloat(e.target.value) || 0 })}
+                className="w-16 bg-[#252526] border border-transparent hover:border-[#3e3e42] focus:border-[#0078d7] px-1 py-0.5 rounded text-[11px] font-mono text-[#cccccc] outline-none"
+              />
+              <span className="w-12 text-[#888888] font-bold">Offset</span>
+              <input
+                type="number"
+                step="1"
+                value={val.yOffset}
+                onChange={(e) => onChange({ ...val, yOffset: parseInt(e.target.value, 10) || 0 })}
+                className="w-16 bg-[#252526] border border-transparent hover:border-[#3e3e42] focus:border-[#0078d7] px-1 py-0.5 rounded text-[11px] font-mono text-[#cccccc] outline-none"
+              />
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  const renderVector3 = (
+    label: string,
+    vectorKey: string,
+    val: [number, number, number] = [0, 0, 0],
+    onChange: (val: [number, number, number]) => void,
+    step: number = 0.5
+  ) => {
+    if (!filterMatch(label)) return null;
+    const isExp = !!expandedVectors[vectorKey];
+    return (
+      <div key={vectorKey}>
+        <div 
+          className="flex items-center h-[26px] hover:bg-[#252526] px-3 cursor-pointer"
+          onClick={() => toggleVector(vectorKey)}
+        >
+          <div className="w-[45%] flex items-center text-[#cccccc]">
+            <span className="mr-1 text-[#888888]">
+              {isExp ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
+            </span>
+            <span className="truncate">{label}</span>
+          </div>
+          <div className="w-[55%] text-[#cccccc] font-mono text-[11px] truncate">
+            {val[0]}, {val[1]}, {val[2]}
+          </div>
+        </div>
+        {isExp && (
+          <div className="pl-6 pr-3 py-1 space-y-1 bg-[#181818] border-t border-[#252526]">
+            {['X', 'Y', 'Z'].map((axis, i) => (
+              <div key={axis} className="flex items-center h-[22px] text-[11px] gap-2">
+                <span className="w-6 text-[#888888] font-bold">{axis}</span>
+                <input
+                  type="number"
+                  step={step}
+                  value={val[i]}
+                  onChange={(e) => {
+                    const next: [number, number, number] = [val[0], val[1], val[2]];
+                    next[i] = parseFloat(e.target.value) || 0;
+                    onChange(next);
+                  }}
+                  className="w-20 bg-[#252526] border border-transparent hover:border-[#3e3e42] focus:border-[#0078d7] px-1.5 py-0.5 rounded text-[11px] font-mono text-[#cccccc] outline-none"
+                />
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  const getParts = (nodes: TreeNodeData[]): TreeNodeData[] => {
+    const result: TreeNodeData[] = [];
+    for (const n of nodes) {
+      if (
+        n.type === 'part' ||
+        n.type === 'object' ||
+        n.type === 'spawnlocation' ||
+        n.name?.toLowerCase() === 'baseplate'
+      ) {
+        result.push(n);
+      }
+      if (n.children && n.children.length > 0) {
+        result.push(...getParts(n.children));
+      }
+    }
+    return result;
+  };
+
+  const renderPropertyItem = (prop: PropertyDescriptor) => {
+    const rawVal = (selectedNode as any)[prop.key];
+    const val = rawVal !== undefined ? rawVal : prop.default;
+
+    switch (prop.type) {
+      case 'boolean':
+        return (
+          <div key={prop.key} className="flex items-center h-[26px] hover:bg-[#252526] px-3">
+            <span className="w-[45%] text-[#cccccc] truncate">{prop.label}</span>
+            <div className="w-[55%] flex items-center">
+              <input
+                type="checkbox"
+                checked={!!val}
+                onChange={(e) => onUpdateProperty(selectedNode.id, prop.key as keyof TreeNodeData, e.target.checked)}
+                className="w-4 h-4 rounded-sm accent-[#0078d7] cursor-pointer bg-[#2d2d2d] border-[#444444]"
+              />
+            </div>
+          </div>
+        );
+
+      case 'number':
+        return (
+          <div key={prop.key} className="flex items-center h-[26px] hover:bg-[#252526] px-3">
+            <span className="w-[45%] text-[#cccccc] truncate">{prop.label}</span>
+            <div className="w-[55%]">
+              <input
+                type="number"
+                min={prop.min}
+                max={prop.max}
+                step={prop.step ?? 1}
+                value={val ?? 0}
+                onChange={(e) => {
+                  let num = parseFloat(e.target.value);
+                  if (isNaN(num)) num = prop.default ?? 0;
+                  if (prop.min !== undefined && num < prop.min) num = prop.min;
+                  if (prop.max !== undefined && num > prop.max) num = prop.max;
+                  onUpdateProperty(selectedNode.id, prop.key as keyof TreeNodeData, num);
+                }}
+                className="w-16 bg-[#181818] border border-transparent hover:border-[#3e3e42] focus:border-[#0078d7] px-1.5 py-0.5 rounded text-[11.5px] font-mono text-[#cccccc] outline-none"
+              />
+            </div>
+          </div>
+        );
+
+      case 'text':
+        return (
+          <div key={prop.key} className="flex items-center h-[26px] hover:bg-[#252526] px-3">
+            <span className="w-[45%] text-[#cccccc] truncate">{prop.label}</span>
+            <div className="w-[55%]">
+              <input
+                type="text"
+                value={val ?? ''}
+                placeholder={prop.placeholder ?? ''}
+                onChange={(e) => onUpdateProperty(selectedNode.id, prop.key as keyof TreeNodeData, e.target.value)}
+                className="w-full bg-[#181818] border border-transparent hover:border-[#3e3e42] focus:border-[#0078d7] px-1.5 py-0.5 rounded text-[11.5px] text-[#cccccc] outline-none font-mono"
+              />
+            </div>
+          </div>
+        );
+
+      case 'select':
+        return (
+          <div key={prop.key} className="flex items-center h-[26px] hover:bg-[#252526] px-3">
+            <span className="w-[45%] text-[#cccccc] truncate">{prop.label}</span>
+            <div className="w-[55%]">
+              <select
+                value={val ?? (prop.options ? prop.options[0] : '')}
+                onChange={(e) => onUpdateProperty(selectedNode.id, prop.key as keyof TreeNodeData, e.target.value)}
+                className="w-full bg-[#181818] text-[#cccccc] border border-transparent hover:border-[#3e3e42] focus:border-[#0078d7] px-1 py-0.5 rounded text-[11.5px] outline-none cursor-pointer"
+              >
+                {(prop.options || []).map((opt) => (
+                  <option key={opt} value={opt}>{opt}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+        );
+
+      case 'color':
+        return (
+          <div key={prop.key} className="flex items-center h-[26px] hover:bg-[#252526] px-3">
+            <span className="w-[45%] text-[#cccccc] truncate">{prop.label}</span>
+            <div className="w-[55%] flex items-center gap-2">
+              <input
+                type="color"
+                value={val || '#ffffff'}
+                onChange={(e) => onUpdateProperty(selectedNode.id, prop.key as keyof TreeNodeData, e.target.value)}
+                className="w-5 h-5 rounded cursor-pointer border border-[#3e3e42] bg-transparent p-0"
+              />
+              <span className="text-[11px] font-mono text-[#888888]">{val || '#ffffff'}</span>
+            </div>
+          </div>
+        );
+
+      case 'range':
+        return (
+          <div key={prop.key} className="flex items-center h-[26px] hover:bg-[#252526] px-3">
+            <span className="w-[45%] text-[#cccccc] truncate">{prop.label}</span>
+            <div className="w-[55%] flex items-center gap-2">
+              <input
+                type="range"
+                min={prop.min ?? 0}
+                max={prop.max ?? 1}
+                step={prop.step ?? 0.05}
+                value={val ?? 0}
+                onChange={(e) => onUpdateProperty(selectedNode.id, prop.key as keyof TreeNodeData, parseFloat(e.target.value))}
+                className="w-24 accent-[#0078d7] cursor-pointer"
+              />
+              <span className="text-[11px] font-mono text-[#cccccc]">{val ?? 0}</span>
+            </div>
+          </div>
+        );
+
+      case 'udim':
+        return renderUDim(
+          prop.label,
+          prop.key,
+          val || { scale: 0, offset: 0 },
+          (v) => onUpdateProperty(selectedNode.id, prop.key as keyof TreeNodeData, v)
+        );
+
+      case 'udim2':
+        return renderUDim2(
+          prop.label,
+          prop.key,
+          val || { xScale: 0, xOffset: 0, yScale: 0, yOffset: 0 },
+          (v) => {
+            onUpdateProperty(selectedNode.id, prop.key as keyof TreeNodeData, v);
+            if (prop.key === 'guiSize' && nodeTypeLower === 'billboardgui') {
+              onUpdateProperty(selectedNode.id, 'canvasSize', [v.xOffset || 200, v.yOffset || 50]);
+            }
+          }
+        );
+
+      case 'vector2':
+        return renderVector2(
+          prop.label,
+          prop.key,
+          val || [0, 0],
+          (v) => onUpdateProperty(selectedNode.id, prop.key as keyof TreeNodeData, v),
+          prop.step ?? 1
+        );
+
+      case 'vector3':
+        return renderVector3(
+          prop.label,
+          prop.key,
+          val || [0, 0, 0],
+          (v) => onUpdateProperty(selectedNode.id, prop.key as keyof TreeNodeData, v),
+          prop.step ?? 0.5
+        );
+
+      case 'canvasSize': {
+        const cVal: [number, number] = Array.isArray(val) && val.length >= 2 ? [Number(val[0]) || 800, Number(val[1]) || 600] : [800, 600];
+        return (
+          <div key={prop.key} className="flex items-center h-[26px] hover:bg-[#252526] px-3">
+            <span className="w-[45%] text-[#cccccc] truncate">{prop.label}</span>
+            <div className="w-[55%] flex items-center gap-1.5">
+              <input
+                type="number"
+                min="10"
+                value={cVal[0]}
+                onChange={(e) => {
+                  const w = parseInt(e.target.value, 10) || 800;
+                  onUpdateProperty(selectedNode.id, prop.key as keyof TreeNodeData, [w, cVal[1]]);
+                }}
+                className="w-14 bg-[#181818] border border-transparent hover:border-[#3e3e42] focus:border-[#0078d7] px-1 py-0.5 rounded text-[11px] font-mono text-[#cccccc] outline-none"
+              />
+              <span className="text-[#666]">×</span>
+              <input
+                type="number"
+                min="10"
+                value={cVal[1]}
+                onChange={(e) => {
+                  const h = parseInt(e.target.value, 10) || 600;
+                  onUpdateProperty(selectedNode.id, prop.key as keyof TreeNodeData, [cVal[0], h]);
+                }}
+                className="w-14 bg-[#181818] border border-transparent hover:border-[#3e3e42] focus:border-[#0078d7] px-1 py-0.5 rounded text-[11px] font-mono text-[#cccccc] outline-none"
+              />
+            </div>
+          </div>
+        );
+      }
+
+      case 'partSelector':
+        return (
+          <div key={prop.key} className="flex items-center h-[26px] hover:bg-[#252526] px-3">
+            <span className="w-[45%] text-[#cccccc] truncate">{prop.label}</span>
+            <div className="w-[55%]">
+              <select
+                value={val || ''}
+                onChange={(e) => onUpdateProperty(selectedNode.id, prop.key as keyof TreeNodeData, e.target.value || undefined)}
+                className="w-full bg-[#181818] border border-transparent hover:border-[#3e3e42] focus:border-[#0078d7] px-1.5 py-0.5 rounded text-[11.5px] text-[#cccccc] outline-none"
+              >
+                <option value="">Parent Part (Default)</option>
+                {getParts(tree).map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+        );
+
+      default:
+        return null;
+    }
+  };
+
   const getClassName = () => {
     if (selectedNode.id === 'workspace') return 'Workspace';
     if (selectedNode.id === 'lighting') return 'Lighting';
@@ -228,6 +748,18 @@ export function PropertiesPanel({
     if (selectedNode.type === 'scrollingframe') return 'ScrollingFrame';
     if (selectedNode.type === 'surfacegui') return 'SurfaceGui';
     if (selectedNode.type === 'billboardgui') return 'BillboardGui';
+    if (selectedNode.type === 'uicorner') return 'UICorner';
+    if (selectedNode.type === 'uistroke') return 'UIStroke';
+    if (selectedNode.type === 'uipadding') return 'UIPadding';
+    if (selectedNode.type === 'uilistlayout') return 'UIListLayout';
+    if (selectedNode.type === 'uigridlayout') return 'UIGridLayout';
+    if (selectedNode.type === 'uiaspectratioconstraint') return 'UIAspectRatioConstraint';
+    if (selectedNode.type === 'uisizeconstraint') return 'UISizeConstraint';
+    if (selectedNode.type === 'uitextsizeconstraint') return 'UITextSizeConstraint';
+    if (selectedNode.type === 'uigradient') return 'UIGradient';
+    if (selectedNode.type === 'uiscale') return 'UIScale';
+    if (selectedNode.type === 'uipagelayout') return 'UIPageLayout';
+    if (selectedNode.type === 'uiflexitem') return 'UIFlexItem';
     if (selectedNode.type === 'pointlight') return 'PointLight';
     if (selectedNode.type === 'spotlight') return 'SpotLight';
     if (selectedNode.type === 'surfacelight') return 'SurfaceLight';
@@ -1773,1076 +2305,35 @@ export function PropertiesPanel({
           </div>
         )}
 
-        {/* ================= GUI OBJECT LAYOUT SECTION ================= */}
-        {isGuiObject && (filterMatch('Position') || filterMatch('Size') || filterMatch('AnchorPoint') || filterMatch('ZIndex') || filterMatch('LayoutOrder') || filterMatch('Visible') || filterMatch('Active') || filterMatch('ClipsDescendants')) && (
-          <div>
-            <div
-              onClick={() => toggleSection('guiLayout')}
-              className="flex items-center h-[24px] px-2 bg-[#2a2a2a] hover:bg-[#333333] cursor-pointer text-[#e0e0e0] font-semibold text-[11.5px] border-b border-[#333333]"
-            >
-              <span className="mr-1 text-[#888888]">
-                {expandedSections.guiLayout ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
-              </span>
-              Layout
-            </div>
-
-            {expandedSections.guiLayout && (
-              <div className="divide-y divide-[#2d2d2d] bg-[#1e1e1e]">
-                {/* Position (UDim2) */}
-                {filterMatch('Position') && (
-                  <div>
-                    <div 
-                      className="flex items-center h-[26px] hover:bg-[#252526] px-3 cursor-pointer"
-                      onClick={() => toggleVector('guiPosition')}
-                    >
-                      <div className="w-[45%] flex items-center text-[#cccccc]">
-                        <span className="mr-1 text-[#888888]">
-                          {expandedVectors.guiPosition ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
-                        </span>
-                        <span className="truncate">Position</span>
-                      </div>
-                      <div className="w-[55%] text-[#cccccc] font-mono text-[11px] truncate">
-                        {`{${guiPos.xScale}, ${guiPos.xOffset}}, {${guiPos.yScale}, ${guiPos.yOffset}}`}
-                      </div>
-                    </div>
-                    {expandedVectors.guiPosition && (
-                      <div className="pl-6 pr-3 py-1 space-y-1 bg-[#181818] border-t border-[#252526]">
-                        <div className="flex items-center h-[22px] text-[11px] gap-2">
-                          <span className="w-12 text-[#888888] font-bold">X Scale</span>
-                          <input
-                            type="number"
-                            step="0.05"
-                            value={guiPos.xScale}
-                            onChange={(e) => onUpdateProperty(selectedNode.id, 'guiPosition', { ...guiPos, xScale: parseFloat(e.target.value) || 0 })}
-                            className="w-16 bg-[#252526] border border-transparent hover:border-[#3e3e42] focus:border-[#0078d7] px-1 py-0.5 rounded text-[11px] font-mono text-[#cccccc] outline-none"
-                          />
-                          <span className="w-12 text-[#888888] font-bold">Offset</span>
-                          <input
-                            type="number"
-                            step="1"
-                            value={guiPos.xOffset}
-                            onChange={(e) => onUpdateProperty(selectedNode.id, 'guiPosition', { ...guiPos, xOffset: parseInt(e.target.value, 10) || 0 })}
-                            className="w-16 bg-[#252526] border border-transparent hover:border-[#3e3e42] focus:border-[#0078d7] px-1 py-0.5 rounded text-[11px] font-mono text-[#cccccc] outline-none"
-                          />
-                        </div>
-                        <div className="flex items-center h-[22px] text-[11px] gap-2">
-                          <span className="w-12 text-[#888888] font-bold">Y Scale</span>
-                          <input
-                            type="number"
-                            step="0.05"
-                            value={guiPos.yScale}
-                            onChange={(e) => onUpdateProperty(selectedNode.id, 'guiPosition', { ...guiPos, yScale: parseFloat(e.target.value) || 0 })}
-                            className="w-16 bg-[#252526] border border-transparent hover:border-[#3e3e42] focus:border-[#0078d7] px-1 py-0.5 rounded text-[11px] font-mono text-[#cccccc] outline-none"
-                          />
-                          <span className="w-12 text-[#888888] font-bold">Offset</span>
-                          <input
-                            type="number"
-                            step="1"
-                            value={guiPos.yOffset}
-                            onChange={(e) => onUpdateProperty(selectedNode.id, 'guiPosition', { ...guiPos, yOffset: parseInt(e.target.value, 10) || 0 })}
-                            className="w-16 bg-[#252526] border border-transparent hover:border-[#3e3e42] focus:border-[#0078d7] px-1 py-0.5 rounded text-[11px] font-mono text-[#cccccc] outline-none"
-                          />
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                )}
-
-                {/* Size (UDim2) */}
-                {filterMatch('Size') && (
-                  <div>
-                    <div 
-                      className="flex items-center h-[26px] hover:bg-[#252526] px-3 cursor-pointer"
-                      onClick={() => toggleVector('guiSize')}
-                    >
-                      <div className="w-[45%] flex items-center text-[#cccccc]">
-                        <span className="mr-1 text-[#888888]">
-                          {expandedVectors.guiSize ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
-                        </span>
-                        <span className="truncate">Size</span>
-                      </div>
-                      <div className="w-[55%] text-[#cccccc] font-mono text-[11px] truncate">
-                        {`{${guiSz.xScale}, ${guiSz.xOffset}}, {${guiSz.yScale}, ${guiSz.yOffset}}`}
-                      </div>
-                    </div>
-                    {expandedVectors.guiSize && (
-                      <div className="pl-6 pr-3 py-1 space-y-1 bg-[#181818] border-t border-[#252526]">
-                        <div className="flex items-center h-[22px] text-[11px] gap-2">
-                          <span className="w-12 text-[#888888] font-bold">X Scale</span>
-                          <input
-                            type="number"
-                            step="0.05"
-                            value={guiSz.xScale}
-                            onChange={(e) => onUpdateProperty(selectedNode.id, 'guiSize', { ...guiSz, xScale: parseFloat(e.target.value) || 0 })}
-                            className="w-16 bg-[#252526] border border-transparent hover:border-[#3e3e42] focus:border-[#0078d7] px-1 py-0.5 rounded text-[11px] font-mono text-[#cccccc] outline-none"
-                          />
-                          <span className="w-12 text-[#888888] font-bold">Offset</span>
-                          <input
-                            type="number"
-                            step="1"
-                            value={guiSz.xOffset}
-                            onChange={(e) => onUpdateProperty(selectedNode.id, 'guiSize', { ...guiSz, xOffset: parseInt(e.target.value, 10) || 0 })}
-                            className="w-16 bg-[#252526] border border-transparent hover:border-[#3e3e42] focus:border-[#0078d7] px-1 py-0.5 rounded text-[11px] font-mono text-[#cccccc] outline-none"
-                          />
-                        </div>
-                        <div className="flex items-center h-[22px] text-[11px] gap-2">
-                          <span className="w-12 text-[#888888] font-bold">Y Scale</span>
-                          <input
-                            type="number"
-                            step="0.05"
-                            value={guiSz.yScale}
-                            onChange={(e) => onUpdateProperty(selectedNode.id, 'guiSize', { ...guiSz, yScale: parseFloat(e.target.value) || 0 })}
-                            className="w-16 bg-[#252526] border border-transparent hover:border-[#3e3e42] focus:border-[#0078d7] px-1 py-0.5 rounded text-[11px] font-mono text-[#cccccc] outline-none"
-                          />
-                          <span className="w-12 text-[#888888] font-bold">Offset</span>
-                          <input
-                            type="number"
-                            step="1"
-                            value={guiSz.yOffset}
-                            onChange={(e) => onUpdateProperty(selectedNode.id, 'guiSize', { ...guiSz, yOffset: parseInt(e.target.value, 10) || 0 })}
-                            className="w-16 bg-[#252526] border border-transparent hover:border-[#3e3e42] focus:border-[#0078d7] px-1 py-0.5 rounded text-[11px] font-mono text-[#cccccc] outline-none"
-                          />
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                )}
-
-                {/* AnchorPoint (Vector2) */}
-                {filterMatch('AnchorPoint') && (
-                  <div>
-                    <div 
-                      className="flex items-center h-[26px] hover:bg-[#252526] px-3 cursor-pointer"
-                      onClick={() => toggleVector('guiAnchorPoint')}
-                    >
-                      <div className="w-[45%] flex items-center text-[#cccccc]">
-                        <span className="mr-1 text-[#888888]">
-                          {expandedVectors.guiAnchorPoint ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
-                        </span>
-                        <span className="truncate">AnchorPoint</span>
-                      </div>
-                      <div className="w-[55%] text-[#cccccc] font-mono text-[11px] truncate">
-                        {anchorPt[0]}, {anchorPt[1]}
-                      </div>
-                    </div>
-                    {expandedVectors.guiAnchorPoint && (
-                      <div className="pl-6 pr-3 py-1 space-y-1 bg-[#181818] border-t border-[#252526]">
-                        {['X', 'Y'].map((axis, i) => (
-                          <div key={axis} className="flex items-center h-[22px] text-[11px]">
-                            <span className="w-6 text-[#888888] font-bold">{axis}</span>
-                            <input
-                              type="number"
-                              step="0.1"
-                              value={anchorPt[i]}
-                              onChange={(e) => {
-                                const newPt: [number, number] = [...anchorPt];
-                                newPt[i] = parseFloat(e.target.value) || 0;
-                                onUpdateProperty(selectedNode.id, 'anchorPoint', newPt);
-                              }}
-                              className="w-20 bg-[#252526] border border-transparent hover:border-[#3e3e42] focus:border-[#0078d7] px-1.5 py-0.5 rounded text-[11px] font-mono text-[#cccccc] outline-none"
-                            />
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                )}
-
-                {/* ZIndex */}
-                {filterMatch('ZIndex') && (
-                  <div className="flex items-center h-[26px] hover:bg-[#252526] px-3">
-                    <span className="w-[45%] text-[#cccccc] truncate">ZIndex</span>
-                    <div className="w-[55%]">
-                      <input
-                        type="number"
-                        value={selectedNode.zIndex ?? 1}
-                        onChange={(e) => onUpdateProperty(selectedNode.id, 'zIndex', parseInt(e.target.value, 10) || 1)}
-                        className="w-16 bg-[#181818] border border-transparent hover:border-[#3e3e42] focus:border-[#0078d7] px-1.5 py-0.5 rounded text-[11.5px] font-mono text-[#cccccc] outline-none"
-                      />
-                    </div>
-                  </div>
-                )}
-
-                {/* LayoutOrder */}
-                {filterMatch('LayoutOrder') && (
-                  <div className="flex items-center h-[26px] hover:bg-[#252526] px-3">
-                    <span className="w-[45%] text-[#cccccc] truncate">LayoutOrder</span>
-                    <div className="w-[55%]">
-                      <input
-                        type="number"
-                        value={selectedNode.layoutOrder ?? 0}
-                        onChange={(e) => onUpdateProperty(selectedNode.id, 'layoutOrder', parseInt(e.target.value, 10) || 0)}
-                        className="w-16 bg-[#181818] border border-transparent hover:border-[#3e3e42] focus:border-[#0078d7] px-1.5 py-0.5 rounded text-[11.5px] font-mono text-[#cccccc] outline-none"
-                      />
-                    </div>
-                  </div>
-                )}
-
-                {/* Visible */}
-                {filterMatch('Visible') && (
-                  <div className="flex items-center h-[26px] hover:bg-[#252526] px-3">
-                    <span className="w-[45%] text-[#cccccc] truncate">Visible</span>
-                    <div className="w-[55%] flex items-center">
-                      <input
-                        type="checkbox"
-                        checked={selectedNode.visible !== false}
-                        onChange={(e) => onUpdateProperty(selectedNode.id, 'visible', e.target.checked)}
-                        className="w-4 h-4 rounded-sm accent-[#0078d7] cursor-pointer bg-[#2d2d2d] border-[#444444]"
-                      />
-                    </div>
-                  </div>
-                )}
-
-                {/* Active */}
-                {filterMatch('Active') && (
-                  <div className="flex items-center h-[26px] hover:bg-[#252526] px-3">
-                    <span className="w-[45%] text-[#cccccc] truncate">Active</span>
-                    <div className="w-[55%] flex items-center">
-                      <input
-                        type="checkbox"
-                        checked={selectedNode.active !== false}
-                        onChange={(e) => onUpdateProperty(selectedNode.id, 'active', e.target.checked)}
-                        className="w-4 h-4 rounded-sm accent-[#0078d7] cursor-pointer bg-[#2d2d2d] border-[#444444]"
-                      />
-                    </div>
-                  </div>
-                )}
-
-                {/* ClipsDescendants */}
-                {filterMatch('ClipsDescendants') && (
-                  <div className="flex items-center h-[26px] hover:bg-[#252526] px-3">
-                    <span className="w-[45%] text-[#cccccc] truncate">ClipsDescendants</span>
-                    <div className="w-[55%] flex items-center">
-                      <input
-                        type="checkbox"
-                        checked={!!selectedNode.clipsDescendants}
-                        onChange={(e) => onUpdateProperty(selectedNode.id, 'clipsDescendants', e.target.checked)}
-                        className="w-4 h-4 rounded-sm accent-[#0078d7] cursor-pointer bg-[#2d2d2d] border-[#444444]"
-                      />
-                    </div>
-                  </div>
-                )}
+        {/* ================= GUI & MODIFIER SECTIONS (DATA-DRIVEN FROM JSON SCHEMA) ================= */}
+        {guiPropertySections.map((section) => {
+          if (!section.appliesTo.includes(nodeTypeLower)) return null;
+          const visibleProps = section.properties.filter((prop) => {
+            if (prop.onlyFor && !prop.onlyFor.includes(nodeTypeLower)) return false;
+            return filterMatch(prop.label);
+          });
+          if (visibleProps.length === 0) return null;
+          const isExpanded = expandedSections[section.section] !== false;
+          return (
+            <div key={section.section}>
+              <div
+                onClick={() => toggleSection(section.section)}
+                className="flex items-center h-[24px] px-2 bg-[#2a2a2a] hover:bg-[#333333] cursor-pointer text-[#e0e0e0] font-semibold text-[11.5px] border-b border-[#333333]"
+              >
+                <span className="mr-1 text-[#888888]">
+                  {isExpanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+                </span>
+                {section.title}
               </div>
-            )}
-          </div>
-        )}
 
-        {/* ================= GUI OBJECT APPEARANCE SECTION ================= */}
-        {isGuiObject && (filterMatch('BackgroundColor3') || filterMatch('BackgroundTransparency') || filterMatch('BorderColor3') || filterMatch('BorderSizePixel')) && (
-          <div>
-            <div
-              onClick={() => toggleSection('guiAppearance')}
-              className="flex items-center h-[24px] px-2 bg-[#2a2a2a] hover:bg-[#333333] cursor-pointer text-[#e0e0e0] font-semibold text-[11.5px] border-b border-[#333333]"
-            >
-              <span className="mr-1 text-[#888888]">
-                {expandedSections.guiAppearance ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
-              </span>
-              Appearance
+              {isExpanded && (
+                <div className="divide-y divide-[#2d2d2d] bg-[#1e1e1e]">
+                  {visibleProps.map((prop) => renderPropertyItem(prop))}
+                </div>
+              )}
             </div>
-
-            {expandedSections.guiAppearance && (
-              <div className="divide-y divide-[#2d2d2d] bg-[#1e1e1e]">
-                {/* BackgroundColor3 */}
-                {filterMatch('BackgroundColor3') && (
-                  <div className="flex items-center h-[28px] hover:bg-[#252526] px-3">
-                    <span className="w-[45%] text-[#cccccc] truncate">BackgroundColor3</span>
-                    <div className="w-[55%] flex items-center gap-2">
-                      <input
-                        type="color"
-                        value={bgCol}
-                        onChange={(e) => onUpdateProperty(selectedNode.id, 'backgroundColor', e.target.value)}
-                        className="w-6 h-5 rounded cursor-pointer border border-[#444] bg-transparent p-0"
-                      />
-                      <input
-                        type="text"
-                        value={bgCol}
-                        onChange={(e) => onUpdateProperty(selectedNode.id, 'backgroundColor', e.target.value)}
-                        className="w-20 bg-[#181818] border border-transparent hover:border-[#3e3e42] focus:border-[#0078d7] px-1 py-0.5 rounded text-[11px] font-mono text-[#cccccc] outline-none uppercase"
-                      />
-                    </div>
-                  </div>
-                )}
-
-                {/* BackgroundTransparency */}
-                {filterMatch('BackgroundTransparency') && (
-                  <div className="flex items-center h-[26px] hover:bg-[#252526] px-3">
-                    <span className="w-[45%] text-[#cccccc] truncate">BackgroundTransparency</span>
-                    <div className="w-[55%] flex items-center gap-2">
-                      <input
-                        type="range"
-                        min="0"
-                        max="1"
-                        step="0.05"
-                        value={selectedNode.backgroundTransparency ?? 0}
-                        onChange={(e) => onUpdateProperty(selectedNode.id, 'backgroundTransparency', parseFloat(e.target.value))}
-                        className="w-24 accent-[#0078d7] cursor-pointer"
-                      />
-                      <span className="text-[11px] font-mono text-[#cccccc]">{selectedNode.backgroundTransparency ?? 0}</span>
-                    </div>
-                  </div>
-                )}
-
-                {/* BorderColor3 */}
-                {filterMatch('BorderColor3') && (
-                  <div className="flex items-center h-[28px] hover:bg-[#252526] px-3">
-                    <span className="w-[45%] text-[#cccccc] truncate">BorderColor3</span>
-                    <div className="w-[55%] flex items-center gap-2">
-                      <input
-                        type="color"
-                        value={borderCol}
-                        onChange={(e) => onUpdateProperty(selectedNode.id, 'borderColor', e.target.value)}
-                        className="w-6 h-5 rounded cursor-pointer border border-[#444] bg-transparent p-0"
-                      />
-                      <input
-                        type="text"
-                        value={borderCol}
-                        onChange={(e) => onUpdateProperty(selectedNode.id, 'borderColor', e.target.value)}
-                        className="w-20 bg-[#181818] border border-transparent hover:border-[#3e3e42] focus:border-[#0078d7] px-1 py-0.5 rounded text-[11px] font-mono text-[#cccccc] outline-none uppercase"
-                      />
-                    </div>
-                  </div>
-                )}
-
-                {/* BorderSizePixel */}
-                {filterMatch('BorderSizePixel') && (
-                  <div className="flex items-center h-[26px] hover:bg-[#252526] px-3">
-                    <span className="w-[45%] text-[#cccccc] truncate">BorderSizePixel</span>
-                    <div className="w-[55%]">
-                      <input
-                        type="number"
-                        min="0"
-                        max="20"
-                        value={selectedNode.borderSizePixel ?? 1}
-                        onChange={(e) => onUpdateProperty(selectedNode.id, 'borderSizePixel', Math.max(0, parseInt(e.target.value, 10) || 0))}
-                        className="w-16 bg-[#181818] border border-transparent hover:border-[#3e3e42] focus:border-[#0078d7] px-1.5 py-0.5 rounded text-[11.5px] font-mono text-[#cccccc] outline-none"
-                      />
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* ================= TEXT SECTION ================= */}
-        {isTextElement && (filterMatch('Text') || filterMatch('TextColor3') || filterMatch('TextSize') || filterMatch('Font') || filterMatch('TextScaled') || filterMatch('TextWrapped') || filterMatch('TextXAlignment') || filterMatch('TextYAlignment')) && (
-          <div>
-            <div
-              onClick={() => toggleSection('guiText')}
-              className="flex items-center h-[24px] px-2 bg-[#2a2a2a] hover:bg-[#333333] cursor-pointer text-[#e0e0e0] font-semibold text-[11.5px] border-b border-[#333333]"
-            >
-              <span className="mr-1 text-[#888888]">
-                {expandedSections.guiText ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
-              </span>
-              Text
-            </div>
-
-            {expandedSections.guiText && (
-              <div className="divide-y divide-[#2d2d2d] bg-[#1e1e1e]">
-                {/* Text */}
-                {filterMatch('Text') && (
-                  <div className="flex items-center h-[26px] hover:bg-[#252526] px-3">
-                    <span className="w-[45%] text-[#cccccc] truncate">Text</span>
-                    <div className="w-[55%]">
-                      <input
-                        type="text"
-                        value={selectedNode.text ?? ''}
-                        onChange={(e) => onUpdateProperty(selectedNode.id, 'text', e.target.value)}
-                        className="w-full bg-[#181818] border border-transparent hover:border-[#3e3e42] focus:border-[#0078d7] px-1.5 py-0.5 rounded text-[11.5px] text-[#cccccc] outline-none"
-                      />
-                    </div>
-                  </div>
-                )}
-
-                {/* TextColor3 */}
-                {filterMatch('TextColor3') && (
-                  <div className="flex items-center h-[28px] hover:bg-[#252526] px-3">
-                    <span className="w-[45%] text-[#cccccc] truncate">TextColor3</span>
-                    <div className="w-[55%] flex items-center gap-2">
-                      <input
-                        type="color"
-                        value={textCol}
-                        onChange={(e) => onUpdateProperty(selectedNode.id, 'textColor', e.target.value)}
-                        className="w-6 h-5 rounded cursor-pointer border border-[#444] bg-transparent p-0"
-                      />
-                      <input
-                        type="text"
-                        value={textCol}
-                        onChange={(e) => onUpdateProperty(selectedNode.id, 'textColor', e.target.value)}
-                        className="w-20 bg-[#181818] border border-transparent hover:border-[#3e3e42] focus:border-[#0078d7] px-1 py-0.5 rounded text-[11px] font-mono text-[#cccccc] outline-none uppercase"
-                      />
-                    </div>
-                  </div>
-                )}
-
-                {/* TextTransparency */}
-                {filterMatch('TextTransparency') && (
-                  <div className="flex items-center h-[26px] hover:bg-[#252526] px-3">
-                    <span className="w-[45%] text-[#cccccc] truncate">TextTransparency</span>
-                    <div className="w-[55%] flex items-center gap-2">
-                      <input
-                        type="range"
-                        min="0"
-                        max="1"
-                        step="0.05"
-                        value={selectedNode.textTransparency ?? 0}
-                        onChange={(e) => onUpdateProperty(selectedNode.id, 'textTransparency', parseFloat(e.target.value))}
-                        className="w-24 accent-[#0078d7] cursor-pointer"
-                      />
-                      <span className="text-[11px] font-mono text-[#cccccc]">{selectedNode.textTransparency ?? 0}</span>
-                    </div>
-                  </div>
-                )}
-
-                {/* TextSize */}
-                {filterMatch('TextSize') && (
-                  <div className="flex items-center h-[26px] hover:bg-[#252526] px-3">
-                    <span className="w-[45%] text-[#cccccc] truncate">TextSize</span>
-                    <div className="w-[55%]">
-                      <input
-                        type="number"
-                        min="1"
-                        max="100"
-                        value={selectedNode.textSize ?? 14}
-                        onChange={(e) => onUpdateProperty(selectedNode.id, 'textSize', Math.max(1, parseInt(e.target.value, 10) || 14))}
-                        className="w-16 bg-[#181818] border border-transparent hover:border-[#3e3e42] focus:border-[#0078d7] px-1.5 py-0.5 rounded text-[11.5px] font-mono text-[#cccccc] outline-none"
-                      />
-                    </div>
-                  </div>
-                )}
-
-                {/* TextScaled */}
-                {filterMatch('TextScaled') && (
-                  <div className="flex items-center h-[26px] hover:bg-[#252526] px-3">
-                    <span className="w-[45%] text-[#cccccc] truncate">TextScaled</span>
-                    <div className="w-[55%] flex items-center">
-                      <input
-                        type="checkbox"
-                        checked={!!selectedNode.textScaled}
-                        onChange={(e) => onUpdateProperty(selectedNode.id, 'textScaled', e.target.checked)}
-                        className="w-4 h-4 rounded-sm accent-[#0078d7] cursor-pointer bg-[#2d2d2d] border-[#444444]"
-                      />
-                    </div>
-                  </div>
-                )}
-
-                {/* TextWrapped */}
-                {filterMatch('TextWrapped') && (
-                  <div className="flex items-center h-[26px] hover:bg-[#252526] px-3">
-                    <span className="w-[45%] text-[#cccccc] truncate">TextWrapped</span>
-                    <div className="w-[55%] flex items-center">
-                      <input
-                        type="checkbox"
-                        checked={selectedNode.textWrapped !== false}
-                        onChange={(e) => onUpdateProperty(selectedNode.id, 'textWrapped', e.target.checked)}
-                        className="w-4 h-4 rounded-sm accent-[#0078d7] cursor-pointer bg-[#2d2d2d] border-[#444444]"
-                      />
-                    </div>
-                  </div>
-                )}
-
-                {/* Font */}
-                {filterMatch('Font') && (
-                  <div className="flex items-center h-[26px] hover:bg-[#252526] px-3">
-                    <span className="w-[45%] text-[#cccccc] truncate">Font</span>
-                    <div className="w-[55%]">
-                      <select
-                        value={selectedNode.font || 'SourceSans'}
-                        onChange={(e) => onUpdateProperty(selectedNode.id, 'font', e.target.value)}
-                        className="w-full bg-[#181818] text-[#cccccc] border border-transparent hover:border-[#3e3e42] focus:border-[#0078d7] px-1 py-0.5 rounded text-[11.5px] outline-none cursor-pointer"
-                      >
-                        {['SourceSans', 'SourceSansBold', 'SourceSansItalic', 'Arial', 'RobotoMono', 'Gotham', 'GothamBold'].map((f) => (
-                          <option key={f} value={f}>{f}</option>
-                        ))}
-                      </select>
-                    </div>
-                  </div>
-                )}
-
-                {/* TextXAlignment */}
-                {filterMatch('TextXAlignment') && (
-                  <div className="flex items-center h-[26px] hover:bg-[#252526] px-3">
-                    <span className="w-[45%] text-[#cccccc] truncate">TextXAlignment</span>
-                    <div className="w-[55%]">
-                      <select
-                        value={selectedNode.textXAlignment || 'Center'}
-                        onChange={(e) => onUpdateProperty(selectedNode.id, 'textXAlignment', e.target.value)}
-                        className="w-full bg-[#181818] text-[#cccccc] border border-transparent hover:border-[#3e3e42] focus:border-[#0078d7] px-1 py-0.5 rounded text-[11.5px] outline-none cursor-pointer"
-                      >
-                        {['Left', 'Center', 'Right'].map((align) => (
-                          <option key={align} value={align}>{align}</option>
-                        ))}
-                      </select>
-                    </div>
-                  </div>
-                )}
-
-                {/* TextYAlignment */}
-                {filterMatch('TextYAlignment') && (
-                  <div className="flex items-center h-[26px] hover:bg-[#252526] px-3">
-                    <span className="w-[45%] text-[#cccccc] truncate">TextYAlignment</span>
-                    <div className="w-[55%]">
-                      <select
-                        value={selectedNode.textYAlignment || 'Center'}
-                        onChange={(e) => onUpdateProperty(selectedNode.id, 'textYAlignment', e.target.value)}
-                        className="w-full bg-[#181818] text-[#cccccc] border border-transparent hover:border-[#3e3e42] focus:border-[#0078d7] px-1 py-0.5 rounded text-[11.5px] outline-none cursor-pointer"
-                      >
-                        {['Top', 'Center', 'Bottom'].map((align) => (
-                          <option key={align} value={align}>{align}</option>
-                        ))}
-                      </select>
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* ================= IMAGE SECTION ================= */}
-        {isImageElement && (filterMatch('Image') || filterMatch('ImageColor3') || filterMatch('ImageTransparency') || filterMatch('ScaleType')) && (
-          <div>
-            <div
-              onClick={() => toggleSection('guiImage')}
-              className="flex items-center h-[24px] px-2 bg-[#2a2a2a] hover:bg-[#333333] cursor-pointer text-[#e0e0e0] font-semibold text-[11.5px] border-b border-[#333333]"
-            >
-              <span className="mr-1 text-[#888888]">
-                {expandedSections.guiImage ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
-              </span>
-              Image
-            </div>
-
-            {expandedSections.guiImage && (
-              <div className="divide-y divide-[#2d2d2d] bg-[#1e1e1e]">
-                {/* Image */}
-                {filterMatch('Image') && (
-                  <div className="flex items-center h-[26px] hover:bg-[#252526] px-3">
-                    <span className="w-[45%] text-[#cccccc] truncate">Image</span>
-                    <div className="w-[55%]">
-                      <input
-                        type="text"
-                        value={selectedNode.image ?? ''}
-                        placeholder="Asset ID or URL"
-                        onChange={(e) => onUpdateProperty(selectedNode.id, 'image', e.target.value)}
-                        className="w-full bg-[#181818] border border-transparent hover:border-[#3e3e42] focus:border-[#0078d7] px-1.5 py-0.5 rounded text-[11.5px] text-[#cccccc] outline-none"
-                      />
-                    </div>
-                  </div>
-                )}
-
-                {/* ImageColor3 */}
-                {filterMatch('ImageColor3') && (
-                  <div className="flex items-center h-[28px] hover:bg-[#252526] px-3">
-                    <span className="w-[45%] text-[#cccccc] truncate">ImageColor3</span>
-                    <div className="w-[55%] flex items-center gap-2">
-                      <input
-                        type="color"
-                        value={imgCol}
-                        onChange={(e) => onUpdateProperty(selectedNode.id, 'imageColor', e.target.value)}
-                        className="w-6 h-5 rounded cursor-pointer border border-[#444] bg-transparent p-0"
-                      />
-                      <input
-                        type="text"
-                        value={imgCol}
-                        onChange={(e) => onUpdateProperty(selectedNode.id, 'imageColor', e.target.value)}
-                        className="w-20 bg-[#181818] border border-transparent hover:border-[#3e3e42] focus:border-[#0078d7] px-1 py-0.5 rounded text-[11px] font-mono text-[#cccccc] outline-none uppercase"
-                      />
-                    </div>
-                  </div>
-                )}
-
-                {/* ImageTransparency */}
-                {filterMatch('ImageTransparency') && (
-                  <div className="flex items-center h-[26px] hover:bg-[#252526] px-3">
-                    <span className="w-[45%] text-[#cccccc] truncate">ImageTransparency</span>
-                    <div className="w-[55%] flex items-center gap-2">
-                      <input
-                        type="range"
-                        min="0"
-                        max="1"
-                        step="0.05"
-                        value={selectedNode.imageTransparency ?? 0}
-                        onChange={(e) => onUpdateProperty(selectedNode.id, 'imageTransparency', parseFloat(e.target.value))}
-                        className="w-24 accent-[#0078d7] cursor-pointer"
-                      />
-                      <span className="text-[11px] font-mono text-[#cccccc]">{selectedNode.imageTransparency ?? 0}</span>
-                    </div>
-                  </div>
-                )}
-
-                {/* ScaleType */}
-                {filterMatch('ScaleType') && (
-                  <div className="flex items-center h-[26px] hover:bg-[#252526] px-3">
-                    <span className="w-[45%] text-[#cccccc] truncate">ScaleType</span>
-                    <div className="w-[55%]">
-                      <select
-                        value={selectedNode.scaleType || 'Stretch'}
-                        onChange={(e) => onUpdateProperty(selectedNode.id, 'scaleType', e.target.value)}
-                        className="w-full bg-[#181818] text-[#cccccc] border border-transparent hover:border-[#3e3e42] focus:border-[#0078d7] px-1 py-0.5 rounded text-[11.5px] outline-none cursor-pointer"
-                      >
-                        {['Stretch', 'Fit', 'Crop', 'Tile'].map((s) => (
-                          <option key={s} value={s}>{s}</option>
-                        ))}
-                      </select>
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* ================= BUTTON SECTION ================= */}
-        {isButtonElement && (filterMatch('AutoButtonColor') || filterMatch('Selected')) && (
-          <div>
-            <div
-              onClick={() => toggleSection('guiButton')}
-              className="flex items-center h-[24px] px-2 bg-[#2a2a2a] hover:bg-[#333333] cursor-pointer text-[#e0e0e0] font-semibold text-[11.5px] border-b border-[#333333]"
-            >
-              <span className="mr-1 text-[#888888]">
-                {expandedSections.guiButton ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
-              </span>
-              Button
-            </div>
-
-            {expandedSections.guiButton && (
-              <div className="divide-y divide-[#2d2d2d] bg-[#1e1e1e]">
-                {/* AutoButtonColor */}
-                {filterMatch('AutoButtonColor') && (
-                  <div className="flex items-center h-[26px] hover:bg-[#252526] px-3">
-                    <span className="w-[45%] text-[#cccccc] truncate">AutoButtonColor</span>
-                    <div className="w-[55%] flex items-center">
-                      <input
-                        type="checkbox"
-                        checked={selectedNode.autoButtonColor !== false}
-                        onChange={(e) => onUpdateProperty(selectedNode.id, 'autoButtonColor', e.target.checked)}
-                        className="w-4 h-4 rounded-sm accent-[#0078d7] cursor-pointer bg-[#2d2d2d] border-[#444444]"
-                      />
-                    </div>
-                  </div>
-                )}
-
-                {/* Selected */}
-                {filterMatch('Selected') && (
-                  <div className="flex items-center h-[26px] hover:bg-[#252526] px-3">
-                    <span className="w-[45%] text-[#cccccc] truncate">Selected</span>
-                    <div className="w-[55%] flex items-center">
-                      <input
-                        type="checkbox"
-                        checked={!!selectedNode.selected}
-                        onChange={(e) => onUpdateProperty(selectedNode.id, 'selected', e.target.checked)}
-                        className="w-4 h-4 rounded-sm accent-[#0078d7] cursor-pointer bg-[#2d2d2d] border-[#444444]"
-                      />
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* ================= TEXTBOX SECTION ================= */}
-        {isTextBoxElement && (filterMatch('PlaceholderText') || filterMatch('ClearTextOnFocus')) && (
-          <div>
-            <div
-              onClick={() => toggleSection('guiTextBox')}
-              className="flex items-center h-[24px] px-2 bg-[#2a2a2a] hover:bg-[#333333] cursor-pointer text-[#e0e0e0] font-semibold text-[11.5px] border-b border-[#333333]"
-            >
-              <span className="mr-1 text-[#888888]">
-                {expandedSections.guiTextBox ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
-              </span>
-              TextBox
-            </div>
-
-            {expandedSections.guiTextBox && (
-              <div className="divide-y divide-[#2d2d2d] bg-[#1e1e1e]">
-                {/* PlaceholderText */}
-                {filterMatch('PlaceholderText') && (
-                  <div className="flex items-center h-[26px] hover:bg-[#252526] px-3">
-                    <span className="w-[45%] text-[#cccccc] truncate">PlaceholderText</span>
-                    <div className="w-[55%]">
-                      <input
-                        type="text"
-                        value={selectedNode.placeholderText ?? ''}
-                        onChange={(e) => onUpdateProperty(selectedNode.id, 'placeholderText', e.target.value)}
-                        className="w-full bg-[#181818] border border-transparent hover:border-[#3e3e42] focus:border-[#0078d7] px-1.5 py-0.5 rounded text-[11.5px] text-[#cccccc] outline-none"
-                      />
-                    </div>
-                  </div>
-                )}
-
-                {/* ClearTextOnFocus */}
-                {filterMatch('ClearTextOnFocus') && (
-                  <div className="flex items-center h-[26px] hover:bg-[#252526] px-3">
-                    <span className="w-[45%] text-[#cccccc] truncate">ClearTextOnFocus</span>
-                    <div className="w-[55%] flex items-center">
-                      <input
-                        type="checkbox"
-                        checked={selectedNode.clearTextOnFocus !== false}
-                        onChange={(e) => onUpdateProperty(selectedNode.id, 'clearTextOnFocus', e.target.checked)}
-                        className="w-4 h-4 rounded-sm accent-[#0078d7] cursor-pointer bg-[#2d2d2d] border-[#444444]"
-                      />
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* ================= SCREENGUI SECTION ================= */}
-        {isScreenGui && (filterMatch('Enabled') || filterMatch('IgnoreGuiInset') || filterMatch('ResetOnSpawn') || filterMatch('DisplayOrder')) && (
-          <div>
-            <div
-              onClick={() => toggleSection('guiScreen')}
-              className="flex items-center h-[24px] px-2 bg-[#2a2a2a] hover:bg-[#333333] cursor-pointer text-[#e0e0e0] font-semibold text-[11.5px] border-b border-[#333333]"
-            >
-              <span className="mr-1 text-[#888888]">
-                {expandedSections.guiScreen ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
-              </span>
-              ScreenGui
-            </div>
-
-            {expandedSections.guiScreen && (
-              <div className="divide-y divide-[#2d2d2d] bg-[#1e1e1e]">
-                {/* Enabled */}
-                {filterMatch('Enabled') && (
-                  <div className="flex items-center h-[26px] hover:bg-[#252526] px-3">
-                    <span className="w-[45%] text-[#cccccc] truncate">Enabled</span>
-                    <div className="w-[55%] flex items-center">
-                      <input
-                        type="checkbox"
-                        checked={selectedNode.enabled !== false}
-                        onChange={(e) => onUpdateProperty(selectedNode.id, 'enabled', e.target.checked)}
-                        className="w-4 h-4 rounded-sm accent-[#0078d7] cursor-pointer bg-[#2d2d2d] border-[#444444]"
-                      />
-                    </div>
-                  </div>
-                )}
-
-                {/* IgnoreGuiInset */}
-                {filterMatch('IgnoreGuiInset') && (
-                  <div className="flex items-center h-[26px] hover:bg-[#252526] px-3">
-                    <span className="w-[45%] text-[#cccccc] truncate">IgnoreGuiInset</span>
-                    <div className="w-[55%] flex items-center">
-                      <input
-                        type="checkbox"
-                        checked={!!selectedNode.ignoreGuiInset}
-                        onChange={(e) => onUpdateProperty(selectedNode.id, 'ignoreGuiInset', e.target.checked)}
-                        className="w-4 h-4 rounded-sm accent-[#0078d7] cursor-pointer bg-[#2d2d2d] border-[#444444]"
-                      />
-                    </div>
-                  </div>
-                )}
-
-                {/* ResetOnSpawn */}
-                {filterMatch('ResetOnSpawn') && (
-                  <div className="flex items-center h-[26px] hover:bg-[#252526] px-3">
-                    <span className="w-[45%] text-[#cccccc] truncate">ResetOnSpawn</span>
-                    <div className="w-[55%] flex items-center">
-                      <input
-                        type="checkbox"
-                        checked={selectedNode.resetOnSpawn !== false}
-                        onChange={(e) => onUpdateProperty(selectedNode.id, 'resetOnSpawn', e.target.checked)}
-                        className="w-4 h-4 rounded-sm accent-[#0078d7] cursor-pointer bg-[#2d2d2d] border-[#444444]"
-                      />
-                    </div>
-                  </div>
-                )}
-
-                {/* DisplayOrder */}
-                {filterMatch('DisplayOrder') && (
-                  <div className="flex items-center h-[26px] hover:bg-[#252526] px-3">
-                    <span className="w-[45%] text-[#cccccc] truncate">DisplayOrder</span>
-                    <div className="w-[55%]">
-                      <input
-                        type="number"
-                        value={selectedNode.displayOrder ?? 0}
-                        onChange={(e) => onUpdateProperty(selectedNode.id, 'displayOrder', parseInt(e.target.value, 10) || 0)}
-                        className="w-16 bg-[#181818] border border-transparent hover:border-[#3e3e42] focus:border-[#0078d7] px-1.5 py-0.5 rounded text-[11.5px] font-mono text-[#cccccc] outline-none"
-                      />
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* ================= 3D GUI (SURFACEGUI / BILLBOARDGUI) SECTION ================= */}
-        {is3dGui && (filterMatch('Enabled') || filterMatch('Face') || filterMatch('CanvasSize') || filterMatch('Size') || filterMatch('AlwaysOnTop') || filterMatch('LightInfluence') || filterMatch('StudsOffset') || filterMatch('MaxDistance') || filterMatch('Adornee')) && (
-          <div>
-            <div
-              onClick={() => toggleSection('gui3D')}
-              className="flex items-center h-[24px] px-2 bg-[#2a2a2a] hover:bg-[#333333] cursor-pointer text-[#e0e0e0] font-semibold text-[11.5px] border-b border-[#333333]"
-            >
-              <span className="mr-1 text-[#888888]">
-                {expandedSections.gui3D ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
-              </span>
-              3D GUI
-            </div>
-
-            {expandedSections.gui3D && (
-              <div className="divide-y divide-[#2d2d2d] bg-[#1e1e1e]">
-                {/* Enabled */}
-                {filterMatch('Enabled') && (
-                  <div className="flex items-center h-[26px] hover:bg-[#252526] px-3">
-                    <span className="w-[45%] text-[#cccccc] truncate">Enabled</span>
-                    <div className="w-[55%] flex items-center">
-                      <input
-                        type="checkbox"
-                        checked={selectedNode.enabled !== false}
-                        onChange={(e) => onUpdateProperty(selectedNode.id, 'enabled', e.target.checked)}
-                        className="w-4 h-4 rounded-sm accent-[#0078d7] cursor-pointer bg-[#2d2d2d] border-[#444444]"
-                      />
-                    </div>
-                  </div>
-                )}
-
-                {/* Face (SurfaceGui) */}
-                {isSurfaceGui && filterMatch('Face') && (
-                  <div className="flex items-center h-[26px] hover:bg-[#252526] px-3">
-                    <span className="w-[45%] text-[#cccccc] truncate">Face</span>
-                    <div className="w-[55%]">
-                      <select
-                        value={selectedNode.face || 'Front'}
-                        onChange={(e) => onUpdateProperty(selectedNode.id, 'face', e.target.value)}
-                        className="w-full bg-[#181818] text-[#cccccc] border border-transparent hover:border-[#3e3e42] focus:border-[#0078d7] px-1 py-0.5 rounded text-[11.5px] outline-none cursor-pointer"
-                      >
-                        {FACES_LIST.map((f) => (
-                          <option key={f} value={f}>{f}</option>
-                        ))}
-                      </select>
-                    </div>
-                  </div>
-                )}
-
-                {/* CanvasSize (SurfaceGui) */}
-                {isSurfaceGui && filterMatch('CanvasSize') && (
-                  <div className="flex items-center h-[26px] hover:bg-[#252526] px-3">
-                    <span className="w-[45%] text-[#cccccc] truncate">CanvasSize</span>
-                    <div className="w-[55%] flex items-center gap-1.5">
-                      <input
-                        type="number"
-                        min="10"
-                        value={cnvSz[0]}
-                        onChange={(e) => {
-                          const w = parseInt(e.target.value, 10) || 800;
-                          onUpdateProperty(selectedNode.id, 'canvasSize', [w, cnvSz[1]]);
-                        }}
-                        className="w-14 bg-[#181818] border border-transparent hover:border-[#3e3e42] focus:border-[#0078d7] px-1 py-0.5 rounded text-[11px] font-mono text-[#cccccc] outline-none"
-                      />
-                      <span className="text-[#666]">×</span>
-                      <input
-                        type="number"
-                        min="10"
-                        value={cnvSz[1]}
-                        onChange={(e) => {
-                          const h = parseInt(e.target.value, 10) || 600;
-                          onUpdateProperty(selectedNode.id, 'canvasSize', [cnvSz[0], h]);
-                        }}
-                        className="w-14 bg-[#181818] border border-transparent hover:border-[#3e3e42] focus:border-[#0078d7] px-1 py-0.5 rounded text-[11px] font-mono text-[#cccccc] outline-none"
-                      />
-                    </div>
-                  </div>
-                )}
-
-                {/* Size (UDim2 - BillboardGui) */}
-                {isBillboardGui && filterMatch('Size') && (
-                  <div>
-                    <div 
-                      className="flex items-center h-[26px] hover:bg-[#252526] px-3 cursor-pointer"
-                      onClick={() => toggleVector('guiSize')}
-                    >
-                      <div className="w-[45%] flex items-center text-[#cccccc]">
-                        <span className="mr-1 text-[#888888]">
-                          {expandedVectors.guiSize ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
-                        </span>
-                        <span className="truncate">Size</span>
-                      </div>
-                      <div className="w-[55%] text-[#cccccc] font-mono text-[11px] truncate">
-                        {`{${guiSz.xScale}, ${guiSz.xOffset}}, {${guiSz.yScale}, ${guiSz.yOffset}}`}
-                      </div>
-                    </div>
-                    {expandedVectors.guiSize && (
-                      <div className="pl-6 pr-3 py-1 space-y-1 bg-[#181818] border-t border-[#252526]">
-                        <div className="flex items-center h-[22px] text-[11px] gap-2">
-                          <span className="w-12 text-[#888888] font-bold">X Scale</span>
-                          <input
-                            type="number"
-                            step="0.05"
-                            value={guiSz.xScale}
-                            onChange={(e) => onUpdateProperty(selectedNode.id, 'guiSize', { ...guiSz, xScale: parseFloat(e.target.value) || 0 })}
-                            className="w-16 bg-[#252526] border border-transparent hover:border-[#3e3e42] focus:border-[#0078d7] px-1 py-0.5 rounded text-[11px] font-mono text-[#cccccc] outline-none"
-                          />
-                          <span className="w-12 text-[#888888] font-bold">Offset</span>
-                          <input
-                            type="number"
-                            step="1"
-                            value={guiSz.xOffset}
-                            onChange={(e) => {
-                              const xOff = parseInt(e.target.value, 10) || 0;
-                              onUpdateProperty(selectedNode.id, 'guiSize', { ...guiSz, xOffset: xOff });
-                              onUpdateProperty(selectedNode.id, 'canvasSize', [xOff || 200, guiSz.yOffset || 50]);
-                            }}
-                            className="w-16 bg-[#252526] border border-transparent hover:border-[#3e3e42] focus:border-[#0078d7] px-1 py-0.5 rounded text-[11px] font-mono text-[#cccccc] outline-none"
-                          />
-                        </div>
-                        <div className="flex items-center h-[22px] text-[11px] gap-2">
-                          <span className="w-12 text-[#888888] font-bold">Y Scale</span>
-                          <input
-                            type="number"
-                            step="0.05"
-                            value={guiSz.yScale}
-                            onChange={(e) => onUpdateProperty(selectedNode.id, 'guiSize', { ...guiSz, yScale: parseFloat(e.target.value) || 0 })}
-                            className="w-16 bg-[#252526] border border-transparent hover:border-[#3e3e42] focus:border-[#0078d7] px-1 py-0.5 rounded text-[11px] font-mono text-[#cccccc] outline-none"
-                          />
-                          <span className="w-12 text-[#888888] font-bold">Offset</span>
-                          <input
-                            type="number"
-                            step="1"
-                            value={guiSz.yOffset}
-                            onChange={(e) => {
-                              const yOff = parseInt(e.target.value, 10) || 0;
-                              onUpdateProperty(selectedNode.id, 'guiSize', { ...guiSz, yOffset: yOff });
-                              onUpdateProperty(selectedNode.id, 'canvasSize', [guiSz.xOffset || 200, yOff || 50]);
-                            }}
-                            className="w-16 bg-[#252526] border border-transparent hover:border-[#3e3e42] focus:border-[#0078d7] px-1 py-0.5 rounded text-[11px] font-mono text-[#cccccc] outline-none"
-                          />
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                )}
-
-                {/* AlwaysOnTop */}
-                {filterMatch('AlwaysOnTop') && (
-                  <div className="flex items-center h-[26px] hover:bg-[#252526] px-3">
-                    <span className="w-[45%] text-[#cccccc] truncate">AlwaysOnTop</span>
-                    <div className="w-[55%] flex items-center">
-                      <input
-                        type="checkbox"
-                        checked={!!selectedNode.alwaysOnTop}
-                        onChange={(e) => onUpdateProperty(selectedNode.id, 'alwaysOnTop', e.target.checked)}
-                        className="w-4 h-4 rounded-sm accent-[#0078d7] cursor-pointer bg-[#2d2d2d] border-[#444444]"
-                      />
-                    </div>
-                  </div>
-                )}
-
-                {/* LightInfluence */}
-                {filterMatch('LightInfluence') && (
-                  <div className="flex items-center h-[26px] hover:bg-[#252526] px-3">
-                    <span className="w-[45%] text-[#cccccc] truncate">LightInfluence</span>
-                    <div className="w-[55%] flex items-center gap-2">
-                      <input
-                        type="range"
-                        min="0"
-                        max="1"
-                        step="0.1"
-                        value={selectedNode.lightInfluence ?? (isBillboardGui ? 0 : 1)}
-                        onChange={(e) => onUpdateProperty(selectedNode.id, 'lightInfluence', parseFloat(e.target.value))}
-                        className="w-24 accent-[#0078d7] cursor-pointer"
-                      />
-                      <span className="text-[11px] font-mono text-[#cccccc]">{selectedNode.lightInfluence ?? (isBillboardGui ? 0 : 1)}</span>
-                    </div>
-                  </div>
-                )}
-
-                {/* StudsOffset (BillboardGui) */}
-                {isBillboardGui && filterMatch('StudsOffset') && (
-                  <div>
-                    <div 
-                      className="flex items-center h-[26px] hover:bg-[#252526] px-3 cursor-pointer"
-                      onClick={() => toggleVector('studsOffset')}
-                    >
-                      <div className="w-[45%] flex items-center text-[#cccccc]">
-                        <span className="mr-1 text-[#888888]">
-                          {expandedVectors.studsOffset ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
-                        </span>
-                        <span className="truncate">StudsOffset</span>
-                      </div>
-                      <div className="w-[55%] text-[#cccccc] font-mono text-[11px] truncate">
-                        {studsOff[0]}, {studsOff[1]}, {studsOff[2]}
-                      </div>
-                    </div>
-                    {expandedVectors.studsOffset && (
-                      <div className="pl-6 pr-3 py-1 space-y-1 bg-[#181818] border-t border-[#252526]">
-                        {['X', 'Y', 'Z'].map((axis, i) => (
-                          <div key={axis} className="flex items-center h-[22px] text-[11px]">
-                            <span className="w-6 text-[#888888] font-bold">{axis}</span>
-                            <input
-                              type="number"
-                              step="0.5"
-                              value={studsOff[i]}
-                              onChange={(e) => {
-                                const newOff: [number, number, number] = [...studsOff];
-                                newOff[i] = parseFloat(e.target.value) || 0;
-                                onUpdateProperty(selectedNode.id, 'studsOffset', newOff);
-                              }}
-                              className="w-20 bg-[#252526] border border-transparent hover:border-[#3e3e42] focus:border-[#0078d7] px-1.5 py-0.5 rounded text-[11px] font-mono text-[#cccccc] outline-none"
-                            />
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                )}
-
-                {/* MaxDistance (BillboardGui) */}
-                {isBillboardGui && filterMatch('MaxDistance') && (
-                  <div className="flex items-center h-[26px] hover:bg-[#252526] px-3">
-                    <span className="w-[45%] text-[#cccccc] truncate">MaxDistance</span>
-                    <div className="w-[55%]">
-                      <input
-                        type="number"
-                        min="0"
-                        value={selectedNode.maxDistance ?? 100}
-                        onChange={(e) => onUpdateProperty(selectedNode.id, 'maxDistance', Math.max(0, parseFloat(e.target.value) || 0))}
-                        className="w-16 bg-[#181818] border border-transparent hover:border-[#3e3e42] focus:border-[#0078d7] px-1.5 py-0.5 rounded text-[11.5px] font-mono text-[#cccccc] outline-none"
-                      />
-                    </div>
-                  </div>
-                )}
-
-                {/* Adornee */}
-                {filterMatch('Adornee') && (
-                  <div className="flex items-center h-[26px] hover:bg-[#252526] px-3">
-                    <span className="w-[45%] text-[#cccccc] truncate">Adornee</span>
-                    <div className="w-[55%]">
-                      <select
-                        value={selectedNode.adorneeId || ''}
-                        onChange={(e) => onUpdateProperty(selectedNode.id, 'adorneeId', e.target.value || undefined)}
-                        className="w-full bg-[#181818] border border-transparent hover:border-[#3e3e42] focus:border-[#0078d7] px-1.5 py-0.5 rounded text-[11.5px] text-[#cccccc] outline-none"
-                      >
-                        <option value="">Parent Part (Default)</option>
-                        {(() => {
-                          const getParts = (nodes: TreeNodeData[]): TreeNodeData[] => {
-                            const result: TreeNodeData[] = [];
-                            for (const n of nodes) {
-                              if (n.type === 'part' || n.type === 'object' || n.type === 'spawnlocation' || n.name?.toLowerCase() === 'baseplate') {
-                                result.push(n);
-                              }
-                              if (n.children && n.children.length > 0) {
-                                result.push(...getParts(n.children));
-                              }
-                            }
-                            return result;
-                          };
-                          return getParts(tree).map((c) => (
-                            <option key={c.id} value={c.id}>
-                              {c.name}
-                            </option>
-                          ));
-                        })()}
-                      </select>
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-        )}
+          );
+        })}
 
         {/* ================= DATA / IDENTITY SECTION ================= */}
         {(filterMatch('Name') || filterMatch('ClassName') || filterMatch('Parent')) && (

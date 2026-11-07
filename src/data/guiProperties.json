@@ -1,0 +1,1116 @@
+[
+  {
+    "section": "guiLayout",
+    "title": "Layout",
+    "appliesTo": ["frame", "textlabel", "textbutton", "imagelabel", "imagebutton", "textbox", "scrollingframe"],
+    "properties": [
+      {
+        "label": "Position",
+        "key": "guiPosition",
+        "type": "udim2",
+        "default": { "xScale": 0, "xOffset": 0, "yScale": 0, "yOffset": 0 }
+      },
+      {
+        "label": "Size",
+        "key": "guiSize",
+        "type": "udim2",
+        "default": { "xScale": 0, "xOffset": 100, "yScale": 0, "yOffset": 100 }
+      },
+      {
+        "label": "AnchorPoint",
+        "key": "anchorPoint",
+        "type": "vector2",
+        "default": [0, 0],
+        "step": 0.1
+      },
+      {
+        "label": "Rotation",
+        "key": "guiRotation",
+        "type": "number",
+        "default": 0,
+        "step": 1
+      },
+      {
+        "label": "AutomaticSize",
+        "key": "automaticSize",
+        "type": "select",
+        "options": ["None", "X", "Y", "XY"],
+        "default": "None"
+      },
+      {
+        "label": "SizeConstraint",
+        "key": "sizeConstraint",
+        "type": "select",
+        "options": ["RelativeXY", "RelativeXX", "RelativeYY"],
+        "default": "RelativeXY"
+      },
+      {
+        "label": "ZIndex",
+        "key": "zIndex",
+        "type": "number",
+        "default": 1,
+        "step": 1
+      },
+      {
+        "label": "LayoutOrder",
+        "key": "layoutOrder",
+        "type": "number",
+        "default": 0,
+        "step": 1
+      },
+      {
+        "label": "Visible",
+        "key": "visible",
+        "type": "boolean",
+        "default": true
+      },
+      {
+        "label": "Active",
+        "key": "active",
+        "type": "boolean",
+        "default": false
+      },
+      {
+        "label": "Selectable",
+        "key": "selectable",
+        "type": "boolean",
+        "default": false
+      },
+      {
+        "label": "ClipsDescendants",
+        "key": "clipsDescendants",
+        "type": "boolean",
+        "default": false
+      }
+    ]
+  },
+  {
+    "section": "guiAppearance",
+    "title": "Appearance",
+    "appliesTo": ["frame", "textlabel", "textbutton", "imagelabel", "imagebutton", "textbox", "scrollingframe"],
+    "properties": [
+      {
+        "label": "BackgroundColor3",
+        "key": "backgroundColor",
+        "type": "color",
+        "default": "#ffffff"
+      },
+      {
+        "label": "BackgroundTransparency",
+        "key": "backgroundTransparency",
+        "type": "range",
+        "min": 0,
+        "max": 1,
+        "step": 0.05,
+        "default": 0
+      },
+      {
+        "label": "BorderColor3",
+        "key": "borderColor",
+        "type": "color",
+        "default": "#000000"
+      },
+      {
+        "label": "BorderSizePixel",
+        "key": "borderSizePixel",
+        "type": "number",
+        "min": 0,
+        "max": 100,
+        "step": 1,
+        "default": 1
+      },
+      {
+        "label": "BorderMode",
+        "key": "borderMode",
+        "type": "select",
+        "options": ["Outline", "Middle", "Inset"],
+        "default": "Outline"
+      },
+      {
+        "label": "AutoLocalize",
+        "key": "autoLocalize",
+        "type": "boolean",
+        "default": true
+      }
+    ]
+  },
+  {
+    "section": "guiText",
+    "title": "Text",
+    "appliesTo": ["textlabel", "textbutton", "textbox"],
+    "properties": [
+      {
+        "label": "Text",
+        "key": "text",
+        "type": "text",
+        "default": "Label"
+      },
+      {
+        "label": "TextColor3",
+        "key": "textColor",
+        "type": "color",
+        "default": "#ffffff"
+      },
+      {
+        "label": "TextTransparency",
+        "key": "textTransparency",
+        "type": "range",
+        "min": 0,
+        "max": 1,
+        "step": 0.05,
+        "default": 0
+      },
+      {
+        "label": "TextStrokeColor3",
+        "key": "textStrokeColor",
+        "type": "color",
+        "default": "#000000"
+      },
+      {
+        "label": "TextStrokeTransparency",
+        "key": "textStrokeTransparency",
+        "type": "range",
+        "min": 0,
+        "max": 1,
+        "step": 0.05,
+        "default": 1
+      },
+      {
+        "label": "TextSize",
+        "key": "textSize",
+        "type": "number",
+        "min": 1,
+        "max": 100,
+        "step": 1,
+        "default": 14
+      },
+      {
+        "label": "TextScaled",
+        "key": "textScaled",
+        "type": "boolean",
+        "default": false
+      },
+      {
+        "label": "TextWrapped",
+        "key": "textWrapped",
+        "type": "boolean",
+        "default": true
+      },
+      {
+        "label": "RichText",
+        "key": "richText",
+        "type": "boolean",
+        "default": false
+      },
+      {
+        "label": "TextTruncate",
+        "key": "textTruncate",
+        "type": "select",
+        "options": ["None", "AtEnd", "SplitWord"],
+        "default": "None"
+      },
+      {
+        "label": "LineHeight",
+        "key": "lineHeight",
+        "type": "number",
+        "min": 0.1,
+        "max": 5,
+        "step": 0.1,
+        "default": 1
+      },
+      {
+        "label": "MaxVisibleGraphemes",
+        "key": "maxVisibleGraphemes",
+        "type": "number",
+        "min": -1,
+        "max": 100000,
+        "step": 1,
+        "default": -1
+      },
+      {
+        "label": "Font",
+        "key": "font",
+        "type": "select",
+        "options": [
+          "SourceSans",
+          "SourceSansBold",
+          "SourceSansLight",
+          "SourceSansItalic",
+          "Arial",
+          "ArialBold",
+          "Gotham",
+          "GothamBold",
+          "GothamBlack",
+          "FredokaOne",
+          "Highway",
+          "AmaticSC",
+          "Creepster",
+          "Michroma",
+          "Roboto",
+          "RobotoMono"
+        ],
+        "default": "SourceSans"
+      },
+      {
+        "label": "TextXAlignment",
+        "key": "textXAlignment",
+        "type": "select",
+        "options": ["Left", "Center", "Right"],
+        "default": "Center"
+      },
+      {
+        "label": "TextYAlignment",
+        "key": "textYAlignment",
+        "type": "select",
+        "options": ["Top", "Center", "Bottom"],
+        "default": "Center"
+      }
+    ]
+  },
+  {
+    "section": "guiImage",
+    "title": "Image",
+    "appliesTo": ["imagelabel", "imagebutton"],
+    "properties": [
+      {
+        "label": "Image",
+        "key": "image",
+        "type": "text",
+        "default": "",
+        "placeholder": "rbxassetid:// or URL"
+      },
+      {
+        "label": "ImageColor3",
+        "key": "imageColor",
+        "type": "color",
+        "default": "#ffffff"
+      },
+      {
+        "label": "ImageTransparency",
+        "key": "imageTransparency",
+        "type": "range",
+        "min": 0,
+        "max": 1,
+        "step": 0.05,
+        "default": 0
+      },
+      {
+        "label": "ScaleType",
+        "key": "scaleType",
+        "type": "select",
+        "options": ["Stretch", "Slice", "Tile", "Fit", "Crop"],
+        "default": "Stretch"
+      },
+      {
+        "label": "SliceScale",
+        "key": "sliceScale",
+        "type": "number",
+        "min": 0,
+        "max": 10,
+        "step": 0.1,
+        "default": 1
+      },
+      {
+        "label": "ResampleMode",
+        "key": "resampleMode",
+        "type": "select",
+        "options": ["Default", "Pixelated"],
+        "default": "Default"
+      },
+      {
+        "label": "ImageRectOffset",
+        "key": "imageRectOffset",
+        "type": "vector2",
+        "default": [0, 0],
+        "step": 1
+      },
+      {
+        "label": "ImageRectSize",
+        "key": "imageRectSize",
+        "type": "vector2",
+        "default": [0, 0],
+        "step": 1
+      },
+      {
+        "label": "TileSize",
+        "key": "tileSize",
+        "type": "udim2",
+        "default": { "xScale": 1, "xOffset": 0, "yScale": 1, "yOffset": 0 }
+      }
+    ]
+  },
+  {
+    "section": "guiButton",
+    "title": "Button",
+    "appliesTo": ["textbutton", "imagebutton"],
+    "properties": [
+      {
+        "label": "AutoButtonColor",
+        "key": "autoButtonColor",
+        "type": "boolean",
+        "default": true
+      },
+      {
+        "label": "Selected",
+        "key": "selected",
+        "type": "boolean",
+        "default": false
+      },
+      {
+        "label": "Modal",
+        "key": "modal",
+        "type": "boolean",
+        "default": false
+      }
+    ]
+  },
+  {
+    "section": "guiTextBox",
+    "title": "TextBox",
+    "appliesTo": ["textbox"],
+    "properties": [
+      {
+        "label": "PlaceholderText",
+        "key": "placeholderText",
+        "type": "text",
+        "default": "",
+        "placeholder": "Placeholder..."
+      },
+      {
+        "label": "PlaceholderColor3",
+        "key": "placeholderColor",
+        "type": "color",
+        "default": "#aaaaaa"
+      },
+      {
+        "label": "ClearTextOnFocus",
+        "key": "clearTextOnFocus",
+        "type": "boolean",
+        "default": true
+      },
+      {
+        "label": "MultiLine",
+        "key": "multiLine",
+        "type": "boolean",
+        "default": false
+      },
+      {
+        "label": "TextEditable",
+        "key": "textEditable",
+        "type": "boolean",
+        "default": true
+      },
+      {
+        "label": "ShowNativeInput",
+        "key": "showNativeInput",
+        "type": "boolean",
+        "default": true
+      }
+    ]
+  },
+  {
+    "section": "guiScrolling",
+    "title": "Scrolling",
+    "appliesTo": ["scrollingframe"],
+    "properties": [
+      {
+        "label": "CanvasSize",
+        "key": "scrollingCanvasSize",
+        "type": "udim2",
+        "default": { "xScale": 0, "xOffset": 0, "yScale": 2, "yOffset": 0 }
+      },
+      {
+        "label": "CanvasPosition",
+        "key": "canvasPosition",
+        "type": "vector2",
+        "default": [0, 0],
+        "step": 1
+      },
+      {
+        "label": "AutomaticCanvasSize",
+        "key": "automaticCanvasSize",
+        "type": "select",
+        "options": ["None", "X", "Y", "XY"],
+        "default": "None"
+      },
+      {
+        "label": "ScrollingDirection",
+        "key": "scrollingDirection",
+        "type": "select",
+        "options": ["Y", "X", "XY"],
+        "default": "Y"
+      },
+      {
+        "label": "ScrollBarThickness",
+        "key": "scrollBarThickness",
+        "type": "number",
+        "min": 0,
+        "max": 100,
+        "step": 1,
+        "default": 12
+      },
+      {
+        "label": "ScrollBarImageColor3",
+        "key": "scrollBarImageColor",
+        "type": "color",
+        "default": "#ffffff"
+      },
+      {
+        "label": "ScrollBarImageTransparency",
+        "key": "scrollBarImageTransparency",
+        "type": "range",
+        "min": 0,
+        "max": 1,
+        "step": 0.05,
+        "default": 0
+      },
+      {
+        "label": "VerticalScrollBarPosition",
+        "key": "verticalScrollBarPosition",
+        "type": "select",
+        "options": ["Right", "Left"],
+        "default": "Right"
+      },
+      {
+        "label": "VerticalScrollBarInset",
+        "key": "verticalScrollBarInset",
+        "type": "select",
+        "options": ["None", "ScrollBar", "Always"],
+        "default": "None"
+      },
+      {
+        "label": "HorizontalScrollBarInset",
+        "key": "horizontalScrollBarInset",
+        "type": "select",
+        "options": ["None", "ScrollBar", "Always"],
+        "default": "None"
+      },
+      {
+        "label": "ElasticBehavior",
+        "key": "elasticBehavior",
+        "type": "select",
+        "options": ["WhenScrollable", "Always", "Never"],
+        "default": "WhenScrollable"
+      },
+      {
+        "label": "ScrollingEnabled",
+        "key": "scrollingEnabled",
+        "type": "boolean",
+        "default": true
+      }
+    ]
+  },
+  {
+    "section": "guiScreen",
+    "title": "ScreenGui",
+    "appliesTo": ["screengui"],
+    "properties": [
+      {
+        "label": "Enabled",
+        "key": "enabled",
+        "type": "boolean",
+        "default": true
+      },
+      {
+        "label": "IgnoreGuiInset",
+        "key": "ignoreGuiInset",
+        "type": "boolean",
+        "default": false
+      },
+      {
+        "label": "ResetOnSpawn",
+        "key": "resetOnSpawn",
+        "type": "boolean",
+        "default": true
+      },
+      {
+        "label": "DisplayOrder",
+        "key": "displayOrder",
+        "type": "number",
+        "step": 1,
+        "default": 0
+      },
+      {
+        "label": "ZIndexBehavior",
+        "key": "zIndexBehavior",
+        "type": "select",
+        "options": ["Sibling", "Global"],
+        "default": "Sibling"
+      },
+      {
+        "label": "ClipToDeviceSafeArea",
+        "key": "clipToDeviceSafeArea",
+        "type": "boolean",
+        "default": true
+      }
+    ]
+  },
+  {
+    "section": "gui3D",
+    "title": "3D Gui Layer",
+    "appliesTo": ["surfacegui", "billboardgui"],
+    "properties": [
+      {
+        "label": "Enabled",
+        "key": "enabled",
+        "type": "boolean",
+        "default": true
+      },
+      {
+        "label": "Face",
+        "key": "face",
+        "type": "select",
+        "options": ["Front", "Back", "Top", "Bottom", "Left", "Right"],
+        "default": "Front",
+        "onlyFor": ["surfacegui"]
+      },
+      {
+        "label": "CanvasSize",
+        "key": "canvasSize",
+        "type": "canvasSize",
+        "default": [800, 600]
+      },
+      {
+        "label": "PixelsPerStud",
+        "key": "pixelsPerStud",
+        "type": "number",
+        "min": 1,
+        "max": 500,
+        "step": 1,
+        "default": 50,
+        "onlyFor": ["surfacegui"]
+      },
+      {
+        "label": "SizingMode",
+        "key": "sizingMode",
+        "type": "select",
+        "options": ["FixedSize", "PixelsPerStud"],
+        "default": "FixedSize",
+        "onlyFor": ["surfacegui"]
+      },
+      {
+        "label": "Size",
+        "key": "guiSize",
+        "type": "udim2",
+        "default": { "xScale": 0, "xOffset": 200, "yScale": 0, "yOffset": 50 },
+        "onlyFor": ["billboardgui"]
+      },
+      {
+        "label": "SizeOffset",
+        "key": "sizeOffset",
+        "type": "vector2",
+        "default": [0, 0],
+        "step": 0.1,
+        "onlyFor": ["billboardgui"]
+      },
+      {
+        "label": "AlwaysOnTop",
+        "key": "alwaysOnTop",
+        "type": "boolean",
+        "default": false
+      },
+      {
+        "label": "LightInfluence",
+        "key": "lightInfluence",
+        "type": "range",
+        "min": 0,
+        "max": 1,
+        "step": 0.05,
+        "default": 0
+      },
+      {
+        "label": "Brightness",
+        "key": "brightness",
+        "type": "number",
+        "min": 0,
+        "max": 10,
+        "step": 0.1,
+        "default": 1
+      },
+      {
+        "label": "StudsOffset",
+        "key": "studsOffset",
+        "type": "vector3",
+        "default": [0, 0, 0],
+        "step": 0.5
+      },
+      {
+        "label": "MaxDistance",
+        "key": "maxDistance",
+        "type": "number",
+        "min": 0,
+        "max": 10000,
+        "step": 10,
+        "default": 1000
+      },
+      {
+        "label": "DistanceLowerLimit",
+        "key": "distanceLowerLimit",
+        "type": "number",
+        "min": 0,
+        "max": 10000,
+        "step": 5,
+        "default": 0,
+        "onlyFor": ["billboardgui"]
+      },
+      {
+        "label": "DistanceUpperLimit",
+        "key": "distanceUpperLimit",
+        "type": "number",
+        "min": 0,
+        "max": 10000,
+        "step": 5,
+        "default": 1000,
+        "onlyFor": ["billboardgui"]
+      },
+      {
+        "label": "Adornee",
+        "key": "adorneeId",
+        "type": "partSelector",
+        "default": ""
+      }
+    ]
+  },
+  {
+    "section": "uiCorner",
+    "title": "UICorner",
+    "appliesTo": ["uicorner"],
+    "properties": [
+      {
+        "label": "CornerRadius",
+        "key": "cornerRadius",
+        "type": "udim",
+        "default": { "scale": 0, "offset": 8 }
+      }
+    ]
+  },
+  {
+    "section": "uiStroke",
+    "title": "UIStroke",
+    "appliesTo": ["uistroke"],
+    "properties": [
+      {
+        "label": "Enabled",
+        "key": "enabled",
+        "type": "boolean",
+        "default": true
+      },
+      {
+        "label": "ApplyStrokeMode",
+        "key": "applyStrokeMode",
+        "type": "select",
+        "options": ["Contextual", "Border"],
+        "default": "Contextual"
+      },
+      {
+        "label": "Color",
+        "key": "strokeColor",
+        "type": "color",
+        "default": "#000000"
+      },
+      {
+        "label": "Thickness",
+        "key": "strokeThickness",
+        "type": "number",
+        "min": 1,
+        "max": 50,
+        "step": 1,
+        "default": 1
+      },
+      {
+        "label": "Transparency",
+        "key": "strokeTransparency",
+        "type": "range",
+        "min": 0,
+        "max": 1,
+        "step": 0.05,
+        "default": 0
+      },
+      {
+        "label": "LineJoinMode",
+        "key": "lineJoinMode",
+        "type": "select",
+        "options": ["Round", "Bevel", "Miter"],
+        "default": "Round"
+      }
+    ]
+  },
+  {
+    "section": "uiPadding",
+    "title": "UIPadding",
+    "appliesTo": ["uipadding"],
+    "properties": [
+      {
+        "label": "PaddingTop",
+        "key": "paddingTop",
+        "type": "udim",
+        "default": { "scale": 0, "offset": 0 }
+      },
+      {
+        "label": "PaddingBottom",
+        "key": "paddingBottom",
+        "type": "udim",
+        "default": { "scale": 0, "offset": 0 }
+      },
+      {
+        "label": "PaddingLeft",
+        "key": "paddingLeft",
+        "type": "udim",
+        "default": { "scale": 0, "offset": 0 }
+      },
+      {
+        "label": "PaddingRight",
+        "key": "paddingRight",
+        "type": "udim",
+        "default": { "scale": 0, "offset": 0 }
+      }
+    ]
+  },
+  {
+    "section": "uiListLayout",
+    "title": "UIListLayout",
+    "appliesTo": ["uilistlayout"],
+    "properties": [
+      {
+        "label": "FillDirection",
+        "key": "fillDirection",
+        "type": "select",
+        "options": ["Vertical", "Horizontal"],
+        "default": "Vertical"
+      },
+      {
+        "label": "HorizontalAlignment",
+        "key": "horizontalAlignment",
+        "type": "select",
+        "options": ["Left", "Center", "Right"],
+        "default": "Left"
+      },
+      {
+        "label": "VerticalAlignment",
+        "key": "verticalAlignment",
+        "type": "select",
+        "options": ["Top", "Center", "Bottom"],
+        "default": "Top"
+      },
+      {
+        "label": "SortOrder",
+        "key": "sortOrder",
+        "type": "select",
+        "options": ["LayoutOrder", "Name"],
+        "default": "LayoutOrder"
+      },
+      {
+        "label": "Padding",
+        "key": "layoutPadding",
+        "type": "udim",
+        "default": { "scale": 0, "offset": 0 }
+      },
+      {
+        "label": "Wraps",
+        "key": "wraps",
+        "type": "boolean",
+        "default": false
+      },
+      {
+        "label": "ItemHorizontalAlignment",
+        "key": "itemHorizontalAlignment",
+        "type": "select",
+        "options": ["Left", "Center", "Right"],
+        "default": "Left"
+      }
+    ]
+  },
+  {
+    "section": "uiGridLayout",
+    "title": "UIGridLayout",
+    "appliesTo": ["uigridlayout"],
+    "properties": [
+      {
+        "label": "CellSize",
+        "key": "cellSize",
+        "type": "udim2",
+        "default": { "xScale": 0, "xOffset": 100, "yScale": 0, "yOffset": 100 }
+      },
+      {
+        "label": "CellPadding",
+        "key": "cellPadding",
+        "type": "udim2",
+        "default": { "xScale": 0, "xOffset": 5, "yScale": 0, "yOffset": 5 }
+      },
+      {
+        "label": "FillDirection",
+        "key": "fillDirection",
+        "type": "select",
+        "options": ["Horizontal", "Vertical"],
+        "default": "Horizontal"
+      },
+      {
+        "label": "FillDirectionMaxCells",
+        "key": "fillDirectionMaxCells",
+        "type": "number",
+        "min": 0,
+        "max": 1000,
+        "step": 1,
+        "default": 0
+      },
+      {
+        "label": "HorizontalAlignment",
+        "key": "horizontalAlignment",
+        "type": "select",
+        "options": ["Left", "Center", "Right"],
+        "default": "Left"
+      },
+      {
+        "label": "VerticalAlignment",
+        "key": "verticalAlignment",
+        "type": "select",
+        "options": ["Top", "Center", "Bottom"],
+        "default": "Top"
+      },
+      {
+        "label": "SortOrder",
+        "key": "sortOrder",
+        "type": "select",
+        "options": ["LayoutOrder", "Name"],
+        "default": "LayoutOrder"
+      },
+      {
+        "label": "StartCorner",
+        "key": "startCorner",
+        "type": "select",
+        "options": ["TopLeft", "TopRight", "BottomLeft", "BottomRight"],
+        "default": "TopLeft"
+      }
+    ]
+  },
+  {
+    "section": "uiAspectRatio",
+    "title": "UIAspectRatioConstraint",
+    "appliesTo": ["uiaspectratioconstraint"],
+    "properties": [
+      {
+        "label": "AspectRatio",
+        "key": "aspectRatio",
+        "type": "number",
+        "min": 0.01,
+        "max": 100,
+        "step": 0.1,
+        "default": 1
+      },
+      {
+        "label": "AspectType",
+        "key": "aspectType",
+        "type": "select",
+        "options": ["FitWithinMaxSize", "ScaleWithParentSize"],
+        "default": "FitWithinMaxSize"
+      },
+      {
+        "label": "DominantAxis",
+        "key": "dominantAxis",
+        "type": "select",
+        "options": ["Width", "Height"],
+        "default": "Width"
+      }
+    ]
+  },
+  {
+    "section": "uiSizeConstraint",
+    "title": "UISizeConstraint",
+    "appliesTo": ["uisizeconstraint"],
+    "properties": [
+      {
+        "label": "MinSize",
+        "key": "minSize",
+        "type": "vector2",
+        "default": [0, 0],
+        "step": 1
+      },
+      {
+        "label": "MaxSize",
+        "key": "maxSize",
+        "type": "vector2",
+        "default": [10000, 10000],
+        "step": 1
+      }
+    ]
+  },
+  {
+    "section": "uiTextSizeConstraint",
+    "title": "UITextSizeConstraint",
+    "appliesTo": ["uitextsizeconstraint"],
+    "properties": [
+      {
+        "label": "MinTextSize",
+        "key": "minTextSize",
+        "type": "number",
+        "min": 1,
+        "max": 100,
+        "step": 1,
+        "default": 1
+      },
+      {
+        "label": "MaxTextSize",
+        "key": "maxTextSize",
+        "type": "number",
+        "min": 1,
+        "max": 100,
+        "step": 1,
+        "default": 100
+      }
+    ]
+  },
+  {
+    "section": "uiGradient",
+    "title": "UIGradient",
+    "appliesTo": ["uigradient"],
+    "properties": [
+      {
+        "label": "Enabled",
+        "key": "enabled",
+        "type": "boolean",
+        "default": true
+      },
+      {
+        "label": "Color",
+        "key": "gradientColor",
+        "type": "color",
+        "default": "#ffffff"
+      },
+      {
+        "label": "Transparency",
+        "key": "gradientTransparency",
+        "type": "range",
+        "min": 0,
+        "max": 1,
+        "step": 0.05,
+        "default": 0
+      },
+      {
+        "label": "Rotation",
+        "key": "gradientRotation",
+        "type": "number",
+        "min": -360,
+        "max": 360,
+        "step": 1,
+        "default": 0
+      },
+      {
+        "label": "Offset",
+        "key": "gradientOffset",
+        "type": "vector2",
+        "default": [0, 0],
+        "step": 0.05
+      }
+    ]
+  },
+  {
+    "section": "uiScale",
+    "title": "UIScale",
+    "appliesTo": ["uiscale"],
+    "properties": [
+      {
+        "label": "Scale",
+        "key": "uiScale",
+        "type": "number",
+        "min": 0.01,
+        "max": 100,
+        "step": 0.05,
+        "default": 1
+      }
+    ]
+  },
+  {
+    "section": "uiPageLayout",
+    "title": "UIPageLayout",
+    "appliesTo": ["uipagelayout"],
+    "properties": [
+      {
+        "label": "Animated",
+        "key": "animated",
+        "type": "boolean",
+        "default": true
+      },
+      {
+        "label": "Circular",
+        "key": "circular",
+        "type": "boolean",
+        "default": false
+      },
+      {
+        "label": "EasingDirection",
+        "key": "easingDirection",
+        "type": "select",
+        "options": ["Out", "In", "InOut"],
+        "default": "Out"
+      },
+      {
+        "label": "EasingStyle",
+        "key": "easingStyle",
+        "type": "select",
+        "options": ["Quad", "Linear", "Sine", "Back", "Bounce", "Elastic"],
+        "default": "Quad"
+      },
+      {
+        "label": "FillDirection",
+        "key": "fillDirection",
+        "type": "select",
+        "options": ["Horizontal", "Vertical"],
+        "default": "Horizontal"
+      },
+      {
+        "label": "Padding",
+        "key": "layoutPadding",
+        "type": "udim",
+        "default": { "scale": 0, "offset": 0 }
+      },
+      {
+        "label": "TweenTime",
+        "key": "tweenTime",
+        "type": "number",
+        "min": 0,
+        "max": 10,
+        "step": 0.05,
+        "default": 0.5
+      }
+    ]
+  },
+  {
+    "section": "uiFlexItem",
+    "title": "UIFlexItem",
+    "appliesTo": ["uiflexitem"],
+    "properties": [
+      {
+        "label": "FlexMode",
+        "key": "flexMode",
+        "type": "select",
+        "options": ["None", "Grow", "Shrink", "Fill", "Custom"],
+        "default": "None"
+      },
+      {
+        "label": "ItemLineAlignment",
+        "key": "itemLineAlignment",
+        "type": "select",
+        "options": ["Automatic", "Start", "Center", "End", "Stretch"],
+        "default": "Automatic"
+      },
+      {
+        "label": "GrowRatio",
+        "key": "growRatio",
+        "type": "number",
+        "min": 0,
+        "max": 100,
+        "step": 1,
+        "default": 0
+      },
+      {
+        "label": "ShrinkRatio",
+        "key": "shrinkRatio",
+        "type": "number",
+        "min": 0,
+        "max": 100,
+        "step": 1,
+        "default": 0
+      }
+    ]
+  }
+]

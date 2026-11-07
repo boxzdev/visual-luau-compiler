@@ -618,3 +618,71 @@
   - Added contextual autocomplete for `Instance.new("..."` suggesting all 30+ creatable classes with descriptive summaries.
   - Added constructors: `UDim.new`, `ColorSequence.new`, `ColorSequenceKeypoint.new`, `NumberSequence.new`, `NumberSequenceKeypoint.new`, `NumberRange.new`.
   - Added GUI method completions: `TweenPosition`, `TweenSize`, `TweenSizeAndPosition`, `CaptureFocus`, `ReleaseFocus`, `ClearAllChildren`.
+
+## Complete GUI Elements Properties & UI Modifiers Expansion — 2026-11-07
+- **Full Roblox Studio GUI Property Set Implementation**:
+  - Implemented comprehensive, authentic Roblox Studio properties across all 2D and 3D GUI classes and UI modifiers in the data model, Lua runtime engine, Properties panel, and viewport rendering.
+  - **Classes Supported**:
+    - **Layer Collectors**: `ScreenGui`, `SurfaceGui`, `BillboardGui`.
+    - **Basic 2D Objects**: `Frame`, `ScrollingFrame`.
+    - **Text & Input Elements**: `TextLabel`, `TextButton`, `TextBox`.
+    - **Image Elements**: `ImageLabel`, `ImageButton`.
+    - **UI Modifiers & Constraints**: `UICorner`, `UIStroke`, `UIPadding`, `UIListLayout`, `UIGridLayout`, `UIAspectRatioConstraint`, `UISizeConstraint`, `UITextSizeConstraint`, `UIGradient`, `UIScale`, `UIPageLayout`, `UIFlexItem`.
+- **Runtime Lua Engine & Metamethods (`src/luaRunner.ts`)**:
+  - Expanded `TreeNodeData` interface with all modern GUI fields: `guiRotation`, `sizeConstraint`, `automaticSize`, `selectable`, `borderMode`, `autoLocalize`, `textStrokeColor`, `textStrokeTransparency`, `richText`, `textTruncate`, `lineHeight`, `maxVisibleGraphemes`, `sliceScale`, `sliceCenter`, `tileSize`, `imageRectOffset`, `imageRectSize`, `resampleMode`, `modal`, `placeholderColor`, `multiLine`, `textEditable`, `showNativeInput`, `cursorPosition`, `canvasPosition`, `scrollingCanvasSize`, `scrollingDirection`, `scrollBarThickness`, `scrollBarImageColor`, `scrollBarImageTransparency`, `verticalScrollBarInset`, `verticalScrollBarPosition`, `horizontalScrollBarInset`, `elasticBehavior`, `scrollingEnabled`, `automaticCanvasSize`, `zIndexBehavior`, `clipToDeviceSafeArea`, `pixelsPerStud`, `sizingMode`, `sizeOffset`, `studsOffsetWorldSpace`, `extentsOffset`, `extentsOffsetWorldSpace`, `distanceLowerLimit`, `distanceUpperLimit`, `lineJoinMode`, `cellPadding`, `fillDirectionMaxCells`, `itemHorizontalAlignment`, `wraps`, `minSize`, `maxSize`, `minTextSize`, `maxTextSize`, `uiScale`, `gradientColor`, `gradientTransparency`, `gradientRotation`, `gradientOffset`, `animated`, `circular`, `easingDirection`, `easingStyle`, `tweenTime`.
+  - Implemented polymorphic runtime getters/setters in `createInstanceProxy` for `Rotation` (degree scalar on GuiObjects vs Vector3 on 3D parts), `CanvasSize` (UDim2 on ScrollingFrame vs Vector2 on SurfaceGui), `Color` / `Transparency` (routed to stroke/gradient parameters on UI modifiers), and `Offset` (vector offset on UIGradient vs scalar on Atmosphere).
+  - Expanded `__WRAP_INSTANCE` table rehydration for `Color3` (`TextStrokeColor3`, `PlaceholderColor3`, `ScrollBarImageColor3`), `UDim2` (`CellSize`, `CellPadding`, `TileSize`), and `Vector2` (`CanvasPosition`, `ImageRectOffset`, `ImageRectSize`, `SizeOffset`, `MinSize`, `MaxSize`, `Offset`).
+  - Added full Lua `Enum` definitions: `TextXAlignment`, `TextYAlignment`, `AutomaticSize`, `SizeConstraint`, `ScaleType`, `BorderMode`, `FillDirection`, `HorizontalAlignment`, `VerticalAlignment`, `SortOrder`, `StartCorner`, `ScrollingDirection`, `ApplyStrokeMode`, `LineJoinMode`, `EasingDirection`, `EasingStyle`, `ZIndexBehavior`.
+- **Properties Panel Overhaul (`src/PropertiesPanel.tsx`)**:
+  - Implemented collapsible, searchable sections for all GUI components:
+    - **Layout**: `Position`, `Size`, `AnchorPoint`, `Rotation` (degrees), `AutomaticSize` (None/X/Y/XY), `SizeConstraint` (RelativeXY/RelativeXX/RelativeYY), `ZIndex`, `LayoutOrder`, `Visible`, `Active`, `Selectable`, `ClipsDescendants`.
+    - **Appearance**: `BackgroundColor3`, `BackgroundTransparency`, `BorderColor3`, `BorderSizePixel`, `BorderMode` (Outline/Middle/Inset), `AutoLocalize`.
+    - **Text**: `Text`, `TextColor3`, `TextTransparency`, `TextStrokeColor3`, `TextStrokeTransparency`, `TextSize`, `TextScaled`, `TextWrapped`, `RichText`, `TextTruncate`, `LineHeight`, `MaxVisibleGraphemes`, `Font`, `TextXAlignment`, `TextYAlignment`.
+    - **Image**: `Image`, `ImageColor3`, `ImageTransparency`, `ScaleType`, `SliceScale`, `ResampleMode`, `ImageRectOffset`, `ImageRectSize`, `TileSize`.
+    - **Button**: `AutoButtonColor`, `Selected`, `Modal`.
+    - **TextBox**: `PlaceholderText`, `PlaceholderColor3`, `ClearTextOnFocus`, `MultiLine`, `TextEditable`, `ShowNativeInput`.
+    - **ScrollingFrame**: `CanvasSize`, `CanvasPosition`, `AutomaticCanvasSize`, `ScrollingDirection`, `ScrollBarThickness`, `ScrollBarImageColor3`, `ScrollBarImageTransparency`, `VerticalScrollBarPosition`, `VerticalScrollBarInset`, `HorizontalScrollBarInset`, `ElasticBehavior`, `ScrollingEnabled`.
+    - **ScreenGui**: `Enabled`, `IgnoreGuiInset`, `ResetOnSpawn`, `DisplayOrder`, `ZIndexBehavior`, `ClipToDeviceSafeArea`.
+    - **3D GUI**: `Enabled`, `Face`, `CanvasSize`, `PixelsPerStud`, `SizingMode`, `Size`, `SizeOffset`, `AlwaysOnTop`, `LightInfluence`, `Brightness`, `StudsOffset`, `MaxDistance`, `DistanceLowerLimit`, `DistanceUpperLimit`, `Adornee`.
+    - **UI Modifiers & Constraints**: Dedicated sections for `UICorner`, `UIStroke`, `UIPadding`, `UIListLayout`, `UIGridLayout`, `UIAspectRatioConstraint`, `UISizeConstraint`, `UITextSizeConstraint`, `UIGradient`, `UIScale`, `UIPageLayout`.
+  - Added reusable, responsive vector input helpers for `UDim`, `UDim2`, and `Vector2` preserving Studio field layout and styling.
+- **Explorer, Insert Object Menu & Viewport Rendering (`src/App.tsx`)**:
+  - Added `UI Modifiers & Constraints` category to the Insert Object popup dialog with automatic binding to official studio icons (`UICorner.png`, `UIStroke.png`, `UIListLayout.png`, `UIGradient.png`, `UIScale.png`, etc.) via `TYPE_TO_CLASS`.
+  - Updated `insertObject` to instantiate modifier nodes with authentic default properties.
+  - Enhanced `GuiElementNode` styling to support CSS rotation around `transformOrigin` (`AnchorPoint`), child `UIScale` magnification, child `UIGradient` linear gradients, text stroke shadows, and line height.
+- **Verification & Schema Generation**:
+  - Generated and validated [`src/guiProperties.json`](file:///c:/visual-luau-compiler-main/src/guiProperties.json) containing 21 comprehensive property definition sections across all GUI objects and UI modifiers, resolving the Vite import resolution error.
+  - Refined type casting for `canvasSize` in [`src/PropertiesPanel.tsx`](file:///c:/visual-luau-compiler-main/src/PropertiesPanel.tsx).
+  - Passed `npx tsc --noEmit` with 0 type errors.
+  - Passed production build (`npm run build`) cleanly in 4.56s.
+
+## Project Structure Organization & Modular Architecture — 2026-11-07
+- **Modular Directory Architecture**:
+  - Organized the flat `src/` codebase into clean, dedicated modules:
+    - **`src/types/`**: Contains [`tree.ts`](file:///c:/visual-luau-compiler-main/src/types/tree.ts) and [`index.ts`](file:///c:/visual-luau-compiler-main/src/types/index.ts) with core TypeScript definitions (`TreeNodeData`, `RigidBodyState`, `LogEntry`, `LogType`, `LuaDiagnostic`, `LuaSyntaxError`).
+    - **`src/data/`**: Houses [`guiProperties.json`](file:///c:/visual-luau-compiler-main/src/data/guiProperties.json) and typed descriptor exports in [`index.ts`](file:///c:/visual-luau-compiler-main/src/data/index.ts).
+    - **`src/engine/`**: Groups execution engines [`luaRunner.ts`](file:///c:/visual-luau-compiler-main/src/engine/luaRunner.ts) and [`physicsEngine.ts`](file:///c:/visual-luau-compiler-main/src/engine/physicsEngine.ts) with unified exports in [`index.ts`](file:///c:/visual-luau-compiler-main/src/engine/index.ts).
+    - **`src/components/`**: Houses React UI panels such as [`PropertiesPanel.tsx`](file:///c:/visual-luau-compiler-main/src/components/PropertiesPanel.tsx) with barrel exports in [`index.ts`](file:///c:/visual-luau-compiler-main/src/components/index.ts).
+- **Clean Modular Migration**:
+  - Migrated imports in [`src/App.tsx`](file:///c:/visual-luau-compiler-main/src/App.tsx) and across components to use the modular paths (`./engine/luaRunner`, `./components/PropertiesPanel`, `./engine/physicsEngine`, `./types`).
+  - Removed redundant root copy files (`src/guiProperties.json`, `src/luaRunner.ts`, `src/physicsEngine.ts`, and `src/PropertiesPanel.tsx`), leaving a clean and uncluttered `src/` tree.
+- **Verification**:
+  - Passed `npx tsc --noEmit` with 0 type errors.
+  - Passed `npm run build` production bundling cleanly.
+
+## Bug Fix: GUI Move/Transform Pointer Event Capture & Drag Stickiness — 2026-11-07
+- **Issue**:
+  - When selecting and moving a GUI element (Frame, Label, Button, etc.) with the UI Editor tool (`activeTool === 'guiTransform'`), releasing the mouse button failed to commit and drop the element. The element remained stuck following the mouse cursor indefinitely, even across multiple clicks.
+- **Root Cause**:
+  - `startGuiDrag` listened for `pointerup` on `window` in the bubbling phase (`useCapture: false`).
+  - Meanwhile, `handlePointerUp` on all GUI elements called `e.stopPropagation()`. When mouse release occurred on the element, the synthetic event stopped native bubbling, preventing `window` from ever receiving `pointerup`.
+  - As a result, the `pointermove` listener was never detached, `liveTransform` was never cleared, and the element remained locked in dragging mode.
+- **Fix**:
+  - Registered window listeners with `useCapture: true` (`window.addEventListener('pointerup', onPointerUp, true)` and `'pointermove'`, `'pointercancel'`) so release events are intercepted before any child handler can block them.
+  - Added dual listeners on `targetEl` for `pointerup`, `pointercancel`, and `lostpointercapture` with explicit `releasePointerCapture`.
+  - In `handlePointerUp` and `handleClick`, bypassed `stopPropagation()` when `editable` is active to allow gestures to complete naturally.
+  - Added drag session management via `dragCleanupRef` and `latestTransformRef`, guaranteeing any previous or interrupted drag is committed and cleaned up.
+  - Added a 2px deadzone threshold to differentiate pure selection clicks from drag translations.
+- **Verification**:
+  - Passed `npx tsc --noEmit` with 0 errors.
+  - Passed `npm run build` cleanly.

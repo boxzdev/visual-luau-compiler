@@ -78,9 +78,9 @@ import {
   LuaSyntaxError,
   analyzeLuaCode,
   LuaDiagnostic
-} from './luaRunner';
-import { PropertiesPanel } from './PropertiesPanel';
-import { globalPhysicsEngine } from './physicsEngine';
+} from './engine/luaRunner';
+import { PropertiesPanel } from './components/PropertiesPanel';
+import { globalPhysicsEngine } from './engine/physicsEngine';
 import sunAsset from '../R_Assets/Sun.png';
 import moonAsset from '../R_Assets/Moon.png';
 
@@ -152,6 +152,18 @@ function getRobloxIconUrl(name: string, type?: string): string | null {
     scrollingframe: 'scrollingframe',
     surfacegui: 'surfacegui',
     billboardgui: 'billboardgui',
+    uicorner: 'uicorner',
+    uistroke: 'uistroke',
+    uipadding: 'uipadding',
+    uilistlayout: 'uilistlayout',
+    uigridlayout: 'uigridlayout',
+    uiaspectratioconstraint: 'uiaspectratioconstraint',
+    uisizeconstraint: 'uisizeconstraint',
+    uitextsizeconstraint: 'uitextsizeconstraint',
+    uigradient: 'uigradient',
+    uiscale: 'uiscale',
+    uipagelayout: 'uipagelayout',
+    uiflexitem: 'uiflexitem',
   };
 
   const mappedClass = TYPE_TO_CLASS[typeLower];
@@ -920,6 +932,17 @@ function GuiElementNode({
   // Live position/size while a move/resize drag is in progress, so the
   // element tracks the cursor smoothly before the change is committed.
   const [liveTransform, setLiveTransform] = useState<{ pos: GuiUDim2; size: GuiUDim2 } | null>(null);
+  const dragCleanupRef = useRef<(() => void) | null>(null);
+  const latestTransformRef = useRef<{ pos: GuiUDim2; size: GuiUDim2 } | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (dragCleanupRef.current) {
+        dragCleanupRef.current();
+        dragCleanupRef.current = null;
+      }
+    };
+  }, []);
   const typeLower = (node.type || '').toLowerCase();
   const visible = node.visible !== false;
 
@@ -940,6 +963,8 @@ function GuiElementNode({
   const uiListLayout = (node.children || []).find((c) => (c.type || '').toLowerCase() === 'uilistlayout');
   const uiGridLayout = (node.children || []).find((c) => (c.type || '').toLowerCase() === 'uigridlayout');
   const uiAspectRatio = (node.children || []).find((c) => (c.type || '').toLowerCase() === 'uiaspectratioconstraint');
+  const uiGradient = (node.children || []).find((c) => (c.type || '').toLowerCase() === 'uigradient');
+  const uiScaleChild = (node.children || []).find((c) => (c.type || '').toLowerCase() === 'uiscale');
   const hasChildLayout = !!(uiListLayout || uiGridLayout);
 
   let borderRadius: string | undefined = undefined;
@@ -1013,24 +1038,42 @@ function GuiElementNode({
   // deltas are added directly to the pixel offset of position/size, since
   // the overlay renders at a 1:1 pixel scale with no zoom transform.
   const startGuiDrag = (e: React.PointerEvent, handle: GuiResizeHandle) => {
+    if (e.button !== 0) return;
     e.stopPropagation();
     e.preventDefault();
     onSelectGui?.(node.id);
 
-    // Route all subsequent events for this gesture through this element,
-    // even if the finger/cursor moves off it - required for touch, since
-    // touch has no free-floating window-level move events like mouse does.
-    (e.target as Element).setPointerCapture?.(e.pointerId);
+    // If a drag is already active, commit and clean it up first
+    if (dragCleanupRef.current) {
+      dragCleanupRef.current();
+      dragCleanupRef.current = null;
+    }
 
     const startX = e.clientX;
     const startY = e.clientY;
     const startPos: GuiUDim2 = { ...pos };
     const startSize: GuiUDim2 = { ...sz };
     const MIN_SIZE = 12;
+    const pointerId = e.pointerId;
+    const targetEl = e.currentTarget as HTMLElement;
+
+    try {
+      targetEl.setPointerCapture(pointerId);
+    } catch {}
+
+    let hasMoved = false;
 
     const onPointerMove = (ev: PointerEvent) => {
+      if (ev.pointerId !== pointerId) return;
       const dx = ev.clientX - startX;
       const dy = ev.clientY - startY;
+
+      // Small threshold (2px) to prevent tiny jitter during a pure click
+      if (!hasMoved && Math.abs(dx) < 2 && Math.abs(dy) < 2) {
+        return;
+      }
+      hasMoved = true;
+
       const newPos: GuiUDim2 = { ...startPos };
       const newSize: GuiUDim2 = { ...startSize };
 
@@ -1056,22 +1099,47 @@ function GuiElementNode({
         }
       }
 
+      latestTransformRef.current = { pos: newPos, size: newSize };
       setLiveTransform({ pos: newPos, size: newSize });
     };
 
-    const onPointerUp = () => {
-      window.removeEventListener('pointermove', onPointerMove);
-      window.removeEventListener('pointerup', onPointerUp);
-      setLiveTransform((current) => {
-        if (current) {
-          onGuiTransformChange?.(node.id, current.pos, current.size);
+    const cleanup = () => {
+      window.removeEventListener('pointermove', onPointerMove, true);
+      window.removeEventListener('pointerup', onPointerUp, true);
+      window.removeEventListener('pointercancel', onPointerUp, true);
+      targetEl.removeEventListener('pointerup', onPointerUp);
+      targetEl.removeEventListener('pointercancel', onPointerUp);
+      targetEl.removeEventListener('lostpointercapture', onPointerUp);
+      try {
+        if (targetEl.hasPointerCapture(pointerId)) {
+          targetEl.releasePointerCapture(pointerId);
         }
-        return null;
-      });
+      } catch {}
+      dragCleanupRef.current = null;
     };
 
-    window.addEventListener('pointermove', onPointerMove);
-    window.addEventListener('pointerup', onPointerUp);
+    const onPointerUp = (ev?: PointerEvent) => {
+      if (ev && ev.pointerId !== undefined && ev.pointerId !== pointerId) return;
+      cleanup();
+
+      const finalTransform = latestTransformRef.current;
+      latestTransformRef.current = null;
+      setLiveTransform(null);
+
+      if (hasMoved && finalTransform) {
+        onGuiTransformChange?.(node.id, finalTransform.pos, finalTransform.size);
+      }
+    };
+
+    dragCleanupRef.current = cleanup;
+
+    // Use capture phase on window so that no child element or React synthetic stopPropagation can block pointerup!
+    window.addEventListener('pointermove', onPointerMove, true);
+    window.addEventListener('pointerup', onPointerUp, true);
+    window.addEventListener('pointercancel', onPointerUp, true);
+    targetEl.addEventListener('pointerup', onPointerUp);
+    targetEl.addEventListener('pointercancel', onPointerUp);
+    targetEl.addEventListener('lostpointercapture', onPointerUp);
   };
 
   // Dashed selection outline + 8 drag handles, rendered as a child of the
@@ -1135,9 +1203,19 @@ function GuiElementNode({
   const top = `calc(${pos.yScale * 100}% + ${pos.yOffset}px)`;
   const width = `calc(${sz.xScale * 100}% + ${sz.xOffset}px)`;
   const height = `calc(${sz.yScale * 100}% + ${sz.yOffset}px)`;
-  const transform = (anchor[0] !== 0 || anchor[1] !== 0)
-    ? `translate(${-anchor[0] * 100}%, ${-anchor[1] * 100}%)`
-    : undefined;
+
+  const transforms: string[] = [];
+  if (anchor[0] !== 0 || anchor[1] !== 0) {
+    transforms.push(`translate(${-anchor[0] * 100}%, ${-anchor[1] * 100}%)`);
+  }
+  if (node.guiRotation) {
+    transforms.push(`rotate(${node.guiRotation}deg)`);
+  }
+  if (uiScaleChild && typeof uiScaleChild.uiScale === 'number' && uiScaleChild.uiScale !== 1) {
+    transforms.push(`scale(${uiScaleChild.uiScale})`);
+  }
+  const transform = transforms.length > 0 ? transforms.join(' ') : undefined;
+  const transformOrigin = `${anchor[0] * 100}% ${anchor[1] * 100}%`;
 
   const bgTransparency = node.backgroundTransparency ?? 0;
   let bgColor = node.backgroundColor || '#ffffff';
@@ -1151,6 +1229,15 @@ function GuiElementNode({
   }
 
   const bg = bgTransparency >= 1 ? 'transparent' : hexToRgba(bgColor, bgTransparency);
+  let backgroundVal: string = bg;
+  if (uiGradient && uiGradient.enabled !== false) {
+    const gRot = uiGradient.gradientRotation ?? 0;
+    const gCol = uiGradient.gradientColor || '#ffffff';
+    const gTrans = uiGradient.gradientTransparency ?? 0;
+    const gRgba = hexToRgba(gCol, gTrans);
+    backgroundVal = `linear-gradient(${gRot + 90}deg, ${bg}, ${gRgba})`;
+  }
+
   const borderSize = node.borderSizePixel ?? 1;
   const border = borderSize > 0 ? `${borderSize}px solid ${node.borderColor || '#1b2a34'}` : 'none';
   const zIndex = node.zIndex ?? 1;
@@ -1163,8 +1250,9 @@ function GuiElementNode({
     top: isPositionedByLayout ? undefined : top,
     width,
     height,
-    transform: isPositionedByLayout ? undefined : transform,
-    backgroundColor: bg,
+    transform: isPositionedByLayout ? (node.guiRotation ? `rotate(${node.guiRotation}deg)` : undefined) : transform,
+    transformOrigin,
+    background: backgroundVal,
     border,
     borderRadius,
     outline,
@@ -1182,6 +1270,10 @@ function GuiElementNode({
   };
 
   const handleClick = (e: React.MouseEvent) => {
+    if (editable) {
+      e.stopPropagation();
+      return;
+    }
     e.stopPropagation();
     if (!isInteractive) return;
     fireInstanceSignal(node.id, 'MouseButton1Click');
@@ -1196,8 +1288,9 @@ function GuiElementNode({
   };
 
   const handlePointerDown = (e: React.PointerEvent) => {
-    e.stopPropagation();
     if (editable) {
+      if (e.button !== 0) return;
+      e.stopPropagation();
       startGuiDrag(e, 'move');
       return;
     }
@@ -1216,6 +1309,11 @@ function GuiElementNode({
   };
 
   const handlePointerUp = (e: React.PointerEvent) => {
+    if (editable) {
+      // In edit mode, startGuiDrag's capture pointerup handler commits transform and cleans up.
+      // Do NOT stopPropagation so window & target capture events fire without disruption.
+      return;
+    }
     e.stopPropagation();
     if (e.button === 0) {
       setIsPressed(false);
@@ -1276,6 +1374,13 @@ function GuiElementNode({
 
   const getTextStyle = (): React.CSSProperties => {
     const textColor = hexToRgba(node.textColor || '#ffffff', node.textTransparency ?? 0);
+    const strokeTransparency = node.textStrokeTransparency ?? 1;
+    const strokeColor = node.textStrokeColor ? hexToRgba(node.textStrokeColor, strokeTransparency) : undefined;
+    const textShadow = strokeTransparency < 1 && strokeColor
+      ? `-1px -1px 0 ${strokeColor}, 1px -1px 0 ${strokeColor}, -1px 1px 0 ${strokeColor}, 1px 1px 0 ${strokeColor}`
+      : undefined;
+    const lineHeight = node.lineHeight ? `${node.lineHeight}` : undefined;
+
     return {
       color: textColor,
       fontSize: node.textScaled ? 'clamp(8px, 60cqh, 120px)' : `${node.textSize ?? 14}px`,
@@ -1283,6 +1388,8 @@ function GuiElementNode({
       whiteSpace: node.textWrapped !== false ? 'pre-wrap' : 'nowrap',
       overflow: 'hidden',
       textOverflow: 'ellipsis',
+      textShadow,
+      lineHeight,
       width: '100%',
       height: '100%',
       display: 'flex',
@@ -3907,6 +4014,17 @@ export default function App() {
       | 'scrollingframe'
       | 'surfacegui'
       | 'billboardgui'
+      | 'uicorner'
+      | 'uistroke'
+      | 'uipadding'
+      | 'uilistlayout'
+      | 'uigridlayout'
+      | 'uiaspectratioconstraint'
+      | 'uisizeconstraint'
+      | 'uitextsizeconstraint'
+      | 'uigradient'
+      | 'uiscale'
+      | 'uipagelayout'
   ) => {
     const newId = 'node_' + Math.random().toString(36).substring(2, 9);
     let name = 'Part';
@@ -3942,6 +4060,28 @@ export default function App() {
       name = 'SurfaceGui';
     } else if (objectType === 'billboardgui') {
       name = 'BillboardGui';
+    } else if (objectType === 'uicorner') {
+      name = 'UICorner';
+    } else if (objectType === 'uistroke') {
+      name = 'UIStroke';
+    } else if (objectType === 'uipadding') {
+      name = 'UIPadding';
+    } else if (objectType === 'uilistlayout') {
+      name = 'UIListLayout';
+    } else if (objectType === 'uigridlayout') {
+      name = 'UIGridLayout';
+    } else if (objectType === 'uiaspectratioconstraint') {
+      name = 'UIAspectRatioConstraint';
+    } else if (objectType === 'uisizeconstraint') {
+      name = 'UISizeConstraint';
+    } else if (objectType === 'uitextsizeconstraint') {
+      name = 'UITextSizeConstraint';
+    } else if (objectType === 'uigradient') {
+      name = 'UIGradient';
+    } else if (objectType === 'uiscale') {
+      name = 'UIScale';
+    } else if (objectType === 'uipagelayout') {
+      name = 'UIPageLayout';
     } else if (objectType === 'script') {
       name = 'Script';
       defaultCode = `-- ${name}\nprint("Hello world from " .. script.Name)`;
@@ -3991,7 +4131,20 @@ export default function App() {
       'surfacegui',
       'billboardgui',
     ].includes(objectType);
-    const isNon3d = isContainer || isDecalOrTexture || isGui;
+    const isUiModifier = [
+      'uicorner',
+      'uistroke',
+      'uipadding',
+      'uilistlayout',
+      'uigridlayout',
+      'uiaspectratioconstraint',
+      'uisizeconstraint',
+      'uitextsizeconstraint',
+      'uigradient',
+      'uiscale',
+      'uipagelayout',
+    ].includes(objectType);
+    const isNon3d = isContainer || isDecalOrTexture || isGui || isUiModifier;
 
     const newNode: TreeNodeData = {
       id: newId,
@@ -4055,6 +4208,14 @@ export default function App() {
       // TextBox
       placeholderText: objectType === 'textbox' ? 'Placeholder Text' : undefined,
       clearTextOnFocus: objectType === 'textbox' ? true : undefined,
+      // ScrollingFrame
+      scrollingCanvasSize: objectType === 'scrollingframe' ? { xScale: 0, xOffset: 0, yScale: 2, yOffset: 0 } : undefined,
+      canvasPosition: objectType === 'scrollingframe' ? [0, 0] : undefined,
+      scrollingDirection: objectType === 'scrollingframe' ? 'XY' : undefined,
+      scrollBarThickness: objectType === 'scrollingframe' ? 12 : undefined,
+      scrollBarImageColor: objectType === 'scrollingframe' ? '#ffffff' : undefined,
+      scrollBarImageTransparency: objectType === 'scrollingframe' ? 0 : undefined,
+      scrollingEnabled: objectType === 'scrollingframe' ? true : undefined,
       // ScreenGui
       ignoreGuiInset: objectType === 'screengui' ? false : undefined,
       resetOnSpawn: objectType === 'screengui' ? true : undefined,
@@ -4066,6 +4227,44 @@ export default function App() {
       alwaysOnTop: objectType === 'billboardgui' ? true : false,
       maxDistance: objectType === 'billboardgui' ? 100 : undefined,
       lightInfluence: objectType === 'surfacegui' ? 1 : objectType === 'billboardgui' ? 0 : undefined,
+      // UI Modifiers
+      cornerRadius: objectType === 'uicorner' ? { scale: 0, offset: 8 } : undefined,
+      strokeColor: objectType === 'uistroke' ? '#000000' : undefined,
+      strokeThickness: objectType === 'uistroke' ? 1 : undefined,
+      strokeTransparency: objectType === 'uistroke' ? 0 : undefined,
+      applyStrokeMode: objectType === 'uistroke' ? 'Contextual' : undefined,
+      lineJoinMode: objectType === 'uistroke' ? 'Round' : undefined,
+      paddingTop: objectType === 'uipadding' ? { scale: 0, offset: 0 } : undefined,
+      paddingBottom: objectType === 'uipadding' ? { scale: 0, offset: 0 } : undefined,
+      paddingLeft: objectType === 'uipadding' ? { scale: 0, offset: 0 } : undefined,
+      paddingRight: objectType === 'uipadding' ? { scale: 0, offset: 0 } : undefined,
+      fillDirection: (objectType === 'uilistlayout' || objectType === 'uigridlayout' || objectType === 'uipagelayout')
+        ? (objectType === 'uilistlayout' ? 'Vertical' : 'Horizontal')
+        : undefined,
+      horizontalAlignment: (objectType === 'uilistlayout' || objectType === 'uigridlayout') ? 'Left' : undefined,
+      verticalAlignment: (objectType === 'uilistlayout' || objectType === 'uigridlayout') ? 'Top' : undefined,
+      sortOrder: (objectType === 'uilistlayout' || objectType === 'uigridlayout') ? 'LayoutOrder' : undefined,
+      layoutPadding: (objectType === 'uilistlayout' || objectType === 'uipagelayout') ? { scale: 0, offset: 0 } : undefined,
+      cellSize: objectType === 'uigridlayout' ? { xScale: 0, xOffset: 100, yScale: 0, yOffset: 100 } : undefined,
+      cellPadding: objectType === 'uigridlayout' ? { xScale: 0, xOffset: 5, yScale: 0, yOffset: 5 } : undefined,
+      startCorner: objectType === 'uigridlayout' ? 'TopLeft' : undefined,
+      aspectRatio: objectType === 'uiaspectratioconstraint' ? 1 : undefined,
+      aspectType: objectType === 'uiaspectratioconstraint' ? 'FitWithinMaxSize' : undefined,
+      dominantAxis: objectType === 'uiaspectratioconstraint' ? 'Width' : undefined,
+      minSize: objectType === 'uisizeconstraint' ? [0, 0] : undefined,
+      maxSize: objectType === 'uisizeconstraint' ? [99999, 99999] : undefined,
+      minTextSize: objectType === 'uitextsizeconstraint' ? 1 : undefined,
+      maxTextSize: objectType === 'uitextsizeconstraint' ? 100 : undefined,
+      gradientColor: objectType === 'uigradient' ? '#ffffff' : undefined,
+      gradientTransparency: objectType === 'uigradient' ? 0 : undefined,
+      gradientRotation: objectType === 'uigradient' ? 0 : undefined,
+      gradientOffset: objectType === 'uigradient' ? [0, 0] : undefined,
+      uiScale: objectType === 'uiscale' ? 1 : undefined,
+      animated: objectType === 'uipagelayout' ? true : undefined,
+      circular: objectType === 'uipagelayout' ? false : undefined,
+      easingDirection: objectType === 'uipagelayout' ? 'Out' : undefined,
+      easingStyle: objectType === 'uipagelayout' ? 'Sine' : undefined,
+      tweenTime: objectType === 'uipagelayout' ? 1 : undefined,
       // Decal / Texture
       texture: isDecalOrTexture ? '' : undefined,
       transparency: isDecalOrTexture ? 0 : undefined,
@@ -5176,6 +5375,22 @@ export default function App() {
               { type: 'scrollingframe' as const, label: 'ScrollingFrame', icon: Scroll, colorClass: 'text-[#34d399]' },
               { type: 'surfacegui' as const, label: 'SurfaceGui', icon: Monitor, colorClass: 'text-[#38bdf8]' },
               { type: 'billboardgui' as const, label: 'BillboardGui', icon: MessageSquare, colorClass: 'text-[#a78bfa]' },
+            ],
+          },
+          {
+            title: 'UI Modifiers & Constraints',
+            items: [
+              { type: 'uicorner' as const, label: 'UICorner', icon: Square, colorClass: 'text-[#38bdf8]' },
+              { type: 'uistroke' as const, label: 'UIStroke', icon: Square, colorClass: 'text-[#fbbf24]' },
+              { type: 'uipadding' as const, label: 'UIPadding', icon: Layout, colorClass: 'text-[#a3e681]' },
+              { type: 'uilistlayout' as const, label: 'UIListLayout', icon: Layout, colorClass: 'text-[#34d399]' },
+              { type: 'uigridlayout' as const, label: 'UIGridLayout', icon: Layout, colorClass: 'text-[#38bdf8]' },
+              { type: 'uiaspectratioconstraint' as const, label: 'UIAspectRatioConstraint', icon: Sliders, colorClass: 'text-[#f472b6]' },
+              { type: 'uisizeconstraint' as const, label: 'UISizeConstraint', icon: Sliders, colorClass: 'text-[#c084fc]' },
+              { type: 'uitextsizeconstraint' as const, label: 'UITextSizeConstraint', icon: Type, colorClass: 'text-[#ffca28]' },
+              { type: 'uigradient' as const, label: 'UIGradient', icon: Sparkles, colorClass: 'text-[#f43f5e]' },
+              { type: 'uiscale' as const, label: 'UIScale', icon: Sliders, colorClass: 'text-[#60a5fa]' },
+              { type: 'uipagelayout' as const, label: 'UIPageLayout', icon: Layout, colorClass: 'text-[#a78bfa]' },
             ],
           },
           {
