@@ -686,3 +686,49 @@
 - **Verification**:
   - Passed `npx tsc --noEmit` with 0 errors.
   - Passed `npm run build` cleanly.
+
+## Roblox Character, Joint, Value & Attachment Elements Expansion — 2026-11-08
+- **Core Elements Implementation**:
+  - Implemented 8 essential Roblox engine classes spanning character systems, rigging joints, 3D constraints, and data containers:
+    - **`Motor6D`** (`motor6D`): Joint instance for character skeletal rigging and animated parts.
+    - **`Attachment`** (`attachmant`): 3D coordinate frame anchoring points with directional axes.
+    - **`HumanoidDescription`**: Avatar appearance description asset defining body scales, clothing asset IDs, and limb colors.
+    - **`Humanoid`**: Avatar controller managing locomotion, health, state transitions, and descriptions.
+    - **`Animator`**: Animation playback controller for loading and stepping `AnimationTrack` sequences.
+    - **`Status`**: Character status indicator and modifier object.
+    - **`BodyColors`** (`Body Colors`): Limb color tinting container for R6 and R15 characters.
+    - **`StringValue`**: Reactive string data container with `Value` and `.Changed` event signal.
+- **Luau Runtime Engine & Metamethods (`src/engine/luaRunner.ts`)**:
+  - **Dynamic Class Reflection & Creation**:
+    - Added `Instance.new(...)` instantiations for all 8 classes with alias and case tolerance (`motor6D`, `attachmant`, `body colors`).
+    - Extended `ClassName` resolution and `IsA(...)` inheritance matching (`JointInstance`, `Instance`, `Humanoid`, `ValueBase`, etc.).
+  - **Properties & Two-Way Viewport Synchronization**:
+    - `Motor6D`: `Part0`, `Part1`, `C0`, `C1`, `Transform`, `CurrentAngle`, `DesiredAngle`, `MaxVelocity`.
+    - `Attachment`: `Axis`, `SecondaryAxis`, `WorldPosition`, `WorldOrientation`, `WorldCFrame`, `Visible`.
+    - `Humanoid`: `Health`, `MaxHealth`, `WalkSpeed`, `JumpPower`, `JumpHeight`, `HipHeight`, `RigType` (R6 / R15), `DisplayName`, `AutoRotate`, `PlatformStand`, `Sit`, `UseJumpPower`, `RequiresNeck`.
+    - `HumanoidDescription`: Limb colors (`HeadColor`, `TorsoColor`, etc.), clothing IDs (`Shirt`, `Pants`), body scales (`HeightScale`, `WidthScale`, `DepthScale`, `HeadScale`, `BodyTypeScale`, `ProportionScale`), and accessories (`BackAccessory`, `HairAccessory`, `FaceAccessory`, etc.).
+    - `Animator`: `:LoadAnimation()`, `:GetPlayingAnimationTracks()`, `:StepAnimations()`.
+    - `BodyColors`: `HeadColor3`, `TorsoColor3`, `LeftArmColor3`, `RightArmColor3`, `LeftLegColor3`, `RightLegColor3`, and legacy `BrickColor` limb properties.
+    - `StringValue`: `Value` property and reactive `.Changed` signal.
+  - **Humanoid Methods & RBXScriptSignals**:
+    - Methods: `:TakeDamage(amount)`, `:MoveTo(location)`, `:ChangeState(state)`, `:GetState()`, `:ApplyDescription(desc)`, `:GetAppliedDescription()`, `:AddAccessory(accessory)`.
+    - RBXScriptSignals: `Died`, `HealthChanged`, `StateChanged`, `Running`, `Jumping`, `Climbing`, `Freefall`, `Seated`, `MoveToFinished`.
+- **Properties Panel Overhaul (`src/components/PropertiesPanel.tsx`)**:
+  - Implemented collapsible Roblox Studio inspector panels with real-time two-way bindings:
+    - **Motor6D Panel**: `Part0` and `Part1` instance references, `C0` and `C1` CFrame components, angular velocity and desired angles.
+    - **Attachment Panel**: Position, Orientation, Axis, SecondaryAxis vectors, and visibility toggle.
+    - **Humanoid Panel**: Health / MaxHealth gauges, WalkSpeed, JumpPower, HipHeight, RigType selector, DisplayName, and locomotion toggles (`AutoRotate`, `PlatformStand`, `Sit`).
+    - **HumanoidDescription Panel**: Body scale multipliers (0.5x to 2.0x), clothing asset IDs, and limb color overrides.
+    - **BodyColors Panel**: Hex / Color picker inputs for all 6 character limbs (`HeadColor3`, `TorsoColor3`, etc.).
+    - **StringValue Panel**: Direct string value text input.
+- **Explorer, Insert Object & 3D Viewport (`src/App.tsx`)**:
+  - Added new "Characters & Animation" and "Values" categories to the Insert Object modal dialog.
+  - Added search alias matching for non-exact queries (`attachmant` -> `Attachment`, `body colors` -> `BodyColors`).
+  - Added 3D gizmo visualization for child `Attachment` nodes on BaseParts, rendering coordinate axes (Red/Green/Blue lines) and a semi-transparent indicator sphere in the Three.js viewport.
+  - Extended Monaco Editor autocompletion for all newly added classes.
+- **Assets & Documentation**:
+  - Added `StringValue.png` and `Status.png` to `R_Assets/Classes/` to complement existing class icons.
+  - Updated `docs/elements.md` with complete API reference tables, properties, signals, methods, and Luau scripting code examples.
+- **Verification**:
+  - Passed `tsc --noEmit` with 0 type errors.
+  - Passed `npm run build` production bundling cleanly.

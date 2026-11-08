@@ -108,6 +108,12 @@ export function PropertiesPanel({
     uiGradient: true,
     uiScale: true,
     uiPageLayout: true,
+    motor6d: true,
+    attachment: true,
+    humanoid: true,
+    humanoidDescription: true,
+    bodyColors: true,
+    stringValue: true,
     data: true,
   });
 
@@ -115,6 +121,10 @@ export function PropertiesPanel({
     position: false,
     orientation: false,
     size: false,
+    c0: false,
+    c1: false,
+    axis: false,
+    secondaryAxis: false,
     guiPosition: false,
     guiSize: false,
     guiAnchorPoint: false,
@@ -234,6 +244,14 @@ export function PropertiesPanel({
   const isUiGradient = nodeTypeLower === 'uigradient';
   const isUiScale = nodeTypeLower === 'uiscale';
   const isUiPageLayout = nodeTypeLower === 'uipagelayout';
+  const isHumanoid = nodeTypeLower === 'humanoid';
+  const isHumanoidDescription = nodeTypeLower === 'humanoiddescription';
+  const isBodyColors = nodeTypeLower === 'bodycolors';
+  const isMotor6D = nodeTypeLower === 'motor6d';
+  const isAttachment = nodeTypeLower === 'attachment';
+  const isStringValue = nodeTypeLower === 'stringvalue';
+  const isAnimator = nodeTypeLower === 'animator';
+  const isStatus = nodeTypeLower === 'status';
   const isUiModifier =
     isUiCorner ||
     isUiStroke ||
@@ -770,6 +788,14 @@ export function PropertiesPanel({
     if (selectedNode.type === 'sunrayseffect') return 'SunRaysEffect';
     if (selectedNode.type === 'blureffect') return 'BlurEffect';
     if (selectedNode.type === 'depthoffieldeffect') return 'DepthOfFieldEffect';
+    if (selectedNode.type === 'motor6d') return 'Motor6D';
+    if (selectedNode.type === 'attachment') return 'Attachment';
+    if (selectedNode.type === 'humanoiddescription') return 'HumanoidDescription';
+    if (selectedNode.type === 'humanoid') return 'Humanoid';
+    if (selectedNode.type === 'animator') return 'Animator';
+    if (selectedNode.type === 'status') return 'Status';
+    if (selectedNode.type === 'bodycolors') return 'BodyColors';
+    if (selectedNode.type === 'stringvalue') return 'StringValue';
     return selectedNode.name;
   };
 
@@ -2334,6 +2360,190 @@ export function PropertiesPanel({
             </div>
           );
         })}
+
+        {/* ================= MOTOR6D SECTION ================= */}
+        {isMotor6D && (
+          <div>
+            <div
+              onClick={() => toggleSection('motor6d')}
+              className="flex items-center h-[24px] px-2 bg-[#2a2a2a] hover:bg-[#333333] cursor-pointer text-[#e0e0e0] font-semibold text-[11.5px] border-b border-[#333333]"
+            >
+              <span className="mr-1 text-[#888888]">
+                {expandedSections.motor6d ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+              </span>
+              Joint / Motor6D
+            </div>
+            {expandedSections.motor6d && (
+              <div className="divide-y divide-[#2d2d2d] bg-[#1e1e1e]">
+                {[
+                  { label: 'Part0', key: 'part0Id', type: 'partSelector' as const },
+                  { label: 'Part1', key: 'part1Id', type: 'partSelector' as const },
+                  { label: 'C0', key: 'c0', type: 'vector3' as const, step: 0.1, default: [0, 0, 0] },
+                  { label: 'C1', key: 'c1', type: 'vector3' as const, step: 0.1, default: [0, 0, 0] },
+                  { label: 'CurrentAngle', key: 'currentAngle', type: 'number' as const, step: 0.1, default: 0 },
+                  { label: 'DesiredAngle', key: 'desiredAngle', type: 'number' as const, step: 0.1, default: 0 },
+                  { label: 'MaxVelocity', key: 'maxVelocity', type: 'number' as const, step: 0.05, min: 0, default: 0 },
+                  { label: 'Enabled', key: 'enabled', type: 'boolean' as const, default: true },
+                ].filter((p) => filterMatch(p.label)).map(renderPropertyItem)}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ================= ATTACHMENT SECTION ================= */}
+        {isAttachment && (
+          <div>
+            <div
+              onClick={() => toggleSection('attachment')}
+              className="flex items-center h-[24px] px-2 bg-[#2a2a2a] hover:bg-[#333333] cursor-pointer text-[#e0e0e0] font-semibold text-[11.5px] border-b border-[#333333]"
+            >
+              <span className="mr-1 text-[#888888]">
+                {expandedSections.attachment ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+              </span>
+              Attachment
+            </div>
+            {expandedSections.attachment && (
+              <div className="divide-y divide-[#2d2d2d] bg-[#1e1e1e]">
+                {[
+                  { label: 'Position', key: 'position', type: 'vector3' as const, step: 0.1, default: [0, 0, 0] },
+                  { label: 'Orientation', key: 'rotation', type: 'vector3' as const, step: 1, default: [0, 0, 0] },
+                  { label: 'Axis', key: 'axis', type: 'vector3' as const, step: 0.1, default: [1, 0, 0] },
+                  { label: 'SecondaryAxis', key: 'secondaryAxis', type: 'vector3' as const, step: 0.1, default: [0, 1, 0] },
+                  { label: 'Visible', key: 'visible', type: 'boolean' as const, default: false },
+                ].filter((p) => filterMatch(p.label)).map(renderPropertyItem)}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ================= HUMANOID SECTION ================= */}
+        {isHumanoid && (
+          <div>
+            <div
+              onClick={() => toggleSection('humanoid')}
+              className="flex items-center h-[24px] px-2 bg-[#2a2a2a] hover:bg-[#333333] cursor-pointer text-[#e0e0e0] font-semibold text-[11.5px] border-b border-[#333333]"
+            >
+              <span className="mr-1 text-[#888888]">
+                {expandedSections.humanoid ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+              </span>
+              Humanoid
+            </div>
+            {expandedSections.humanoid && (
+              <div className="divide-y divide-[#2d2d2d] bg-[#1e1e1e]">
+                {[
+                  { label: 'Health', key: 'health', type: 'number' as const, min: 0, default: 100 },
+                  { label: 'MaxHealth', key: 'maxHealth', type: 'number' as const, min: 0, default: 100 },
+                  { label: 'WalkSpeed', key: 'walkSpeed', type: 'number' as const, min: 0, default: 16 },
+                  { label: 'JumpPower', key: 'jumpPower', type: 'number' as const, min: 0, default: 50 },
+                  { label: 'JumpHeight', key: 'jumpHeight', type: 'number' as const, min: 0, default: 7.2 },
+                  { label: 'HipHeight', key: 'hipHeight', type: 'number' as const, default: 2 },
+                  { label: 'RigType', key: 'rigType', type: 'select' as const, options: ['R15', 'R6'], default: 'R15' },
+                  { label: 'DisplayName', key: 'displayName', type: 'text' as const, default: '' },
+                  { label: 'AutoRotate', key: 'autoRotate', type: 'boolean' as const, default: true },
+                  { label: 'PlatformStand', key: 'platformStand', type: 'boolean' as const, default: false },
+                  { label: 'Sit', key: 'sit', type: 'boolean' as const, default: false },
+                  { label: 'UseJumpPower', key: 'useJumpPower', type: 'boolean' as const, default: true },
+                  { label: 'RequiresNeck', key: 'requiresNeck', type: 'boolean' as const, default: true },
+                ].filter((p) => filterMatch(p.label)).map(renderPropertyItem)}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ================= HUMANOIDDESCRIPTION SECTION ================= */}
+        {isHumanoidDescription && (
+          <div>
+            <div
+              onClick={() => toggleSection('humanoidDescription')}
+              className="flex items-center h-[24px] px-2 bg-[#2a2a2a] hover:bg-[#333333] cursor-pointer text-[#e0e0e0] font-semibold text-[11.5px] border-b border-[#333333]"
+            >
+              <span className="mr-1 text-[#888888]">
+                {expandedSections.humanoidDescription ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+              </span>
+              HumanoidDescription
+            </div>
+            {expandedSections.humanoidDescription && (
+              <div className="divide-y divide-[#2d2d2d] bg-[#1e1e1e]">
+                {[
+                  { label: 'HeadColor', key: 'headColor', type: 'color' as const, default: '#f8d966' },
+                  { label: 'TorsoColor', key: 'torsoColor', type: 'color' as const, default: '#0d69ac' },
+                  { label: 'LeftArmColor', key: 'leftArmColor', type: 'color' as const, default: '#f8d966' },
+                  { label: 'RightArmColor', key: 'rightArmColor', type: 'color' as const, default: '#f8d966' },
+                  { label: 'LeftLegColor', key: 'leftLegColor', type: 'color' as const, default: '#a4c639' },
+                  { label: 'RightLegColor', key: 'rightLegColor', type: 'color' as const, default: '#a4c639' },
+                  { label: 'HeightScale', key: 'heightScale', type: 'number' as const, step: 0.05, min: 0.1, default: 1 },
+                  { label: 'WidthScale', key: 'widthScale', type: 'number' as const, step: 0.05, min: 0.1, default: 1 },
+                  { label: 'HeadScale', key: 'headScale', type: 'number' as const, step: 0.05, min: 0.1, default: 1 },
+                  { label: 'DepthScale', key: 'depthScale', type: 'number' as const, step: 0.05, min: 0.1, default: 1 },
+                  { label: 'BodyTypeScale', key: 'bodyTypeScale', type: 'number' as const, step: 0.05, min: 0, default: 0 },
+                  { label: 'ProportionScale', key: 'proportionScale', type: 'number' as const, step: 0.05, min: 0, default: 0 },
+                  { label: 'Shirt', key: 'shirt', type: 'text' as const, default: '' },
+                  { label: 'Pants', key: 'pants', type: 'text' as const, default: '' },
+                  { label: 'GraphicTShirt', key: 'graphicTShirt', type: 'text' as const, default: '' },
+                  { label: 'Face', key: 'face', type: 'text' as const, default: '' },
+                  { label: 'Head', key: 'headAsset', type: 'text' as const, default: '' },
+                  { label: 'HairAccessory', key: 'hairAccessory', type: 'text' as const, default: '' },
+                  { label: 'HatAccessory', key: 'hatAccessory', type: 'text' as const, default: '' },
+                  { label: 'FaceAccessory', key: 'faceAccessory', type: 'text' as const, default: '' },
+                  { label: 'NeckAccessory', key: 'neckAccessory', type: 'text' as const, default: '' },
+                  { label: 'ShouldersAccessory', key: 'shouldersAccessory', type: 'text' as const, default: '' },
+                  { label: 'FrontAccessory', key: 'frontAccessory', type: 'text' as const, default: '' },
+                  { label: 'BackAccessory', key: 'backAccessory', type: 'text' as const, default: '' },
+                  { label: 'WaistAccessory', key: 'waistAccessory', type: 'text' as const, default: '' },
+                ].filter((p) => filterMatch(p.label)).map(renderPropertyItem)}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ================= BODYCOLORS SECTION ================= */}
+        {isBodyColors && (
+          <div>
+            <div
+              onClick={() => toggleSection('bodyColors')}
+              className="flex items-center h-[24px] px-2 bg-[#2a2a2a] hover:bg-[#333333] cursor-pointer text-[#e0e0e0] font-semibold text-[11.5px] border-b border-[#333333]"
+            >
+              <span className="mr-1 text-[#888888]">
+                {expandedSections.bodyColors ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+              </span>
+              Body Colors
+            </div>
+            {expandedSections.bodyColors && (
+              <div className="divide-y divide-[#2d2d2d] bg-[#1e1e1e]">
+                {[
+                  { label: 'HeadColor3', key: 'headColor3', type: 'color' as const, default: '#f8d966' },
+                  { label: 'TorsoColor3', key: 'torsoColor3', type: 'color' as const, default: '#0d69ac' },
+                  { label: 'LeftArmColor3', key: 'leftArmColor3', type: 'color' as const, default: '#f8d966' },
+                  { label: 'RightArmColor3', key: 'rightArmColor3', type: 'color' as const, default: '#f8d966' },
+                  { label: 'LeftLegColor3', key: 'leftLegColor3', type: 'color' as const, default: '#a4c639' },
+                  { label: 'RightLegColor3', key: 'rightLegColor3', type: 'color' as const, default: '#a4c639' },
+                ].filter((p) => filterMatch(p.label)).map(renderPropertyItem)}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ================= STRINGVALUE SECTION ================= */}
+        {isStringValue && (
+          <div>
+            <div
+              onClick={() => toggleSection('stringValue')}
+              className="flex items-center h-[24px] px-2 bg-[#2a2a2a] hover:bg-[#333333] cursor-pointer text-[#e0e0e0] font-semibold text-[11.5px] border-b border-[#333333]"
+            >
+              <span className="mr-1 text-[#888888]">
+                {expandedSections.stringValue ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+              </span>
+              Value
+            </div>
+            {expandedSections.stringValue && (
+              <div className="divide-y divide-[#2d2d2d] bg-[#1e1e1e]">
+                {[
+                  { label: 'Value', key: 'value', type: 'text' as const, default: '' },
+                ].filter((p) => filterMatch(p.label)).map(renderPropertyItem)}
+              </div>
+            )}
+          </div>
+        )}
 
         {/* ================= DATA / IDENTITY SECTION ================= */}
         {(filterMatch('Name') || filterMatch('ClassName') || filterMatch('Parent')) && (

@@ -235,6 +235,77 @@ export type TreeNodeData = {
   easingDirection?: string;
   easingStyle?: string;
   tweenTime?: number;
+  // Motor6D properties
+  part0Id?: string;
+  part1Id?: string;
+  c0?: [number, number, number];
+  c1?: [number, number, number];
+  c0Rotation?: [number, number, number];
+  c1Rotation?: [number, number, number];
+  currentAngle?: number;
+  desiredAngle?: number;
+  maxVelocity?: number;
+  transformPos?: [number, number, number];
+  transformRot?: [number, number, number];
+  // Attachment properties
+  axis?: [number, number, number];
+  secondaryAxis?: [number, number, number];
+  // Humanoid properties
+  health?: number;
+  maxHealth?: number;
+  walkSpeed?: number;
+  jumpPower?: number;
+  jumpHeight?: number;
+  hipHeight?: number;
+  rigType?: 'R6' | 'R15' | string;
+  displayName?: string;
+  autoRotate?: boolean;
+  platformStand?: boolean;
+  sit?: boolean;
+  useJumpPower?: boolean;
+  requiresNeck?: boolean;
+  humanoidState?: string;
+  // HumanoidDescription properties
+  headColor?: string;
+  torsoColor?: string;
+  leftArmColor?: string;
+  rightArmColor?: string;
+  leftLegColor?: string;
+  rightLegColor?: string;
+  heightScale?: number;
+  widthScale?: number;
+  headScale?: number;
+  depthScale?: number;
+  bodyTypeScale?: number;
+  proportionScale?: number;
+  shirt?: string;
+  pants?: string;
+  graphicTShirt?: string;
+  headAsset?: string;
+  hairAccessory?: string;
+  hatAccessory?: string;
+  faceAccessory?: string;
+  neckAccessory?: string;
+  shouldersAccessory?: string;
+  frontAccessory?: string;
+  backAccessory?: string;
+  waistAccessory?: string;
+  climbAnimation?: string;
+  fallAnimation?: string;
+  idleAnimation?: string;
+  jumpAnimation?: string;
+  runAnimation?: string;
+  swimAnimation?: string;
+  walkAnimation?: string;
+  // BodyColors properties
+  headColor3?: string;
+  torsoColor3?: string;
+  leftArmColor3?: string;
+  rightArmColor3?: string;
+  leftLegColor3?: string;
+  rightLegColor3?: string;
+  // StringValue properties
+  value?: string;
 };
 
 export const LIGHTING_DEFAULTS = {
@@ -1217,6 +1288,36 @@ export function createInstanceProxy(
     get Focused() {
       return makeInstanceSignal('Focused');
     },
+    get Died() {
+      return makeInstanceSignal('Died');
+    },
+    get HealthChanged() {
+      return makeInstanceSignal('HealthChanged');
+    },
+    get StateChanged() {
+      return makeInstanceSignal('StateChanged');
+    },
+    get Running() {
+      return makeInstanceSignal('Running');
+    },
+    get Jumping() {
+      return makeInstanceSignal('Jumping');
+    },
+    get Climbing() {
+      return makeInstanceSignal('Climbing');
+    },
+    get Freefall() {
+      return makeInstanceSignal('Freefall');
+    },
+    get Seated() {
+      return makeInstanceSignal('Seated');
+    },
+    get MoveToFinished() {
+      return makeInstanceSignal('MoveToFinished');
+    },
+    get Changed() {
+      return makeInstanceSignal('Changed');
+    },
 
     get Name() {
       return getNode()?.name || '';
@@ -1276,6 +1377,14 @@ export function createInstanceProxy(
       if (node.type === 'uiscale') return 'UIScale';
       if (node.type === 'uipagelayout') return 'UIPageLayout';
       if (node.type === 'uiflexitem') return 'UIFlexItem';
+      if (node.type === 'motor6d') return 'Motor6D';
+      if (node.type === 'attachment') return 'Attachment';
+      if (node.type === 'humanoiddescription') return 'HumanoidDescription';
+      if (node.type === 'humanoid') return 'Humanoid';
+      if (node.type === 'animator') return 'Animator';
+      if (node.type === 'status') return 'Status';
+      if (node.type === 'bodycolors') return 'BodyColors';
+      if (node.type === 'stringvalue') return 'StringValue';
       return node.name || 'Instance';
     },
 
@@ -3769,6 +3878,658 @@ export function createInstanceProxy(
       return true;
     },
 
+    // ---- ValueBase / StringValue --------------------------------------------
+    get Value() {
+      const node = getNode();
+      return node?.value ?? '';
+    },
+    set Value(v: any) {
+      const str = String(v ?? '');
+      updateNode((n) => ({ ...n, value: str }));
+      fireInstanceSignal(nodeId, 'Changed', str);
+      fireInstanceSignal(nodeId, 'PropertyChanged:Value', str);
+    },
+
+    // ---- Attachment ---------------------------------------------------------
+    get Axis() {
+      const node = getNode();
+      const a = node?.axis || [1, 0, 0];
+      return makeInstanceVector3(bridge, a[0], a[1], a[2]);
+    },
+    set Axis(v: any) {
+      const x = Number(v?.X ?? v?.x ?? 1);
+      const y = Number(v?.Y ?? v?.y ?? 0);
+      const z = Number(v?.Z ?? v?.z ?? 0);
+      updateNode((n) => ({ ...n, axis: [x, y, z] }));
+      fireInstanceSignal(nodeId, 'PropertyChanged:Axis');
+    },
+
+    get SecondaryAxis() {
+      const node = getNode();
+      const a = node?.secondaryAxis || [0, 1, 0];
+      return makeInstanceVector3(bridge, a[0], a[1], a[2]);
+    },
+    set SecondaryAxis(v: any) {
+      const x = Number(v?.X ?? v?.x ?? 0);
+      const y = Number(v?.Y ?? v?.y ?? 1);
+      const z = Number(v?.Z ?? v?.z ?? 0);
+      updateNode((n) => ({ ...n, secondaryAxis: [x, y, z] }));
+      fireInstanceSignal(nodeId, 'PropertyChanged:SecondaryAxis');
+    },
+
+    get WorldPosition() {
+      const node = getNode();
+      const localPos = node?.position || [0, 0, 0];
+      const parent = findParentNode(getTree(), nodeId);
+      const parentPos = parent?.position || [0, 0, 0];
+      return makeInstanceVector3(bridge, parentPos[0] + localPos[0], parentPos[1] + localPos[1], parentPos[2] + localPos[2]);
+    },
+    set WorldPosition(v: any) {
+      const wx = Number(v?.X ?? v?.x ?? 0);
+      const wy = Number(v?.Y ?? v?.y ?? 0);
+      const wz = Number(v?.Z ?? v?.z ?? 0);
+      const parent = findParentNode(getTree(), nodeId);
+      const parentPos = parent?.position || [0, 0, 0];
+      const lx = wx - parentPos[0];
+      const ly = wy - parentPos[1];
+      const lz = wz - parentPos[2];
+      updateNode((n) => ({ ...n, position: [lx, ly, lz] }));
+      fireInstanceSignal(nodeId, 'PropertyChanged:WorldPosition');
+    },
+
+    get WorldOrientation() {
+      const node = getNode();
+      const localRot = node?.rotation || [0, 0, 0];
+      const parent = findParentNode(getTree(), nodeId);
+      const parentRot = parent?.rotation || [0, 0, 0];
+      return makeInstanceVector3(bridge, parentRot[0] + localRot[0], parentRot[1] + localRot[1], parentRot[2] + localRot[2]);
+    },
+    set WorldOrientation(v: any) {
+      const wx = Number(v?.X ?? v?.x ?? 0);
+      const wy = Number(v?.Y ?? v?.y ?? 0);
+      const wz = Number(v?.Z ?? v?.z ?? 0);
+      const parent = findParentNode(getTree(), nodeId);
+      const parentRot = parent?.rotation || [0, 0, 0];
+      updateNode((n) => ({ ...n, rotation: [wx - parentRot[0], wy - parentRot[1], wz - parentRot[2]] }));
+      fireInstanceSignal(nodeId, 'PropertyChanged:WorldOrientation');
+    },
+
+    get WorldCFrame() {
+      const wp = (this as any).WorldPosition;
+      const wo = (this as any).WorldOrientation;
+      return bridge?.makeCFrame
+        ? bridge.makeCFrame(wp.X, wp.Y, wp.Z, wo.X, wo.Y, wo.Z)
+        : { __type: 'CFrame', Position: wp, Orientation: wo };
+    },
+    set WorldCFrame(cf: any) {
+      if (!cf) return;
+      const { position, rotation } = extractCFrameData(cf);
+      (this as any).WorldPosition = { X: position[0], Y: position[1], Z: position[2] };
+      (this as any).WorldOrientation = { X: rotation[0], Y: rotation[1], Z: rotation[2] };
+    },
+
+    // ---- Motor6D ------------------------------------------------------------
+    get Part0() {
+      const node = getNode();
+      if (!node?.part0Id) return null;
+      return createInstanceProxy(node.part0Id, getTree, updateTree, onLog, bridge);
+    },
+    set Part0(p: any) {
+      const pId = p?.__nodeId || null;
+      updateNode((n) => ({ ...n, part0Id: pId }));
+      fireInstanceSignal(nodeId, 'PropertyChanged:Part0');
+    },
+
+    get Part1() {
+      const node = getNode();
+      if (!node?.part1Id) return null;
+      return createInstanceProxy(node.part1Id, getTree, updateTree, onLog, bridge);
+    },
+    set Part1(p: any) {
+      const pId = p?.__nodeId || null;
+      updateNode((n) => ({ ...n, part1Id: pId }));
+      fireInstanceSignal(nodeId, 'PropertyChanged:Part1');
+    },
+
+    get C0() {
+      const node = getNode();
+      const p = node?.c0 || [0, 0, 0];
+      const r = node?.c0Rotation || [0, 0, 0];
+      return bridge?.makeCFrame
+        ? bridge.makeCFrame(p[0], p[1], p[2], r[0], r[1], r[2])
+        : { __type: 'CFrame', Position: makeInstanceVector3(bridge, p[0], p[1], p[2]) };
+    },
+    set C0(cf: any) {
+      if (!cf) return;
+      const { position, rotation } = extractCFrameData(cf);
+      updateNode((n) => ({ ...n, c0: position, c0Rotation: rotation }));
+      fireInstanceSignal(nodeId, 'PropertyChanged:C0');
+    },
+
+    get C1() {
+      const node = getNode();
+      const p = node?.c1 || [0, 0, 0];
+      const r = node?.c1Rotation || [0, 0, 0];
+      return bridge?.makeCFrame
+        ? bridge.makeCFrame(p[0], p[1], p[2], r[0], r[1], r[2])
+        : { __type: 'CFrame', Position: makeInstanceVector3(bridge, p[0], p[1], p[2]) };
+    },
+    set C1(cf: any) {
+      if (!cf) return;
+      const { position, rotation } = extractCFrameData(cf);
+      updateNode((n) => ({ ...n, c1: position, c1Rotation: rotation }));
+      fireInstanceSignal(nodeId, 'PropertyChanged:C1');
+    },
+
+    get Transform() {
+      const node = getNode();
+      const p = node?.transformPos || [0, 0, 0];
+      const r = node?.transformRot || [0, 0, 0];
+      return bridge?.makeCFrame
+        ? bridge.makeCFrame(p[0], p[1], p[2], r[0], r[1], r[2])
+        : { __type: 'CFrame', Position: makeInstanceVector3(bridge, p[0], p[1], p[2]) };
+    },
+    set Transform(cf: any) {
+      if (!cf) return;
+      const { position, rotation } = extractCFrameData(cf);
+      updateNode((n) => ({ ...n, transformPos: position, transformRot: rotation }));
+      fireInstanceSignal(nodeId, 'PropertyChanged:Transform');
+    },
+
+    get CurrentAngle() {
+      return getNode()?.currentAngle ?? 0;
+    },
+    set CurrentAngle(v: number) {
+      const num = Number(v) || 0;
+      updateNode((n) => ({ ...n, currentAngle: num }));
+      fireInstanceSignal(nodeId, 'PropertyChanged:CurrentAngle');
+    },
+
+    get DesiredAngle() {
+      return getNode()?.desiredAngle ?? 0;
+    },
+    set DesiredAngle(v: number) {
+      const num = Number(v) || 0;
+      updateNode((n) => ({ ...n, desiredAngle: num }));
+      fireInstanceSignal(nodeId, 'PropertyChanged:DesiredAngle');
+    },
+
+    get MaxVelocity() {
+      return getNode()?.maxVelocity ?? 0;
+    },
+    set MaxVelocity(v: number) {
+      const num = Math.max(0, Number(v) || 0);
+      updateNode((n) => ({ ...n, maxVelocity: num }));
+      fireInstanceSignal(nodeId, 'PropertyChanged:MaxVelocity');
+    },
+
+    // ---- Humanoid -----------------------------------------------------------
+    get Health() {
+      return getNode()?.health ?? 100;
+    },
+    set Health(v: number) {
+      const current = getNode()?.health ?? 100;
+      const maxH = getNode()?.maxHealth ?? 100;
+      const newHealth = Math.max(0, Math.min(maxH, Number(v) || 0));
+      updateNode((n) => ({ ...n, health: newHealth }));
+      fireInstanceSignal(nodeId, 'HealthChanged', newHealth);
+      fireInstanceSignal(nodeId, 'PropertyChanged:Health', newHealth);
+      if (newHealth <= 0 && current > 0) {
+        updateNode((n) => ({ ...n, humanoidState: 'Dead' }));
+        fireInstanceSignal(nodeId, 'Died');
+        fireInstanceSignal(nodeId, 'StateChanged', 'Dead');
+      }
+    },
+
+    get MaxHealth() {
+      return getNode()?.maxHealth ?? 100;
+    },
+    set MaxHealth(v: number) {
+      const num = Math.max(0, Number(v) || 0);
+      updateNode((n) => ({ ...n, maxHealth: num }));
+      fireInstanceSignal(nodeId, 'PropertyChanged:MaxHealth');
+    },
+
+    get WalkSpeed() {
+      return getNode()?.walkSpeed ?? 16;
+    },
+    set WalkSpeed(v: number) {
+      const num = Math.max(0, Number(v) || 0);
+      updateNode((n) => ({ ...n, walkSpeed: num }));
+      fireInstanceSignal(nodeId, 'PropertyChanged:WalkSpeed');
+    },
+
+    get JumpPower() {
+      return getNode()?.jumpPower ?? 50;
+    },
+    set JumpPower(v: number) {
+      const num = Math.max(0, Number(v) || 0);
+      updateNode((n) => ({ ...n, jumpPower: num }));
+      fireInstanceSignal(nodeId, 'PropertyChanged:JumpPower');
+    },
+
+    get JumpHeight() {
+      return getNode()?.jumpHeight ?? 7.2;
+    },
+    set JumpHeight(v: number) {
+      const num = Math.max(0, Number(v) || 0);
+      updateNode((n) => ({ ...n, jumpHeight: num }));
+      fireInstanceSignal(nodeId, 'PropertyChanged:JumpHeight');
+    },
+
+    get HipHeight() {
+      return getNode()?.hipHeight ?? 2;
+    },
+    set HipHeight(v: number) {
+      const num = Number(v) || 0;
+      updateNode((n) => ({ ...n, hipHeight: num }));
+      fireInstanceSignal(nodeId, 'PropertyChanged:HipHeight');
+    },
+
+    get RigType() {
+      return getNode()?.rigType || 'R15';
+    },
+    set RigType(v: string) {
+      const str = String(v || 'R15');
+      updateNode((n) => ({ ...n, rigType: str }));
+      fireInstanceSignal(nodeId, 'PropertyChanged:RigType');
+    },
+
+    get DisplayName() {
+      return getNode()?.displayName ?? '';
+    },
+    set DisplayName(v: string) {
+      const str = String(v ?? '');
+      updateNode((n) => ({ ...n, displayName: str }));
+      fireInstanceSignal(nodeId, 'PropertyChanged:DisplayName');
+    },
+
+    get AutoRotate() {
+      return getNode()?.autoRotate ?? true;
+    },
+    set AutoRotate(v: boolean) {
+      updateNode((n) => ({ ...n, autoRotate: v === true }));
+      fireInstanceSignal(nodeId, 'PropertyChanged:AutoRotate');
+    },
+
+    get PlatformStand() {
+      return getNode()?.platformStand ?? false;
+    },
+    set PlatformStand(v: boolean) {
+      updateNode((n) => ({ ...n, platformStand: v === true }));
+      fireInstanceSignal(nodeId, 'PropertyChanged:PlatformStand');
+    },
+
+    get Sit() {
+      return getNode()?.sit ?? false;
+    },
+    set Sit(v: boolean) {
+      const val = v === true;
+      updateNode((n) => ({ ...n, sit: val }));
+      fireInstanceSignal(nodeId, 'Seated', val);
+      fireInstanceSignal(nodeId, 'PropertyChanged:Sit');
+    },
+
+    get UseJumpPower() {
+      return getNode()?.useJumpPower ?? true;
+    },
+    set UseJumpPower(v: boolean) {
+      updateNode((n) => ({ ...n, useJumpPower: v === true }));
+      fireInstanceSignal(nodeId, 'PropertyChanged:UseJumpPower');
+    },
+
+    get RequiresNeck() {
+      return getNode()?.requiresNeck ?? true;
+    },
+    set RequiresNeck(v: boolean) {
+      updateNode((n) => ({ ...n, requiresNeck: v === true }));
+      fireInstanceSignal(nodeId, 'PropertyChanged:RequiresNeck');
+    },
+
+    get MoveDirection() {
+      return makeInstanceVector3(bridge, 0, 0, 0);
+    },
+    get FloorMaterial() {
+      return 'Plastic';
+    },
+    get SeatPart() {
+      return null;
+    },
+
+    TakeDamage: (damage: number) => {
+      const dmg = Math.max(0, Number(damage) || 0);
+      const current = getNode()?.health ?? 100;
+      const nextHealth = Math.max(0, current - dmg);
+      updateNode((n) => ({ ...n, health: nextHealth }));
+      fireInstanceSignal(nodeId, 'HealthChanged', nextHealth);
+      fireInstanceSignal(nodeId, 'PropertyChanged:Health', nextHealth);
+      if (nextHealth <= 0 && current > 0) {
+        updateNode((n) => ({ ...n, humanoidState: 'Dead' }));
+        fireInstanceSignal(nodeId, 'Died');
+        fireInstanceSignal(nodeId, 'StateChanged', 'Dead');
+      }
+    },
+
+    ChangeState: (state: string) => {
+      const s = String(state || 'Running');
+      const prev = getNode()?.humanoidState || 'Running';
+      updateNode((n) => ({ ...n, humanoidState: s }));
+      fireInstanceSignal(nodeId, 'StateChanged', prev, s);
+    },
+
+    GetState: () => {
+      return getNode()?.humanoidState || 'Running';
+    },
+
+    SetStateEnabled: () => {},
+    GetStateEnabled: () => true,
+
+    ApplyDescription: (descProxy: any) => {
+      if (!descProxy) return;
+      const headC = descProxy.HeadColor ? (descProxy.HeadColor.toString ? descProxy.HeadColor.toString() : descProxy.HeadColor) : undefined;
+      updateNode((n) => ({
+        ...n,
+        headColor: typeof headC === 'string' ? headC : n.headColor,
+      }));
+    },
+
+    GetAppliedDescription: () => {
+      const parent = findParentNode(getTree(), nodeId);
+      const childDesc = parent?.children.find((c) => c.type === 'humanoiddescription');
+      if (childDesc) {
+        return createInstanceProxy(childDesc.id, getTree, updateTree, onLog, bridge);
+      }
+      return null;
+    },
+
+    AddAccessory: (acc: any) => {
+      const parent = findParentNode(getTree(), nodeId);
+      if (parent && acc?.__nodeId) {
+        acc.__setParentById?.(parent.id);
+      }
+    },
+
+    // ---- HumanoidDescription & BodyColors Colors ---------------------------
+    get HeadColor() {
+      const node = getNode();
+      if (node?.type === 'bodycolors') {
+        return (this as any).HeadColor3;
+      }
+      return hexToColor3Value(node?.headColor || '#f8d966', bridge);
+    },
+    set HeadColor(v: any) {
+      const node = getNode();
+      if (node?.type === 'bodycolors') {
+        (this as any).HeadColor3 = v;
+        return;
+      }
+      const hex = colorValueToHex(v, '#f8d966');
+      updateNode((n) => ({ ...n, headColor: hex }));
+      fireInstanceSignal(nodeId, 'PropertyChanged:HeadColor');
+    },
+
+    get TorsoColor() {
+      const node = getNode();
+      if (node?.type === 'bodycolors') {
+        return (this as any).TorsoColor3;
+      }
+      return hexToColor3Value(node?.torsoColor || '#0d69ac', bridge);
+    },
+    set TorsoColor(v: any) {
+      const node = getNode();
+      if (node?.type === 'bodycolors') {
+        (this as any).TorsoColor3 = v;
+        return;
+      }
+      const hex = colorValueToHex(v, '#0d69ac');
+      updateNode((n) => ({ ...n, torsoColor: hex }));
+      fireInstanceSignal(nodeId, 'PropertyChanged:TorsoColor');
+    },
+
+    get LeftArmColor() {
+      const node = getNode();
+      if (node?.type === 'bodycolors') {
+        return (this as any).LeftArmColor3;
+      }
+      return hexToColor3Value(node?.leftArmColor || '#f8d966', bridge);
+    },
+    set LeftArmColor(v: any) {
+      const node = getNode();
+      if (node?.type === 'bodycolors') {
+        (this as any).LeftArmColor3 = v;
+        return;
+      }
+      const hex = colorValueToHex(v, '#f8d966');
+      updateNode((n) => ({ ...n, leftArmColor: hex }));
+      fireInstanceSignal(nodeId, 'PropertyChanged:LeftArmColor');
+    },
+
+    get RightArmColor() {
+      const node = getNode();
+      if (node?.type === 'bodycolors') {
+        return (this as any).RightArmColor3;
+      }
+      return hexToColor3Value(node?.rightArmColor || '#f8d966', bridge);
+    },
+    set RightArmColor(v: any) {
+      const node = getNode();
+      if (node?.type === 'bodycolors') {
+        (this as any).RightArmColor3 = v;
+        return;
+      }
+      const hex = colorValueToHex(v, '#f8d966');
+      updateNode((n) => ({ ...n, rightArmColor: hex }));
+      fireInstanceSignal(nodeId, 'PropertyChanged:RightArmColor');
+    },
+
+    get LeftLegColor() {
+      const node = getNode();
+      if (node?.type === 'bodycolors') {
+        return (this as any).LeftLegColor3;
+      }
+      return hexToColor3Value(node?.leftLegColor || '#a4c639', bridge);
+    },
+    set LeftLegColor(v: any) {
+      const node = getNode();
+      if (node?.type === 'bodycolors') {
+        (this as any).LeftLegColor3 = v;
+        return;
+      }
+      const hex = colorValueToHex(v, '#a4c639');
+      updateNode((n) => ({ ...n, leftLegColor: hex }));
+      fireInstanceSignal(nodeId, 'PropertyChanged:LeftLegColor');
+    },
+
+    get RightLegColor() {
+      const node = getNode();
+      if (node?.type === 'bodycolors') {
+        return (this as any).RightLegColor3;
+      }
+      return hexToColor3Value(node?.rightLegColor || '#a4c639', bridge);
+    },
+    set RightLegColor(v: any) {
+      const node = getNode();
+      if (node?.type === 'bodycolors') {
+        (this as any).RightLegColor3 = v;
+        return;
+      }
+      const hex = colorValueToHex(v, '#a4c639');
+      updateNode((n) => ({ ...n, rightLegColor: hex }));
+      fireInstanceSignal(nodeId, 'PropertyChanged:RightLegColor');
+    },
+
+    get HeightScale() { return getNode()?.heightScale ?? 1; },
+    set HeightScale(v: number) { updateNode((n) => ({ ...n, heightScale: Number(v) || 1 })); },
+    get WidthScale() { return getNode()?.widthScale ?? 1; },
+    set WidthScale(v: number) { updateNode((n) => ({ ...n, widthScale: Number(v) || 1 })); },
+    get HeadScale() { return getNode()?.headScale ?? 1; },
+    set HeadScale(v: number) { updateNode((n) => ({ ...n, headScale: Number(v) || 1 })); },
+    get DepthScale() { return getNode()?.depthScale ?? 1; },
+    set DepthScale(v: number) { updateNode((n) => ({ ...n, depthScale: Number(v) || 1 })); },
+    get BodyTypeScale() { return getNode()?.bodyTypeScale ?? 0; },
+    set BodyTypeScale(v: number) { updateNode((n) => ({ ...n, bodyTypeScale: Number(v) || 0 })); },
+    get ProportionScale() { return getNode()?.proportionScale ?? 0; },
+    set ProportionScale(v: number) { updateNode((n) => ({ ...n, proportionScale: Number(v) || 0 })); },
+
+    get Shirt() { return getNode()?.shirt ?? ''; },
+    set Shirt(v: any) { updateNode((n) => ({ ...n, shirt: String(v ?? '') })); },
+    get Pants() { return getNode()?.pants ?? ''; },
+    set Pants(v: any) { updateNode((n) => ({ ...n, pants: String(v ?? '') })); },
+    get GraphicTShirt() { return getNode()?.graphicTShirt ?? ''; },
+    set GraphicTShirt(v: any) { updateNode((n) => ({ ...n, graphicTShirt: String(v ?? '') })); },
+    get Head() { return getNode()?.headAsset ?? ''; },
+    set Head(v: any) { updateNode((n) => ({ ...n, headAsset: String(v ?? '') })); },
+
+    get HairAccessory() { return getNode()?.hairAccessory ?? ''; },
+    set HairAccessory(v: any) { updateNode((n) => ({ ...n, hairAccessory: String(v ?? '') })); },
+    get HatAccessory() { return getNode()?.hatAccessory ?? ''; },
+    set HatAccessory(v: any) { updateNode((n) => ({ ...n, hatAccessory: String(v ?? '') })); },
+    get FaceAccessory() { return getNode()?.faceAccessory ?? ''; },
+    set FaceAccessory(v: any) { updateNode((n) => ({ ...n, faceAccessory: String(v ?? '') })); },
+    get NeckAccessory() { return getNode()?.neckAccessory ?? ''; },
+    set NeckAccessory(v: any) { updateNode((n) => ({ ...n, neckAccessory: String(v ?? '') })); },
+    get ShouldersAccessory() { return getNode()?.shouldersAccessory ?? ''; },
+    set ShouldersAccessory(v: any) { updateNode((n) => ({ ...n, shouldersAccessory: String(v ?? '') })); },
+    get FrontAccessory() { return getNode()?.frontAccessory ?? ''; },
+    set FrontAccessory(v: any) { updateNode((n) => ({ ...n, frontAccessory: String(v ?? '') })); },
+    get BackAccessory() { return getNode()?.backAccessory ?? ''; },
+    set BackAccessory(v: any) { updateNode((n) => ({ ...n, backAccessory: String(v ?? '') })); },
+    get WaistAccessory() { return getNode()?.waistAccessory ?? ''; },
+    set WaistAccessory(v: any) { updateNode((n) => ({ ...n, waistAccessory: String(v ?? '') })); },
+
+    get ClimbAnimation() { return getNode()?.climbAnimation ?? ''; },
+    set ClimbAnimation(v: any) { updateNode((n) => ({ ...n, climbAnimation: String(v ?? '') })); },
+    get FallAnimation() { return getNode()?.fallAnimation ?? ''; },
+    set FallAnimation(v: any) { updateNode((n) => ({ ...n, fallAnimation: String(v ?? '') })); },
+    get IdleAnimation() { return getNode()?.idleAnimation ?? ''; },
+    set IdleAnimation(v: any) { updateNode((n) => ({ ...n, idleAnimation: String(v ?? '') })); },
+    get JumpAnimation() { return getNode()?.jumpAnimation ?? ''; },
+    set JumpAnimation(v: any) { updateNode((n) => ({ ...n, jumpAnimation: String(v ?? '') })); },
+    get RunAnimation() { return getNode()?.runAnimation ?? ''; },
+    set RunAnimation(v: any) { updateNode((n) => ({ ...n, runAnimation: String(v ?? '') })); },
+    get SwimAnimation() { return getNode()?.swimAnimation ?? ''; },
+    set SwimAnimation(v: any) { updateNode((n) => ({ ...n, swimAnimation: String(v ?? '') })); },
+    get WalkAnimation() { return getNode()?.walkAnimation ?? ''; },
+    set WalkAnimation(v: any) { updateNode((n) => ({ ...n, walkAnimation: String(v ?? '') })); },
+
+    GetAccessories: () => [],
+    SetAccessories: () => {},
+
+    // ---- BodyColors ---------------------------------------------------------
+    get HeadColor3() {
+      return hexToColor3Value(getNode()?.headColor3 || '#f8d966', bridge);
+    },
+    set HeadColor3(v: any) {
+      const hex = colorValueToHex(v, '#f8d966');
+      updateNode((n) => ({ ...n, headColor3: hex }));
+      fireInstanceSignal(nodeId, 'PropertyChanged:HeadColor3');
+    },
+
+    get TorsoColor3() {
+      return hexToColor3Value(getNode()?.torsoColor3 || '#0d69ac', bridge);
+    },
+    set TorsoColor3(v: any) {
+      const hex = colorValueToHex(v, '#0d69ac');
+      updateNode((n) => ({ ...n, torsoColor3: hex }));
+      fireInstanceSignal(nodeId, 'PropertyChanged:TorsoColor3');
+    },
+
+    get LeftArmColor3() {
+      return hexToColor3Value(getNode()?.leftArmColor3 || '#f8d966', bridge);
+    },
+    set LeftArmColor3(v: any) {
+      const hex = colorValueToHex(v, '#f8d966');
+      updateNode((n) => ({ ...n, leftArmColor3: hex }));
+      fireInstanceSignal(nodeId, 'PropertyChanged:LeftArmColor3');
+    },
+
+    get RightArmColor3() {
+      return hexToColor3Value(getNode()?.rightArmColor3 || '#f8d966', bridge);
+    },
+    set RightArmColor3(v: any) {
+      const hex = colorValueToHex(v, '#f8d966');
+      updateNode((n) => ({ ...n, rightArmColor3: hex }));
+      fireInstanceSignal(nodeId, 'PropertyChanged:RightArmColor3');
+    },
+
+    get LeftLegColor3() {
+      return hexToColor3Value(getNode()?.leftLegColor3 || '#a4c639', bridge);
+    },
+    set LeftLegColor3(v: any) {
+      const hex = colorValueToHex(v, '#a4c639');
+      updateNode((n) => ({ ...n, leftLegColor3: hex }));
+      fireInstanceSignal(nodeId, 'PropertyChanged:LeftLegColor3');
+    },
+
+    get RightLegColor3() {
+      return hexToColor3Value(getNode()?.rightLegColor3 || '#a4c639', bridge);
+    },
+    set RightLegColor3(v: any) {
+      const hex = colorValueToHex(v, '#a4c639');
+      updateNode((n) => ({ ...n, rightLegColor3: hex }));
+      fireInstanceSignal(nodeId, 'PropertyChanged:RightLegColor3');
+    },
+
+    // ---- Animator -----------------------------------------------------------
+    LoadAnimation: (animInstance: any) => {
+      let isPlaying = false;
+      let speed = 1.0;
+      let timePos = 0.0;
+      let looped = false;
+      let weightTarget = 1.0;
+      const trackSignal = (sigName: string) => ({
+        __type: 'RBXScriptSignal',
+        Connect: (fn: any) => {
+          if (typeof fn !== 'function') return null;
+          const channel = `AnimTrack:${nodeId}:${sigName}`;
+          globalSignalHub.connect(channel, fn);
+          return {
+            __type: 'RBXScriptConnection',
+            Connected: true,
+            Disconnect: () => globalSignalHub.disconnect(channel, fn),
+          };
+        },
+      });
+
+      const track = {
+        __type: 'AnimationTrack',
+        Animation: animInstance,
+        Length: 1.0,
+        Priority: 'Action',
+        get IsPlaying() { return isPlaying; },
+        get Speed() { return speed; },
+        get TimePosition() { return timePos; },
+        set TimePosition(v: number) { timePos = Number(v) || 0; },
+        get Looped() { return looped; },
+        set Looped(v: boolean) { looped = v === true; },
+        get WeightCurrent() { return weightTarget; },
+        get WeightTarget() { return weightTarget; },
+        Play: (_fadeTime = 0.1, weight = 1, spd = 1) => {
+          isPlaying = true;
+          speed = Number(spd) || 1;
+          weightTarget = Number(weight) || 1;
+        },
+        Stop: (_fadeTime = 0.1) => {
+          isPlaying = false;
+          globalSignalHub.fire(`AnimTrack:${nodeId}:Stopped`);
+        },
+        AdjustSpeed: (s: number) => { speed = Number(s) || 1; },
+        AdjustWeight: (w: number) => { weightTarget = Number(w) || 1; },
+        Stopped: trackSignal('Stopped'),
+        KeyframeReached: trackSignal('KeyframeReached'),
+        DidLoop: trackSignal('DidLoop'),
+      };
+      return track;
+    },
+
+    GetPlayingAnimationTracks: () => [],
+    StepAnimations: () => {},
+
+    // ---- General Instance ---------------------------------------------------
+    GetPropertyChangedSignal: (propName: string) => {
+      return makeInstanceSignal(`PropertyChanged:${propName}`);
+    },
+
     __setParentById: (targetParentId: string | null) => {
       let targetNode: TreeNodeData | null = null;
       if (orphanNodes.has(nodeId)) {
@@ -4017,6 +4778,20 @@ export function createInstanceProxy(
       const z = Number(targetPos.Z ?? targetPos.z ?? 0);
       const node = getNode();
       if (!node) return;
+
+      if (node.type === 'humanoid') {
+        const parent = findParentNode(getTree(), nodeId);
+        if (parent && (parent.type === 'model' || parent.type === 'part')) {
+          updateTree((tree) => {
+            const move = (nodes: TreeNodeData[]): TreeNodeData[] =>
+              nodes.map((n) => (n.id === parent.id ? { ...n, position: [x, y, z] } : { ...n, children: move(n.children) }));
+            return move(tree);
+          });
+        }
+        fireInstanceSignal(nodeId, 'MoveToFinished', true);
+        return;
+      }
+
       const primaryPart = (node.primaryPartId ? findNodeById([node], node.primaryPartId) : null) ||
         (node.children || []).find((c) => c.type === 'part' || c.type === 'object');
       const curPos = primaryPart?.position || node.position || [0, 5, 0];
@@ -4048,6 +4823,14 @@ export function createInstanceProxy(
       if (lower === 'folder' && (nodeType === 'folder' || nodeType === 'folder_script')) return true;
       if (lower === 'decal' && (nodeType === 'decal' || nodeType === 'texture')) return true;
       if (lower === 'texture' && nodeType === 'texture') return true;
+      if ((lower === 'jointinstance' || lower === 'motor6d') && nodeType === 'motor6d') return true;
+      if (lower === 'attachment' && nodeType === 'attachment') return true;
+      if (lower === 'humanoid' && nodeType === 'humanoid') return true;
+      if (lower === 'humanoiddescription' && nodeType === 'humanoiddescription') return true;
+      if (lower === 'animator' && nodeType === 'animator') return true;
+      if (lower === 'status' && nodeType === 'status') return true;
+      if (lower === 'bodycolors' && nodeType === 'bodycolors') return true;
+      if ((lower === 'valuebase' || lower === 'stringvalue') && nodeType === 'stringvalue') return true;
       if (lower === 'guiinstance' || lower === 'guibase2d') {
         return ['screengui', 'frame', 'textlabel', 'textbutton', 'imagelabel', 'imagebutton', 'textbox', 'scrollingframe', 'surfacegui', 'billboardgui'].includes(nodeType);
       }
@@ -7348,10 +8131,51 @@ export class LuaRuntime {
           UIScale: 'uiscale',
           UIPageLayout: 'uipagelayout',
           UIFlexItem: 'uiflexitem',
+          Motor6D: 'motor6d',
+          motor6d: 'motor6d',
+          motor6D: 'motor6d',
+          Attachment: 'attachment',
+          attachment: 'attachment',
+          attachmant: 'attachment',
+          HumanoidDescription: 'humanoiddescription',
+          humanoiddescription: 'humanoiddescription',
+          Humanoid: 'humanoid',
+          humanoid: 'humanoid',
+          Animator: 'animator',
+          animator: 'animator',
+          Status: 'status',
+          status: 'status',
+          BodyColors: 'bodycolors',
+          bodycolors: 'bodycolors',
+          'Body Colors': 'bodycolors',
+          StringValue: 'stringvalue',
+          stringvalue: 'stringvalue',
         };
         const nodeType = typeMap[className] || 'object';
         const isGui = ['screengui', 'frame', 'textlabel', 'textbutton', 'imagelabel', 'imagebutton', 'textbox', 'scrollingframe', 'surfacegui', 'billboardgui'].includes(nodeType);
         const isUiModifier = ['uicorner', 'uistroke', 'uipadding', 'uilistlayout', 'uigridlayout', 'uiaspectratioconstraint', 'uisizeconstraint', 'uitextsizeconstraint', 'uigradient', 'uiscale', 'uipagelayout', 'uiflexitem'].includes(nodeType);
+        const isNon3d = isGui || isUiModifier || [
+          'motor6d',
+          'humanoiddescription',
+          'humanoid',
+          'animator',
+          'status',
+          'bodycolors',
+          'stringvalue',
+          'script',
+          'localscript',
+          'modulescript',
+          'remoteevent',
+          'remotefunction',
+          'folder',
+          'sky',
+          'atmosphere',
+          'colorcorrectioneffect',
+          'bloomeffect',
+          'sunrayseffect',
+          'blureffect',
+          'depthoffieldeffect',
+        ].includes(nodeType);
 
         let parentId: string | null = null;
         if (typeof parent === 'string' && parent) {
@@ -7371,10 +8195,10 @@ export class LuaRuntime {
           name: className,
           type: nodeType,
           children: [],
-          position: (nodeType === 'decal' || nodeType === 'texture' || isGui || isUiModifier) ? undefined : [0, 5, 0],
-          rotation: (nodeType === 'decal' || nodeType === 'texture' || isGui || isUiModifier) ? undefined : [0, 0, 0],
-          size: (nodeType === 'decal' || nodeType === 'texture' || isGui || isUiModifier) ? undefined : [4, 4, 4],
-          color: (nodeType === 'decal' || nodeType === 'texture') ? '#ffffff' : (isGui || isUiModifier ? undefined : '#a3a2a5'),
+          position: (nodeType === 'attachment') ? [0, 0, 0] : (isNon3d ? undefined : [0, 5, 0]),
+          rotation: (nodeType === 'attachment') ? [0, 0, 0] : (isNon3d ? undefined : [0, 0, 0]),
+          size: (isNon3d || nodeType === 'attachment') ? undefined : [4, 4, 4],
+          color: (nodeType === 'decal' || nodeType === 'texture') ? '#ffffff' : (isNon3d || nodeType === 'attachment' ? undefined : '#a3a2a5'),
           // GUI object properties
           guiPosition: isGui ? { xScale: 0, xOffset: 0, yScale: 0, yOffset: 0 } : undefined,
           guiSize: isGui
@@ -7540,6 +8364,54 @@ export class LuaRuntime {
           threshold: nodeType === 'bloomeffect' ? 2 : undefined,
           spread: nodeType === 'sunrayseffect' ? 0.1 : undefined,
           effectSize: (nodeType === 'bloomeffect' || nodeType === 'blureffect') ? 24 : undefined,
+          // Motor6D defaults
+          c0: nodeType === 'motor6d' ? [0, 0, 0] : undefined,
+          c1: nodeType === 'motor6d' ? [0, 0, 0] : undefined,
+          c0Rotation: nodeType === 'motor6d' ? [0, 0, 0] : undefined,
+          c1Rotation: nodeType === 'motor6d' ? [0, 0, 0] : undefined,
+          currentAngle: nodeType === 'motor6d' ? 0 : undefined,
+          desiredAngle: nodeType === 'motor6d' ? 0 : undefined,
+          maxVelocity: nodeType === 'motor6d' ? 0 : undefined,
+          // Attachment defaults
+          axis: nodeType === 'attachment' ? [1, 0, 0] : undefined,
+          secondaryAxis: nodeType === 'attachment' ? [0, 1, 0] : undefined,
+          // Humanoid defaults
+          health: nodeType === 'humanoid' ? 100 : undefined,
+          maxHealth: nodeType === 'humanoid' ? 100 : undefined,
+          walkSpeed: nodeType === 'humanoid' ? 16 : undefined,
+          jumpPower: nodeType === 'humanoid' ? 50 : undefined,
+          jumpHeight: nodeType === 'humanoid' ? 7.2 : undefined,
+          hipHeight: nodeType === 'humanoid' ? 2 : undefined,
+          rigType: nodeType === 'humanoid' ? 'R15' : undefined,
+          displayName: nodeType === 'humanoid' ? '' : undefined,
+          autoRotate: nodeType === 'humanoid' ? true : undefined,
+          platformStand: nodeType === 'humanoid' ? false : undefined,
+          sit: nodeType === 'humanoid' ? false : undefined,
+          useJumpPower: nodeType === 'humanoid' ? true : undefined,
+          requiresNeck: nodeType === 'humanoid' ? true : undefined,
+          humanoidState: nodeType === 'humanoid' ? 'Running' : undefined,
+          // HumanoidDescription defaults
+          headColor: nodeType === 'humanoiddescription' ? '#f8d966' : undefined,
+          torsoColor: nodeType === 'humanoiddescription' ? '#0d69ac' : undefined,
+          leftArmColor: nodeType === 'humanoiddescription' ? '#f8d966' : undefined,
+          rightArmColor: nodeType === 'humanoiddescription' ? '#f8d966' : undefined,
+          leftLegColor: nodeType === 'humanoiddescription' ? '#a4c639' : undefined,
+          rightLegColor: nodeType === 'humanoiddescription' ? '#a4c639' : undefined,
+          heightScale: nodeType === 'humanoiddescription' ? 1 : undefined,
+          widthScale: nodeType === 'humanoiddescription' ? 1 : undefined,
+          headScale: nodeType === 'humanoiddescription' ? 1 : undefined,
+          depthScale: nodeType === 'humanoiddescription' ? 1 : undefined,
+          bodyTypeScale: nodeType === 'humanoiddescription' ? 0 : undefined,
+          proportionScale: nodeType === 'humanoiddescription' ? 0 : undefined,
+          // BodyColors defaults
+          headColor3: nodeType === 'bodycolors' ? '#f8d966' : undefined,
+          torsoColor3: nodeType === 'bodycolors' ? '#0d69ac' : undefined,
+          leftArmColor3: nodeType === 'bodycolors' ? '#f8d966' : undefined,
+          rightArmColor3: nodeType === 'bodycolors' ? '#f8d966' : undefined,
+          leftLegColor3: nodeType === 'bodycolors' ? '#a4c639' : undefined,
+          rightLegColor3: nodeType === 'bodycolors' ? '#a4c639' : undefined,
+          // StringValue defaults
+          value: nodeType === 'stringvalue' ? '' : undefined,
         };
 
         if (parentId) {

@@ -12,9 +12,10 @@ This document provides an exhaustive, authoritative catalog of all **classes, in
 5. [UI Modifiers & Constraints](#5-ui-modifiers--constraints)
 6. [Lighting & Environmental Effects](#6-lighting--environmental-effects)
 7. [Networking & Remotes](#7-networking--remotes)
-8. [DataModel Container Services](#8-datamodel-container-services)
-9. [Engine Utility Services](#9-engine-utility-services)
-10. [Datatypes & Enums Reference](#10-datatypes--enums-reference)
+8. [Characters, Rigging & Value Elements](#8-characters-rigging--value-elements)
+9. [DataModel Container Services](#9-datamodel-container-services)
+10. [Engine Utility Services](#10-engine-utility-services)
+11. [Datatypes & Enums Reference](#11-datatypes--enums-reference)
 
 ---
 
@@ -67,6 +68,14 @@ This document provides an exhaustive, authoritative catalog of all **classes, in
 | **DepthOfFieldEffect** | Post-Processing | ✅ | ✅ (DoF Blur) | ✅ | Simulates camera focal blur outside the focus distance. |
 | **RemoteEvent** | Networking | ✅ | ❌ | ✅ | Asynchronous cross-VM client/server messaging. |
 | **RemoteFunction** | Networking | ✅ | ❌ | ✅ | Synchronous two-way request/response remote calls. |
+| **Motor6D** | Rigging & Constraints | ✅ | ❌ (Rigging) | ✅ | Rigid joint connecting two parts with transform offsets for character animation rigs. |
+| **Attachment** | 3D Spatial & Rigging | ✅ | ✅ (Gizmo) | ✅ | 3D spatial anchor and coordinate frame attached to a BasePart. |
+| **HumanoidDescription** | Character Avatar | ✅ | ❌ (Data) | ✅ | Configures humanoid avatar appearance, scales, body colors, clothing, and accessories. |
+| **Humanoid** | Character Controller | ✅ | ❌ (Logical) | ✅ | Core avatar controller handling health, movement physics, jump, states, and animation. |
+| **Animator** | Animation | ✅ | ❌ (Logical) | ✅ | Evaluates and plays animation tracks on Humanoid or AnimationController. |
+| **Status** | Character Status | ✅ | ❌ (Logical) | ✅ | Character status indicator instance used for gameplay status conditions. |
+| **BodyColors** | Character Appearance | ✅ | ❌ (Logical) | ✅ | Configures individual limb colors for character models (Head, Torso, Arms, Legs). |
+| **StringValue** | Data & Values | ✅ | ❌ (Logical) | ✅ | Data storage object holding a string Value with a Changed event. |
 
 ---
 
@@ -212,7 +221,99 @@ Two-way request/response invoking:
 
 ---
 
-## 8. DataModel Container Services
+## 8. Characters, Rigging & Value Elements
+
+### `Humanoid`
+The central controller instance that brings character models and avatars to life with health, physics locomotion, jumping, and animation state management.
+- **Properties**:
+  - `Health` (number, default 100): Current health level of character.
+  - `MaxHealth` (number, default 100): Maximum allowable health.
+  - `WalkSpeed` (number, default 16): Studs/sec forward locomotion speed.
+  - `JumpPower` (number, default 50): Upward impulse power when jumping.
+  - `JumpHeight` (number, default 7.2): Target jump height when `UseJumpPower` is false.
+  - `HipHeight` (number, default 2): Standing offset distance above terrain/floor.
+  - `RigType` (`"R15"` | `"R6"`): Skeletal joint rig standard.
+  - `DisplayName` (string): In-game character overhead name display.
+  - `AutoRotate` (boolean, default true): Automatically aligns facing towards movement direction.
+  - `PlatformStand`, `Sit` (boolean).
+  - `UseJumpPower` (boolean, default true).
+  - `RequiresNeck` (boolean, default true).
+- **Methods**:
+  - `:TakeDamage(amount)`: Inflicts damage and automatically fires `HealthChanged` and `Died`.
+  - `:MoveTo(Vector3)`: Directs the character model towards a target 3D coordinate.
+  - `:ChangeState(HumanoidStateType)`: Forces a transition into another humanoid state.
+  - `:GetState()`: Returns the active humanoid state.
+  - `:ApplyDescription(HumanoidDescription)`: Applies character customization properties.
+  - `:GetAppliedDescription()`: Retrieves the current active avatar appearance description.
+- **Events**:
+  - `.Died`: Fires when health drops to 0.
+  - `.HealthChanged(newHealth)`: Fires upon any health modification.
+  - `.StateChanged(oldState, newState)`: Fires on locomotion or state changes.
+  - `.Running(speed)`, `.Jumping(active)`, `.Climbing(speed)`, `.Freefall(active)`, `.Seated(isSeated)`.
+  - `.MoveToFinished(reachedTarget)`: Fires when character reaches its MoveTo location.
+
+### `HumanoidDescription`
+Data configuration asset specifying the complete visual avatar appearance including limb colors, body proportions, clothing, and accessory attachments.
+- **Properties**:
+  - `HeadColor`, `TorsoColor`, `LeftArmColor`, `RightArmColor`, `LeftLegColor`, `RightLegColor` (`Color3`).
+  - `HeightScale`, `WidthScale`, `HeadScale`, `DepthScale` (numbers, default 1.0).
+  - `BodyTypeScale`, `ProportionScale` (numbers, default 0.0).
+  - `Shirt`, `Pants`, `GraphicTShirt`, `Face`, `Head` (asset IDs or URLs).
+  - Accessories: `HairAccessory`, `HatAccessory`, `FaceAccessory`, `NeckAccessory`, `ShouldersAccessory`, `FrontAccessory`, `BackAccessory`, `WaistAccessory`.
+  - Animations: `ClimbAnimation`, `FallAnimation`, `IdleAnimation`, `JumpAnimation`, `RunAnimation`, `SwimAnimation`, `WalkAnimation`.
+
+### `Animator`
+Animation evaluation unit typically parented under a `Humanoid` or `AnimationController`.
+- **Methods**:
+  - `:LoadAnimation(animation)`: Instantiates a playable `AnimationTrack`.
+  - `:GetPlayingAnimationTracks()`: Returns currently active playing tracks.
+  - `:StepAnimations(deltaTime)`.
+- **AnimationTrack**:
+  - Properties: `IsPlaying`, `Length`, `Speed`, `TimePosition`, `Looped`, `Priority`.
+  - Methods: `:Play(fadeTime, weight, speed)`, `:Stop(fadeTime)`, `:AdjustSpeed(speed)`, `:AdjustWeight(weight)`.
+  - Events: `.Stopped`, `.KeyframeReached`, `.DidLoop`.
+
+### `Motor6D`
+Rigid animated 6-degree-of-freedom joint connecting two `BasePart` instances (`Part0` and `Part1`), forming the basis of all character animation rigs.
+- **Properties**:
+  - `Part0` (`BasePart`): The primary root or parent part in the joint hierarchy.
+  - `Part1` (`BasePart`): The connected child limb or sub-assembly.
+  - `C0` (`CFrame`): 3D offset transform relative to `Part0`.
+  - `C1` (`CFrame`): 3D offset transform relative to `Part1`.
+  - `Transform` (`CFrame`): Animated relative joint offset driven by animation tracks.
+  - `CurrentAngle`, `DesiredAngle`, `MaxVelocity` (numbers).
+  - `Enabled` (boolean).
+
+### `Attachment`
+Spatial point and coordinate frame anchor parented to a `BasePart`.
+- **Properties**:
+  - `Position` (`Vector3`): Local 3D position relative to the parent part.
+  - `Orientation` (`Vector3`): Local Euler rotation.
+  - `Axis`, `SecondaryAxis` (`Vector3`): Direction axes for constraints and hinges.
+  - `WorldPosition`, `WorldOrientation`, `WorldCFrame` (world-space coordinates).
+  - `Visible` (boolean): When true or selected, renders an interactive 3D axes gizmo in the Viewport.
+
+### `BodyColors`
+Limb color configuration instance parented under a character `Model`.
+- **Properties**:
+  - `HeadColor3`, `TorsoColor3`, `LeftArmColor3`, `RightArmColor3`, `LeftLegColor3`, `RightLegColor3` (`Color3`).
+  - Backward-compatible BrickColor accessors: `HeadColor`, `TorsoColor`, etc.
+
+### `Status`
+Legacy character and entity condition indicator instance used to track gameplay status effects, shields, or active buffs.
+- **Properties**: `Name`, `ClassName`, `Parent`, `Archivable`.
+
+### `StringValue`
+Primitive value container storing a text string in the hierarchy with change detection.
+- **Properties**:
+  - `Value` (string): The stored string text.
+- **Events**:
+  - `.Changed(newValue)`: Fires whenever `Value` changes with the new string.
+  - `:GetPropertyChangedSignal("Value")`: Signal firing on value modification.
+
+---
+
+## 9. DataModel Container Services
 
 Root service nodes available in the Explorer hierarchy via `game:GetService("ServiceName")` or `game.ServiceName`:
 

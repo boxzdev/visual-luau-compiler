@@ -263,4 +263,75 @@ export type TreeNodeData = {
   itemLineAlignment?: 'Automatic' | 'Start' | 'Center' | 'End' | 'Stretch' | string;
   growRatio?: number;
   shrinkRatio?: number;
+  // Motor6D properties
+  part0Id?: string;
+  part1Id?: string;
+  c0?: [number, number, number];
+  c1?: [number, number, number];
+  c0Rotation?: [number, number, number];
+  c1Rotation?: [number, number, number];
+  currentAngle?: number;
+  desiredAngle?: number;
+  maxVelocity?: number;
+  transformPos?: [number, number, number];
+  transformRot?: [number, number, number];
+  // Attachment properties
+  axis?: [number, number, number];
+  secondaryAxis?: [number, number, number];
+  // Humanoid properties
+  health?: number;
+  maxHealth?: number;
+  walkSpeed?: number;
+  jumpPower?: number;
+  jumpHeight?: number;
+  hipHeight?: number;
+  rigType?: 'R6' | 'R15' | string;
+  displayName?: string;
+  autoRotate?: boolean;
+  platformStand?: boolean;
+  sit?: boolean;
+  useJumpPower?: boolean;
+  requiresNeck?: boolean;
+  humanoidState?: string;
+  // HumanoidDescription properties
+  headColor?: string;
+  torsoColor?: string;
+  leftArmColor?: string;
+  rightArmColor?: string;
+  leftLegColor?: string;
+  rightLegColor?: string;
+  heightScale?: number;
+  widthScale?: number;
+  headScale?: number;
+  depthScale?: number;
+  bodyTypeScale?: number;
+  proportionScale?: number;
+  shirt?: string;
+  pants?: string;
+  graphicTShirt?: string;
+  headAsset?: string;
+  hairAccessory?: string;
+  hatAccessory?: string;
+  faceAccessory?: string;
+  neckAccessory?: string;
+  shouldersAccessory?: string;
+  frontAccessory?: string;
+  backAccessory?: string;
+  waistAccessory?: string;
+  climbAnimation?: string;
+  fallAnimation?: string;
+  idleAnimation?: string;
+  jumpAnimation?: string;
+  runAnimation?: string;
+  swimAnimation?: string;
+  walkAnimation?: string;
+  // BodyColors properties
+  headColor3?: string;
+  torsoColor3?: string;
+  leftArmColor3?: string;
+  rightArmColor3?: string;
+  leftLegColor3?: string;
+  rightLegColor3?: string;
+  // StringValue properties
+  value?: string;
 };

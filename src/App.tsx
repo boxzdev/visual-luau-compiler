@@ -55,7 +55,12 @@ import {
   Scroll,
   Frame,
   Plus,
-  Search
+  Search,
+  Activity,
+  Heart,
+  Palette,
+  Shield,
+  User
 } from 'lucide-react';
 import Editor from '@monaco-editor/react';
 import { Canvas, useFrame, useLoader, useThree } from '@react-three/fiber';
@@ -164,6 +169,16 @@ function getRobloxIconUrl(name: string, type?: string): string | null {
     uiscale: 'uiscale',
     uipagelayout: 'uipagelayout',
     uiflexitem: 'uiflexitem',
+    motor6d: 'motor6d',
+    attachment: 'attachment',
+    attachmant: 'attachment',
+    humanoiddescription: 'humanoiddescription',
+    humanoid: 'humanoid',
+    animator: 'animator',
+    status: 'status',
+    bodycolors: 'bodycolors',
+    'body colors': 'bodycolors',
+    stringvalue: 'stringvalue',
   };
 
   const mappedClass = TYPE_TO_CLASS[typeLower];
@@ -2147,6 +2162,25 @@ function DraggablePart({
           <PartDecalOrTexture key={child.id} node={child} parentSize={effectiveSize} />
         ))}
 
+        {/* Dynamic child attachments */}
+        {(node.children || [])
+          .filter((c) => c.type?.toLowerCase() === 'attachment')
+          .map((att) => {
+            const attPos = att.position || [0, 0, 0];
+            const attRot = att.rotation || [0, 0, 0];
+            const isAttVisible = att.visible || isSelected;
+            if (!isAttVisible) return null;
+            return (
+              <group key={att.id} position={attPos} rotation={attRot}>
+                <mesh>
+                  <sphereGeometry args={[0.2, 16, 16]} />
+                  <meshBasicMaterial color={isSelected ? '#00b0ff' : '#00e676'} />
+                </mesh>
+                <axesHelper args={[0.8]} />
+              </group>
+            );
+          })}
+
         {/* Dynamic child 3D GUIs (SurfaceGui & BillboardGui) attached or adorned to Part */}
         {childGuis.map((gui) => {
           const gType = gui.type?.toLowerCase();
@@ -3128,6 +3162,14 @@ function registerRobloxCompletions(monaco: any) {
           ['SurfaceLight', 'Emits light outward from a Part face'],
           ['Decal', 'Applies a 2D texture onto a Part face'],
           ['Texture', 'Repeats a tiled 2D texture over a Part surface'],
+          ['Motor6D', 'Rigid joint connecting two parts with transform offsets for character animation rigs'],
+          ['Attachment', 'Spatial point attachment on a part for constraints, particles, and rigging'],
+          ['HumanoidDescription', 'Configures humanoid avatar appearance, scales, body colors, and accessories'],
+          ['Humanoid', 'Core character avatar controller with health, movement, and animation states'],
+          ['Animator', 'Evaluates and plays animation tracks on Humanoid or AnimationController'],
+          ['Status', 'Legacy character status indicator instance for gameplay status effects'],
+          ['BodyColors', 'Configures individual limb colors for character models'],
+          ['StringValue', 'Data storage object holding a string Value with Changed event'],
         ];
 
         const query = instanceNewMatch[1].toLowerCase();
@@ -4025,6 +4067,14 @@ export default function App() {
       | 'uigradient'
       | 'uiscale'
       | 'uipagelayout'
+      | 'motor6d'
+      | 'attachment'
+      | 'humanoiddescription'
+      | 'humanoid'
+      | 'animator'
+      | 'status'
+      | 'bodycolors'
+      | 'stringvalue'
   ) => {
     const newId = 'node_' + Math.random().toString(36).substring(2, 9);
     let name = 'Part';
@@ -4040,6 +4090,22 @@ export default function App() {
       name = 'Decal';
     } else if (objectType === 'texture') {
       name = 'Texture';
+    } else if (objectType === 'motor6d') {
+      name = 'Motor6D';
+    } else if (objectType === 'attachment') {
+      name = 'Attachment';
+    } else if (objectType === 'humanoiddescription') {
+      name = 'HumanoidDescription';
+    } else if (objectType === 'humanoid') {
+      name = 'Humanoid';
+    } else if (objectType === 'animator') {
+      name = 'Animator';
+    } else if (objectType === 'status') {
+      name = 'Status';
+    } else if (objectType === 'bodycolors') {
+      name = 'Body Colors';
+    } else if (objectType === 'stringvalue') {
+      name = 'StringValue';
     } else if (objectType === 'screengui') {
       name = 'ScreenGui';
     } else if (objectType === 'frame') {
@@ -4144,20 +4210,29 @@ export default function App() {
       'uiscale',
       'uipagelayout',
     ].includes(objectType);
-    const isNon3d = isContainer || isDecalOrTexture || isGui || isUiModifier;
+    const isCharacterOrData = [
+      'motor6d',
+      'humanoiddescription',
+      'humanoid',
+      'animator',
+      'status',
+      'bodycolors',
+      'stringvalue',
+    ].includes(objectType);
+    const isNon3d = isContainer || isDecalOrTexture || isGui || isUiModifier || isCharacterOrData;
 
     const newNode: TreeNodeData = {
       id: newId,
       name,
       type: objectType,
       children: [],
-      position: isNon3d ? undefined : [0, 5, 0],
-      rotation: isNon3d ? undefined : [0, 0, 0],
-      size: isNon3d ? undefined : [4, 4, 4],
-      color: isDecalOrTexture ? '#ffffff' : (isNon3d ? undefined : '#a3a2a5'),
-      anchored: isNon3d ? undefined : false,
-      canCollide: isNon3d ? undefined : true,
-      canTouch: isNon3d ? undefined : true,
+      position: objectType === 'attachment' ? [0, 0, 0] : (isNon3d ? undefined : [0, 5, 0]),
+      rotation: objectType === 'attachment' ? [0, 0, 0] : (isNon3d ? undefined : [0, 0, 0]),
+      size: (isNon3d || objectType === 'attachment') ? undefined : [4, 4, 4],
+      color: isDecalOrTexture ? '#ffffff' : ((isNon3d || objectType === 'attachment') ? undefined : '#a3a2a5'),
+      anchored: (isNon3d || objectType === 'attachment') ? undefined : false,
+      canCollide: (isNon3d || objectType === 'attachment') ? undefined : true,
+      canTouch: (isNon3d || objectType === 'attachment') ? undefined : true,
       // GUI Base Properties
       guiPosition: isGui && !['screengui', 'surfacegui', 'billboardgui'].includes(objectType)
         ? { xScale: 0, xOffset: 0, yScale: 0, yOffset: 0 }
@@ -4184,7 +4259,7 @@ export default function App() {
       backgroundTransparency: ['textlabel', 'imagelabel', 'screengui', 'surfacegui', 'billboardgui'].includes(objectType) ? 1 : 0,
       borderColor: '#1b2a34',
       borderSizePixel: ['screengui', 'surfacegui', 'billboardgui'].includes(objectType) ? 0 : 1,
-      visible: isGui ? true : undefined,
+      visible: objectType === 'attachment' ? false : (isGui ? true : undefined),
       active: ['textbutton', 'imagebutton', 'textbox'].includes(objectType) ? true : undefined,
       zIndex: isGui ? 1 : undefined,
       clipsDescendants: objectType === 'scrollingframe' ? true : false,
@@ -4298,6 +4373,54 @@ export default function App() {
       threshold: objectType === 'bloomeffect' ? 2 : undefined,
       spread: objectType === 'sunrayseffect' ? 0.1 : undefined,
       effectSize: (objectType === 'bloomeffect' || objectType === 'blureffect') ? 24 : undefined,
+      // Motor6D
+      c0: objectType === 'motor6d' ? [0, 0, 0] : undefined,
+      c1: objectType === 'motor6d' ? [0, 0, 0] : undefined,
+      c0Rotation: objectType === 'motor6d' ? [0, 0, 0] : undefined,
+      c1Rotation: objectType === 'motor6d' ? [0, 0, 0] : undefined,
+      currentAngle: objectType === 'motor6d' ? 0 : undefined,
+      desiredAngle: objectType === 'motor6d' ? 0 : undefined,
+      maxVelocity: objectType === 'motor6d' ? 0 : undefined,
+      // Attachment
+      axis: objectType === 'attachment' ? [1, 0, 0] : undefined,
+      secondaryAxis: objectType === 'attachment' ? [0, 1, 0] : undefined,
+      // Humanoid
+      health: objectType === 'humanoid' ? 100 : undefined,
+      maxHealth: objectType === 'humanoid' ? 100 : undefined,
+      walkSpeed: objectType === 'humanoid' ? 16 : undefined,
+      jumpPower: objectType === 'humanoid' ? 50 : undefined,
+      jumpHeight: objectType === 'humanoid' ? 7.2 : undefined,
+      hipHeight: objectType === 'humanoid' ? 2 : undefined,
+      rigType: objectType === 'humanoid' ? 'R15' : undefined,
+      displayName: objectType === 'humanoid' ? '' : undefined,
+      autoRotate: objectType === 'humanoid' ? true : undefined,
+      platformStand: objectType === 'humanoid' ? false : undefined,
+      sit: objectType === 'humanoid' ? false : undefined,
+      useJumpPower: objectType === 'humanoid' ? true : undefined,
+      requiresNeck: objectType === 'humanoid' ? true : undefined,
+      humanoidState: objectType === 'humanoid' ? 'Running' : undefined,
+      // HumanoidDescription
+      headColor: objectType === 'humanoiddescription' ? '#f8d966' : undefined,
+      torsoColor: objectType === 'humanoiddescription' ? '#0d69ac' : undefined,
+      leftArmColor: objectType === 'humanoiddescription' ? '#f8d966' : undefined,
+      rightArmColor: objectType === 'humanoiddescription' ? '#f8d966' : undefined,
+      leftLegColor: objectType === 'humanoiddescription' ? '#a4c639' : undefined,
+      rightLegColor: objectType === 'humanoiddescription' ? '#a4c639' : undefined,
+      heightScale: objectType === 'humanoiddescription' ? 1 : undefined,
+      widthScale: objectType === 'humanoiddescription' ? 1 : undefined,
+      headScale: objectType === 'humanoiddescription' ? 1 : undefined,
+      depthScale: objectType === 'humanoiddescription' ? 1 : undefined,
+      bodyTypeScale: objectType === 'humanoiddescription' ? 0 : undefined,
+      proportionScale: objectType === 'humanoiddescription' ? 0 : undefined,
+      // BodyColors
+      headColor3: objectType === 'bodycolors' ? '#f8d966' : undefined,
+      torsoColor3: objectType === 'bodycolors' ? '#0d69ac' : undefined,
+      leftArmColor3: objectType === 'bodycolors' ? '#f8d966' : undefined,
+      rightArmColor3: objectType === 'bodycolors' ? '#f8d966' : undefined,
+      leftLegColor3: objectType === 'bodycolors' ? '#a4c639' : undefined,
+      rightLegColor3: objectType === 'bodycolors' ? '#a4c639' : undefined,
+      // StringValue
+      value: objectType === 'stringvalue' ? '' : undefined,
     };
 
     if (defaultCode) {
@@ -5409,6 +5532,24 @@ export default function App() {
             ],
           },
           {
+            title: 'Characters & Animation',
+            items: [
+              { type: 'humanoid' as const, label: 'Humanoid', icon: Activity, colorClass: 'text-[#ef4444]' },
+              { type: 'humanoiddescription' as const, label: 'HumanoidDescription', icon: Sliders, colorClass: 'text-[#38bdf8]' },
+              { type: 'animator' as const, label: 'Animator', icon: Play, colorClass: 'text-[#a855f7]' },
+              { type: 'bodycolors' as const, label: 'Body Colors', icon: Palette, colorClass: 'text-[#f59e0b]' },
+              { type: 'status' as const, label: 'Status', icon: Shield, colorClass: 'text-[#10b981]' },
+              { type: 'motor6d' as const, label: 'Motor6D', icon: RotateCw, colorClass: 'text-[#3b82f6]' },
+              { type: 'attachment' as const, label: 'Attachment', icon: Move, colorClass: 'text-[#06b6d4]' },
+            ],
+          },
+          {
+            title: 'Values',
+            items: [
+              { type: 'stringvalue' as const, label: 'StringValue', icon: Type, colorClass: 'text-[#ec4899]' },
+            ],
+          },
+          {
             title: 'Environment & Effects',
             items: [
               { type: 'sky' as const, label: 'Sky', icon: Cloud, colorClass: 'text-[#64b5f6]' },
@@ -5428,7 +5569,9 @@ export default function App() {
               (item) =>
                 !filterQuery ||
                 item.label.toLowerCase().includes(filterQuery) ||
-                item.type.toLowerCase().includes(filterQuery)
+                item.type.toLowerCase().includes(filterQuery) ||
+                (filterQuery === 'attachmant' && item.type === 'attachment') ||
+                (filterQuery === 'motor6d' && item.type === 'motor6d')
             ),
           }))
           .filter((section) => section.items.length > 0);
