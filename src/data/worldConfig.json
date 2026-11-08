@@ -1,0 +1,48 @@
+{
+  "baseplate": {
+    "name": "Baseplate",
+    "size": [512, 1, 512],
+    "position": [0, -0.5, 0],
+    "rotation": [0, 0, 0],
+    "color": "#5B5B5B",
+    "material": "Plastic",
+    "anchored": true,
+    "canCollide": true,
+    "texture": {
+      "name": "Texture",
+      "texture": "6372755229",
+      "face": "Top",
+      "studsPerTileU": 16,
+      "studsPerTileV": 16,
+      "transparency": 0.8,
+      "color": "#ffffff"
+    }
+  },
+  "spawnLocation": {
+    "name": "SpawnLocation",
+    "size": [12, 1, 12],
+    "position": [0, 0.5, 0],
+    "rotation": [0, 0, 0],
+    "color": "#e8e8e8",
+    "material": "Plastic",
+    "anchored": true,
+    "canCollide": true,
+    "decal": {
+      "name": "Decal",
+      "texture": "3724740815",
+      "face": "Top",
+      "transparency": 0,
+      "color": "#ffffff"
+    }
+  },
+  "defaultPart": {
+    "name": "Part",
+    "size": [4, 4, 4],
+    "position": [0, 5, 0],
+    "rotation": [0, 0, 0],
+    "color": "#a3a2a5",
+    "material": "Plastic",
+    "anchored": true,
+    "canCollide": true
+  }
+}

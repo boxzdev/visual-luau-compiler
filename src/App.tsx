@@ -86,6 +86,7 @@ import {
 } from './engine/luaRunner';
 import { PropertiesPanel } from './components/PropertiesPanel';
 import { globalPhysicsEngine } from './engine/physicsEngine';
+import { worldConfig, getWorldDefaultPosition, getWorldDefaultSize, getWorldDefaultColor } from './data';
 import sunAsset from '../R_Assets/Sun.png';
 import moonAsset from '../R_Assets/Moon.png';
 
@@ -2033,20 +2034,10 @@ function DraggablePart({
   const callbackRef = useRef(onTransformChange);
   callbackRef.current = onTransformChange;
   
-  // Default values based on type
-  let defaultPos: [number, number, number] = [0, 5, 0];
-  let defaultSize: [number, number, number] = [4, 4, 4];
-  let defaultColor = '#a3a2a5';
-
-  if (node.name.toLowerCase() === 'baseplate') {
-    defaultPos = [0, -0.5, 0];
-    defaultSize = [512, 1, 512];
-    defaultColor = '#5B5B5B';
-  } else if (node.type === 'spawnlocation' || node.name.toLowerCase() === 'spawnlocation') {
-    defaultPos = [0, 0.5, 0];
-    defaultSize = [12, 1, 12];
-    defaultColor = '#e8e8e8';
-  }
+  // Default values based on worldConfig JSON
+  const defaultPos = getWorldDefaultPosition(node);
+  const defaultSize = getWorldDefaultSize(node);
+  const defaultColor = getWorldDefaultColor(node);
 
   const pos = node.position || defaultPos;
   const rot = node.rotation || [0, 0, 0];
@@ -2620,40 +2611,52 @@ const initialTree: TreeNodeData[] = [
       { id: 'terrain', name: 'Terrain', type: 'terrain', children: [] },
       {
         id: 'spawnlocation',
-        name: 'SpawnLocation',
+        name: worldConfig.spawnLocation.name || 'SpawnLocation',
         type: 'spawnlocation',
-        color: '#e8e8e8',
+        position: [...worldConfig.spawnLocation.position],
+        size: [...worldConfig.spawnLocation.size],
+        rotation: worldConfig.spawnLocation.rotation ? [...worldConfig.spawnLocation.rotation] : [0, 0, 0],
+        color: worldConfig.spawnLocation.color || '#e8e8e8',
+        material: worldConfig.spawnLocation.material || 'Plastic',
+        anchored: worldConfig.spawnLocation.anchored !== false,
+        canCollide: worldConfig.spawnLocation.canCollide !== false,
         expanded: true,
         children: [
           {
             id: 'spawnlocation_decal',
-            name: 'Decal',
+            name: worldConfig.spawnLocation.decal?.name || 'Decal',
             type: 'decal',
-            texture: '3724740815',
-            face: 'Top',
-            transparency: 0,
-            color: '#ffffff',
+            texture: worldConfig.spawnLocation.decal?.texture || '3724740815',
+            face: worldConfig.spawnLocation.decal?.face || 'Top',
+            transparency: worldConfig.spawnLocation.decal?.transparency ?? 0,
+            color: worldConfig.spawnLocation.decal?.color || '#ffffff',
             children: [],
           },
         ],
       },
       {
         id: 'baseplate',
-        name: 'Baseplate',
+        name: worldConfig.baseplate.name || 'Baseplate',
         type: 'object',
-        color: '#5B5B5B',
+        position: [...worldConfig.baseplate.position],
+        size: [...worldConfig.baseplate.size],
+        rotation: worldConfig.baseplate.rotation ? [...worldConfig.baseplate.rotation] : [0, 0, 0],
+        color: worldConfig.baseplate.color || '#5B5B5B',
+        material: worldConfig.baseplate.material || 'Plastic',
+        anchored: worldConfig.baseplate.anchored !== false,
+        canCollide: worldConfig.baseplate.canCollide !== false,
         expanded: true,
         children: [
           {
             id: 'baseplate_texture',
-            name: 'Texture',
+            name: worldConfig.baseplate.texture?.name || 'Texture',
             type: 'texture',
-            texture: '6372755229',
-            face: 'Top',
-            studsPerTileU: 16,
-            studsPerTileV: 16,
-            transparency: 0.8,
-            color: '#ffffff',
+            texture: worldConfig.baseplate.texture?.texture || '6372755229',
+            face: worldConfig.baseplate.texture?.face || 'Top',
+            studsPerTileU: worldConfig.baseplate.texture?.studsPerTileU ?? 16,
+            studsPerTileV: worldConfig.baseplate.texture?.studsPerTileV ?? 16,
+            transparency: worldConfig.baseplate.texture?.transparency ?? 0.8,
+            color: worldConfig.baseplate.texture?.color || '#ffffff',
             children: [],
           },
         ],
@@ -4226,12 +4229,12 @@ export default function App() {
       name,
       type: objectType,
       children: [],
-      position: objectType === 'attachment' ? [0, 0, 0] : (isNon3d ? undefined : [0, 5, 0]),
-      rotation: objectType === 'attachment' ? [0, 0, 0] : (isNon3d ? undefined : [0, 0, 0]),
-      size: (isNon3d || objectType === 'attachment') ? undefined : [4, 4, 4],
-      color: isDecalOrTexture ? '#ffffff' : ((isNon3d || objectType === 'attachment') ? undefined : '#a3a2a5'),
-      anchored: (isNon3d || objectType === 'attachment') ? undefined : false,
-      canCollide: (isNon3d || objectType === 'attachment') ? undefined : true,
+      position: objectType === 'attachment' ? [0, 0, 0] : (isNon3d ? undefined : [...worldConfig.defaultPart.position]),
+      rotation: objectType === 'attachment' ? [0, 0, 0] : (isNon3d ? undefined : (worldConfig.defaultPart.rotation ? [...worldConfig.defaultPart.rotation] : [0, 0, 0])),
+      size: (isNon3d || objectType === 'attachment') ? undefined : [...worldConfig.defaultPart.size],
+      color: isDecalOrTexture ? '#ffffff' : ((isNon3d || objectType === 'attachment') ? undefined : (worldConfig.defaultPart.color || '#a3a2a5')),
+      anchored: (isNon3d || objectType === 'attachment') ? undefined : (worldConfig.defaultPart.anchored !== false),
+      canCollide: (isNon3d || objectType === 'attachment') ? undefined : (worldConfig.defaultPart.canCollide !== false),
       canTouch: (isNon3d || objectType === 'attachment') ? undefined : true,
       // GUI Base Properties
       guiPosition: isGui && !['screengui', 'surfacegui', 'billboardgui'].includes(objectType)

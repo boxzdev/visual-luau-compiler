@@ -1,6 +1,7 @@
 import { LuaFactory, LuaEngine } from 'wasmoon';
 import glueUrl from 'wasmoon/dist/glue.wasm?url';
 import { globalPhysicsEngine, computeMass } from './physicsEngine';
+import { getWorldDefaultPosition, getWorldDefaultSize, getWorldDefaultColor, worldConfig } from '../data';
 
 export type LogType = 'print' | 'warn' | 'error' | 'system';
 
@@ -1133,19 +1134,11 @@ export function makeInstanceVector2(bridge: LuaBridge | undefined, x = 0, y = 0)
 }
 
 function getDefaultPosition(node: TreeNodeData): [number, number, number] {
-  if (node.position) return node.position;
-  const name = node.name.toLowerCase();
-  if (name === 'baseplate') return [0, -0.5, 0];
-  if (name === 'spawnlocation' || node.type === 'spawnlocation') return [0, 0.5, 0];
-  return [0, 5, 0];
+  return getWorldDefaultPosition(node);
 }
 
 function getDefaultSize(node: TreeNodeData): [number, number, number] {
-  if (node.size) return node.size;
-  const name = node.name.toLowerCase();
-  if (name === 'baseplate') return [512, 1, 512];
-  if (name === 'spawnlocation' || node.type === 'spawnlocation') return [12, 1, 12];
-  return [4, 4, 4];
+  return getWorldDefaultSize(node);
 }
 
 function makeInstanceVector3(bridge: LuaBridge | undefined, x: number, y: number, z: number): any {

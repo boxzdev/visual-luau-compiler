@@ -1,4 +1,5 @@
 import { TreeNodeData } from '../types';
+import { getWorldDefaultPosition, getWorldDefaultSize } from '../data';
 
 export interface RigidBodyState {
   id: string;
@@ -816,9 +817,8 @@ export class PhysicsEngine {
 
         if (isPart) {
           const isBaseplate = nameLower === 'baseplate';
-          const isSpawn = item.type === 'spawnlocation' || nameLower === 'spawnlocation';
-          const defaultPos: Vec3 = isBaseplate ? [0, -0.5, 0] : isSpawn ? [0, 0.5, 0] : [0, 5, 0];
-          const defaultSize: Vec3 = isBaseplate ? [512, 1, 512] : isSpawn ? [12, 1, 12] : [4, 4, 4];
+          const defaultPos: Vec3 = getWorldDefaultPosition(item) as Vec3;
+          const defaultSize: Vec3 = getWorldDefaultSize(item) as Vec3;
 
           const pos: Vec3 = item.position ? [...item.position] : defaultPos;
           const rot: Vec3 = item.rotation ? [...item.rotation] : [0, 0, 0];

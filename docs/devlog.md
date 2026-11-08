@@ -732,3 +732,20 @@
 - **Verification**:
   - Passed `tsc --noEmit` with 0 type errors.
   - Passed `npm run build` production bundling cleanly.
+
+## World Configuration JSON (Baseplate & SpawnLocation Decoupling) — 2026-11-08
+- **Decoupled Hardcoded Dimensions & Positions into [`src/data/worldConfig.json`](file:///c:/visual-luau-compiler-main/src/data/worldConfig.json)**:
+  - Extracted all hardcoded dimensions, positions, orientations, colors, materials, textures, and decals for `Baseplate`, `SpawnLocation`, and default `Part` instances into [`src/data/worldConfig.json`](file:///c:/visual-luau-compiler-main/src/data/worldConfig.json), sitting right alongside [`src/data/guiProperties.json`](file:///c:/visual-luau-compiler-main/src/data/guiProperties.json).
+  - Users can now customize the size, position, color, texture tiling, and decal of the Baseplate and SpawnLocation simply by editing `src/data/worldConfig.json` without modifying any TypeScript code.
+- **Unified World Helpers & Typings (`src/data/index.ts`)**:
+  - Created typed interfaces `WorldConfig` and `WorldObjectConfig`.
+  - Implemented dynamic fallback helper functions `getWorldDefaultPosition(node)`, `getWorldDefaultSize(node)`, and `getWorldDefaultColor(node)`.
+- **System-Wide Integration**:
+  - **Explorer & Initial Scene (`src/App.tsx`)**: `initialTree` now derives `Baseplate` and `SpawnLocation` initial transforms, colors, and child Texture/Decal properties dynamically from `worldConfig`.
+  - **3D Viewport (`DraggablePart` in `src/App.tsx`)**: Replaced hardcoded fallback dimensions with calls to `getWorldDefaultPosition(node)`, `getWorldDefaultSize(node)`, and `getWorldDefaultColor(node)`.
+  - **Properties Panel (`src/components/PropertiesPanel.tsx`)**: Replaced ternary fallback chains with dynamic world config helpers.
+  - **Luau Runtime VM (`src/engine/luaRunner.ts`)**: `getDefaultPosition` and `getDefaultSize` now dynamically read configured values from `worldConfig`.
+  - **Physics Simulator (`src/engine/physicsEngine.ts`)**: Collision box extents and static body transforms for the Baseplate and SpawnLocation now dynamically resolve from `worldConfig`.
+- **Verification**:
+  - `tsc --noEmit` passed with 0 errors.
+  - `npm run build` production bundle built cleanly in 28s.
